@@ -1,0 +1,7 @@
+multiprocessing
+Fabric
+pymongo
+pynsca
+PyYAML
+boto
+filechunkio
