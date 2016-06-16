@@ -37,9 +37,9 @@ make
 
 %install
 mkdir -p %{buildroot}/usr/share/%{bin_name}
-install conf/example.yml %{buildroot}/usr/share/%{bin_name}/%{bin_name}.example.yml
-install LICENSE %{buildroot}/usr/share/%{bin_name}/LICENSE
-install README.md %{buildroot}/usr/share/%{bin_name}/README.md
+install -m 0644 conf/example.yml %{buildroot}/usr/share/%{bin_name}/%{bin_name}.example.yml
+install -m 0644 LICENSE %{buildroot}/usr/share/%{bin_name}/LICENSE
+install -m 0644 README.md %{buildroot}/usr/share/%{bin_name}/README.md
 
 make PREFIX=%{prefix} DESTDIR=%{buildroot} install
 
