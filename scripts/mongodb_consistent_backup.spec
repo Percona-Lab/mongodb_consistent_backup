@@ -13,14 +13,14 @@ Source:		%{name}.tar.gz
 Prefix:		/usr
 
 # Use CentOS SCL python27 (https://www.softwarecollections.org/en/scls/rhscl/python27/) on CentOS 6 (RHEL6 untested)
-# On build host: 'yum install python27-python python27-python-devel python27-python-virtualenv'
+# On build host: 'yum install python27-python python27-python-devel python27-python-virtualenv gcc'
 %{?el6:Requires: python27-python >= 2.7}
-%{?el6:BuildRequires: python27-python >= 2.7 python27-python-devel python27-python-virtualenv}
+%{?el6:BuildRequires: python27-python >= 2.7 python27-python-devel python27-python-virtualenv gcc}
 
 # Use base python/virtualenv, which should be 2.7 on CentOS/RHEL 7
-# On build host: 'yum install python python-devel python-virtualenv'
+# On build host: 'yum install python python-devel python-virtualenv gcc'
 %{?el7:Requires: python >= 2.7}
-%{?el7:BuildRequires: python >= 2.7 python-devel python-virtualenv}
+%{?el7:BuildRequires: python >= 2.7 python-devel python-virtualenv gcc}
 
 
 %description
