@@ -143,10 +143,10 @@ class Backup(object):
                     self.backup_name
                 ))
 
-            logging.info("Cleanup complete. Exiting")
-
             if self._lock:
                 self._lock.release()
+
+            logging.info("Cleanup complete. Exiting")
 
             sys.exit(1)
 
