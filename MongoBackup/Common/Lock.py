@@ -27,4 +27,5 @@ class Lock:
         if self._lock:
             logging.debug("Releasing exclusive lock on file: %s" % self.lock_file)
             self._lock.close()
+            self._lock = None
             return os.remove(self.lock_file)
