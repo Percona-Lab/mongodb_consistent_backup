@@ -24,6 +24,7 @@ class Lock:
             raise Exception, "Could not acquire lock!", None
     
     def release(self):
-        logging.debug("Releasing exclusive lock on file: %s" % self.lock_file)
-        self._lock.close()
-        return os.remove(self.lock_file)
+        if self._lock:
+            logging.debug("Releasing exclusive lock on file: %s" % self.lock_file)
+            self._lock.close()
+            return os.remove(self.lock_file)
