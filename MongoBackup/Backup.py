@@ -145,7 +145,9 @@ class Backup(object):
 
             logging.info("Cleanup complete. Exiting")
 
-            self._lock.release()
+            if self._lock:
+                self._lock.release()
+
             sys.exit(1)
 
     def exception(self, error_message):
