@@ -3,6 +3,7 @@ import logging
 
 from fcntl import flock, LOCK_EX, LOCK_NB
 
+
 class Lock:
     def __init__(self, lock_file):
         self.lock_file = lock_file
