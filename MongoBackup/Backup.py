@@ -8,6 +8,7 @@ from multiprocessing import current_process
 from signal import signal, SIGINT, SIGTERM
 from time import time
 
+from Common import Lock
 from DB import DB
 from ShardingHandler import ShardingHandler
 from Mongodumper import Mongodumper
@@ -62,6 +63,7 @@ class Backup(object):
         self.backup_duration = None
         self.end_time = None
 
+        self._lock = None
         self.log_level = logging.INFO
         self.start_time = time()
         self.oplog_threads = []
@@ -71,6 +73,10 @@ class Backup(object):
         # Setup options are properies and connection to node
         for option in vars(options):
             setattr(self, option, getattr(options, option))
+
+        # Set default lock file:
+	if not self.lock_file:
+            self.lock_file = '/tmp/%s.lock' % self.program_name
 
         # Setup logging
         if self.verbose:
@@ -138,6 +144,8 @@ class Backup(object):
                 ))
 
             logging.info("Cleanup complete. Exiting")
+
+            self._lock.release()
             sys.exit(1)
 
     def exception(self, error_message):
@@ -145,6 +153,12 @@ class Backup(object):
         return self.cleanup_and_exit(None, None)
 
     def run(self):
+        try:
+            self._lock = Lock(self.lock_file)
+        except Exception, e:
+            logging.fatal("Could not acquire lock! Is another %s process running? Exiting" % self.program_name)
+            sys.exit(1)
+
         if not self.is_mongos:
             logging.info("Starting backup of %s:%s in replset mode" % (self.host, self.port))
 
@@ -283,5 +297,7 @@ class Backup(object):
                 ))
             except Exception, e:
                 self.exception("Problem running NSCA notifier! Error: %s" % e)
+
+        self._lock.release()
 
         logging.info("Backup completed in %s sec" % self.backup_duration)
