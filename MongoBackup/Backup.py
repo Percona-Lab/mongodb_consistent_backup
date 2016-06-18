@@ -182,7 +182,6 @@ class Backup(object):
                 )
                 self.sharding.get_start_state()
                 self.sharding.stop_balancer()
-                assert "test123"
             except Exception, e:
                 self.exception("Problem connecting-to and/or stopping balancer! Error: %s" % e)
 
