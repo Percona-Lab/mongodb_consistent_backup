@@ -11,8 +11,6 @@ class LocalCommand:
         self.verbose       = verbose
 
         self.output   = []
-        self.stdout   = None
-        self.stderr   = None
         self._process = None
 
         self.command_line = [self.command]
@@ -22,10 +20,10 @@ class LocalCommand:
     def parse_output(self):
         if self._process:
             try:
-                self.stdout, self.stderr = self._process.communicate()
-                output = self.stdout.strip()
-                if output == "" and self.stderr.strip() != "":
-                    output = self.stderr.strip()
+                stdout, stderr = self._process.communicate()
+                output = stdout.strip()
+                if output == "" and stderr.strip() != "":
+                    output = stderr.strip()
                 if not output == "":
                     self.output.append("\n\t".join(output.split("\n")))
             except Exception, e:
@@ -45,7 +43,7 @@ class LocalCommand:
             raise Exception, "%s command failed with exit code %i! Stderr output:\n%s" % (
                 self.command,
                 self._process.returncode,
-                self.stderr.strip()
+                "\n".join(self.output)
             ), None
         elif self.verbose:
             if len(self.output) > 0:
