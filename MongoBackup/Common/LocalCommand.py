@@ -37,7 +37,7 @@ class LocalCommand:
             self._process = Popen(self.command_line, stdout=PIPE, stderr=PIPE)
             while self._process.poll() is None:
                 self.parse_output()
-                sleep(0.25)
+                sleep(0.1)
         except Exception, e:
             raise e
     
