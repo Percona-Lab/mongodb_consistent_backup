@@ -81,6 +81,7 @@ def run():
     parser.add_option("--no-archive", dest="no_archiver", help="Disable archiving of backups directories post-resolving", action="store_true", default=False)
     parser.add_option("--no-archive-gzip", dest="no_archiver_gzip", help="Disable gzip compression of archive files", action="store_true", default=False)
     parser.add_option("--lazy", dest="no_oplog_tailer", help="Disable tailing/resolving of clusterwide oplogs. This makes a shard-consistent, not cluster-consistent backup", action="store_true", default=False)
+    parser.add_option("--lock-file", dest="lock_file", help="Location of lock file (default: /tmp/%s.lock)" % os.path.basename(sys.argv[0]), default="/tmp/%s.lock" % os.path.basename(sys.argv[0]))
     parser.set_defaults()
 
     options = handle_options(parser)
