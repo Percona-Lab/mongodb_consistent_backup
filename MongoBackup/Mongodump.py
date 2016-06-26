@@ -1,7 +1,7 @@
 import os
 import logging
 
-from multiprocessing import Process, Event
+from multiprocessing import Process
 from signal import signal, SIGINT, SIGTERM
 from time import time
 
@@ -28,7 +28,7 @@ class Mongodump(Process):
         self.verbose        = verbose
 
         self._command   = None
-        self._complete  = Event()
+        self.completed  = False 
         self.backup_dir = "%s/%s" % (self.base_dir, self.backup_name)
         self.dump_dir   = "%s/dump" % self.backup_dir
         self.oplog_file = "%s/oplog.bson" % self.dump_dir
@@ -37,13 +37,18 @@ class Mongodump(Process):
         signal(SIGINT, self.close)
         signal(SIGTERM, self.close)
 
-    def complete(self):
-        return self._complete.is_set()
-
     def close(self, exit_code=None, frame=None):
         if self._command:
             logging.debug("Killing running subprocess/command: %s" % self._command.command)
             self._command.close()
+            self.response_queue.put({
+                'host': self.host,
+                'port': self.port,
+                'file': self.oplog_file,
+                'count': oplog.count(),
+                'last_ts': oplog.last_ts(),
+                'first_ts': oplog.first_ts()
+            })
 
     def run(self):
         logging.info("Starting mongodump (with oplog) backup of %s/%s:%i" % (
@@ -77,15 +82,16 @@ class Mongodump(Process):
             return None
 
         oplog = OplogInfo(self.oplog_file, self.dump_gzip)
+        self.completed = True
         self.response_queue.put({
             'host': self.host,
             'port': self.port,
             'file': self.oplog_file,
             'count': oplog.count(),
             'last_ts': oplog.last_ts(),
-            'first_ts': oplog.first_ts()
+            'first_ts': oplog.first_ts(),
+            'completed': self.completed
         })
-        self._complete.set()
 
         time_diff = time() - self.start_time
         logging.info("Backup for %s/%s:%s completed in %s sec with %i oplog changes captured to: %s" % (
