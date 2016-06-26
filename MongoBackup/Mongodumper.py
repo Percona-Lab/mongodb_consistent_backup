@@ -132,11 +132,11 @@ class Mongodumper:
             if backup['completed']:
                 completed += 1
 
-        # fail if all threads did not complete
-        if not completed == len(self.threads):
+        # check if all threads completed
+        if completed == len(self.threads):
+            logging.info("All mongodump backups completed")
+        else:
             raise Exception, "Not all mongodump threads completed successfully!", None
-
-        logging.info("All mongodump backups completed")
 
         return self._summary
 
