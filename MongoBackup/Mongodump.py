@@ -41,14 +41,6 @@ class Mongodump(Process):
         if self._command:
             logging.debug("Killing running subprocess/command: %s" % self._command.command)
             self._command.close()
-            self.response_queue.put({
-                'host': self.host,
-                'port': self.port,
-                'file': self.oplog_file,
-                'count': oplog.count(),
-                'last_ts': oplog.last_ts(),
-                'first_ts': oplog.first_ts()
-            })
 
     def run(self):
         logging.info("Starting mongodump (with oplog) backup of %s/%s:%i" % (
