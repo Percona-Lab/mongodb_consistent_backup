@@ -79,8 +79,10 @@ class Backup(object):
         # Check for required fields:
         required = ['program_name', 'version', 'git_commit', 'backup_name', 'backup_binary', 'backup_location'] 
         for field in required:
-            if not getattr(self, field):
-                raise Exception, 'Field: %s is required by this class!', None
+            try:
+                getattr(self, field)
+            except Exception:
+                raise Exception, 'Field: %s is required by %s!' % (field, __name__), None
 
         # Set default lock file:
 	if not self.lock_file:
