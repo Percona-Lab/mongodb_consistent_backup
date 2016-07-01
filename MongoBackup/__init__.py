@@ -5,8 +5,9 @@ from optparse import OptionParser
 from yaml import load
 from Backup import Backup
 
-__version__    = '#.#.#'
-__git_commit__ = 'GIT_COMMIT_HASH'
+__version__ = '#.#.#'
+git_commit  = 'GIT_COMMIT_HASH'
+prog_name   = os.path.basename(sys.argv[0])
 
 
 def handle_options(parser):
@@ -51,7 +52,7 @@ def printPythonVersions():
 # noinspection PyUnusedLocal
 def run():
     parser = OptionParser()
-    parser.add_option("--version", dest="version", help="Display version number and exit", action="store_true", default=False)
+    parser.add_option("--version", dest="print_version", help="Display version number and exit", action="store_true", default=False)
     parser.add_option("-v", "--verbose", dest="verbose", help="Increase verbosity", action="store_true", default=False)
     parser.add_option("-c", "--config", dest="config", help="Use YAML config file as defaults")
     parser.add_option("-l", "--location", dest="backup_location", help="Directory to save the backup(s) to (required)")
@@ -81,15 +82,17 @@ def run():
     parser.add_option("--no-archive", dest="no_archiver", help="Disable archiving of backups directories post-resolving", action="store_true", default=False)
     parser.add_option("--no-archive-gzip", dest="no_archiver_gzip", help="Disable gzip compression of archive files", action="store_true", default=False)
     parser.add_option("--lazy", dest="no_oplog_tailer", help="Disable tailing/resolving of clusterwide oplogs. This makes a shard-consistent, not cluster-consistent backup", action="store_true", default=False)
-    parser.add_option("--lock-file", dest="lock_file", help="Location of lock file (default: /tmp/%s.lock)" % os.path.basename(sys.argv[0]), default="/tmp/%s.lock" % os.path.basename(sys.argv[0]))
+    parser.add_option("--lock-file", dest="lock_file", help="Location of lock file (default: /tmp/%s.lock)" % prog_name, default="/tmp/%s.lock" % prog_name)
     parser.set_defaults()
 
     options = handle_options(parser)
 
-    if options.version:
-        binary = os.path.basename(sys.argv[0])
-        print "%s version: %s, git commit hash: %s" % (binary, __version__, __git_commit__)
+    options.program_name = prog_name
+    options.version      = __version__
+    options.git_commit   = git_commit
 
+    if options.print_version:
+        print "%s version: %s, git commit hash: %s" % (prog_name, __version__, git_commit)
         if options.verbose:
             printPythonVersions()
         sys.exit(0)
