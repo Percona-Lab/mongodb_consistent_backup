@@ -38,7 +38,7 @@ class ReplsetHandler:
                 raise Exception, "Could not get output from command: 'replSetGetStatus' after %i retries!" % self.retries, None
             return status
         except Exception, e:
-            logging.fatal("Failed to execute command! Error: %s" % e)
+            logging.fatal("Failed to execute 'replSetGetStatus' command! Error: %s" % e)
             raise e
 
     def find_desirable_secondary(self):
@@ -49,7 +49,7 @@ class ReplsetHandler:
         primary      = None
         for member in rs_status['members']:
             if 'health' in member and member['health'] > 0:
-                logging.info("Found %s: %s/%s with optime %s" % (
+                logging.debug("Found %s: %s/%s with optime %s" % (
                     member['stateStr'],
                     rs_name,
                     member['name'],
@@ -75,7 +75,11 @@ class ReplsetHandler:
             raise Exception, "Unable to locate a PRIMARY member for replset %s, giving up" % rs_name, None
 
         if secondary is None or (secondary['count'] + 1) < quorum_count:
-            logging.fatal("Not enough secondaries in replset %s to safely take backup!" % rs_name)
+            logging.fatal("Not enough secondaries in replset %s to take backup! Num replset members: %i, required quorum: %i" % (
+                rs_name,
+                secondary['count'] + 1,
+                quorum_count
+            ))
             raise Exception, "Not enough secondaries in replset %s to safely take backup!" % rs_name, None
 
         rep_lag = (mktime(primary['optime'].timetuple()) - mktime(secondary['optime'].timetuple()))
@@ -83,8 +87,7 @@ class ReplsetHandler:
             logging.fatal("No secondary found in replset %s within %s lag time!" % (rs_name, self.max_lag_secs))
             raise Exception, "No secondary found in replset %s within %s lag time!" % (rs_name, self.max_lag_secs), None
 
-        logging.info("Choosing SECONDARY %s for replica set %s" % (secondary['host'], rs_name))
-
+        logging.debug("Choosing SECONDARY %s for replica set %s" % (secondary['host'], rs_name))
         return secondary
 
 
