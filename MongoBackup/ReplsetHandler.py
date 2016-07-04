@@ -27,19 +27,20 @@ class ReplsetHandler:
         return self.connection.close()
 
     def get_rs_status(self):
-        try:
-            tries  = 0
-            status = None
-            while not status and tries < self.retries:
+        tries  = 0
+        status = None
+        while not status and tries < self.retries:
+            try:
                 status = self.connection['admin'].command("replSetGetStatus")
-                tries  = tries + 1
+                if not status:
+                    raise e
+            except Exception, e:
+                logging.debug("Error running command 'replSetGetStatus': %s" % e)
+                tries = tries + 1
                 sleep(1)
-            if not status:
-                raise Exception, "Could not get output from command: 'replSetGetStatus' after %i retries!" % self.retries, None
-            return status
-        except Exception, e:
-            logging.fatal("Failed to execute 'replSetGetStatus' command! Error: %s" % e)
-            raise e
+        if not status:
+            raise Exception, "Could not get output from command: 'replSetGetStatus' after %i retries!" % self.retries, None
+        return status
 
     def find_desirable_secondary(self):
         rs_status    = self.get_rs_status()
@@ -53,7 +54,7 @@ class ReplsetHandler:
                     member['stateStr'],
                     rs_name,
                     member['name'],
-                    str(member['optime'])
+                    str(member['optime']['ts'])
                 ))
     
                 if member['stateStr'] == 'PRIMARY':
