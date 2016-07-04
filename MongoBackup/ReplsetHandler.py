@@ -103,7 +103,7 @@ class ReplsetHandler:
                     log_msg = "Found SECONDARY %s/%s with too-high replication lag! Skipping" % (rs_name, member['name'])
 
                 log_data['optime'] = member['optime']['ts']
-                log_data['score']  = score
+                log_data['score']  = int(score)
                 logging.debug("%s: %s" % (log_msg, str(log_data)))
         if secondary is None or (secondary['count'] + 1) < quorum_count:
             logging.fatal("Not enough secondaries in replset %s to take backup! Num replset members: %i, required quorum: %i" % (
