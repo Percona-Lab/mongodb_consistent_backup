@@ -35,7 +35,7 @@ class ReplsetHandler:
                 if not status:
                     raise e
             except Exception, e:
-                logging.debug("Error running command 'replSetGetStatus': %s" % e)
+                logging.error("Error running command 'replSetGetStatus': %s" % e)
                 tries = tries + 1
                 sleep(1)
         if not status:
