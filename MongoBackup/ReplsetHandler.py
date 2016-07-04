@@ -82,7 +82,7 @@ class ReplsetHandler:
                             score += 20
                             log_data['hidden'] = True
                         if 'priority' in member_config:
-                            log_data['priority'] = member_config['priority']
+                            log_data['priority'] = int(member_config['priority'])
                             if member_config['priority'] > 1:
                                 score = score - member_config['priority']
                         break
