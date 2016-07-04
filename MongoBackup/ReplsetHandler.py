@@ -36,7 +36,7 @@ class ReplsetHandler:
                     raise e
             except Exception, e:
                 logging.error("Error running command 'replSetGetStatus': %s" % e)
-                tries = tries + 1
+                tries += 1
                 sleep(1)
         if not status:
             raise Exception, "Could not get output from command: 'replSetGetStatus' after %i retries!" % self.retries, None
