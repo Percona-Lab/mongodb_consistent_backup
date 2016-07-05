@@ -61,10 +61,13 @@ class ReplsetHandler:
                     'host': member['name'],
                     'optime': member['optimeDate']
                 }
+                optime = member['optime']
+                if 'ts' in member['optime']:
+                    optime = member['optime']['ts']
                 logging.debug("Found PRIMARY: %s/%s with optime %s" % (
                     rs_name,
                     member['name'],
-                    str(member['optime']['ts'])
+                    str(optime)
                 ))
         if primary is None:
             logging.fatal("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
@@ -73,22 +76,24 @@ class ReplsetHandler:
         secondary = None
         for member in rs_status['members']:
             if member['stateStr'] == 'SECONDARY' and member['health'] > 0:
-                log_data = {}
-                score    = 100
+                score       = self.max_lag_secs * 10
+                score_scale = 100 / score
+                log_data    = {}
 
+                hidden_weight = 0.20
                 for member_config in rs_config['config']['members']:
                     if member_config['host'] == member['name']:
                         if 'hidden' in member_config and member_config['hidden'] == True:
-                            score += 20
+                            score += (score * hidden_weight)
                             log_data['hidden'] = True
                         if 'priority' in member_config:
                             log_data['priority'] = int(member_config['priority'])
-                            if member_config['priority'] > 1:
+                            if member_config['priority'] > 0:
                                 score = score - member_config['priority']
                         break
 
                 rep_lag = (mktime(primary['optime'].timetuple()) - mktime(member['optimeDate'].timetuple()))
-                score = score - rep_lag
+                score = ceil((score - rep_lag) * score_scale)
                 if rep_lag < self.max_lag_secs:
                     if secondary is None or score > secondary['score']:
                         secondary = {
@@ -102,7 +107,9 @@ class ReplsetHandler:
                 else:
                     log_msg = "Found SECONDARY %s/%s with too-high replication lag! Skipping" % (rs_name, member['name'])
 
-                log_data['optime'] = member['optime']['ts']
+                log_data['optime'] = member['optime']
+                if 'ts' in member['optime']:
+                    log_data['optime'] = member['optime']['ts']
                 log_data['score']  = int(score)
                 logging.debug("%s: %s" % (log_msg, str(log_data)))
         if secondary is None or (secondary['count'] + 1) < quorum_count:
