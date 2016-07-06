@@ -113,16 +113,15 @@ class Mongodumper:
         for thread in self.threads:
             thread.start()
 
-        # wait for all threads to finish and check their status
+        # wait for all threads to finish
         for thread in self.threads:
             thread.join()
-            if not thread.complete():
-                raise Exception, "Not all mongodump threads completed successfully!", None
 
         # sleep for 3 sec to fix logging order
         sleep(3)
 
         # get oplog summaries from the queue
+        completed = 0
         while not self.response_queue.empty():
             backup = self.response_queue.get()
             host = backup['host']
@@ -130,8 +129,14 @@ class Mongodumper:
             if host not in self._summary:
                 self._summary[host] = {}
             self._summary[host][port] = backup
+            if backup['completed']:
+                completed += 1
 
-        logging.info("All mongodump backups completed")
+        # check if all threads completed
+        if completed == len(self.threads):
+            logging.info("All mongodump backups completed")
+        else:
+            raise Exception, "Not all mongodump threads completed successfully!", None
 
         return self._summary
 
