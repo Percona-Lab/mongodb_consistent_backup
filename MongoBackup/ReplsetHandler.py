@@ -34,7 +34,7 @@ class ReplsetHandler:
 
     def get_rs_config(self):
         try:
-            if self.db.server_version() > tuple("2.4.0".split(".")):
+            if self.db.server_version() >= tuple("2.6.0".split(".")):
                 output = self.db.admin_command('replSetGetConfig')
                 return output['config']
             else:
