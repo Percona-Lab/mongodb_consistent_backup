@@ -27,10 +27,20 @@ class ReplsetHandler:
         return self.connection.close()
 
     def get_rs_status(self):
-        return self.db.admin_command('replSetGetStatus')
+        try:
+            return self.db.admin_command('replSetGetStatus')
+        except Exception, e:
+            raise Exception, "Error getting replica set status! Error: %s" % e, None
 
     def get_rs_config(self):
-        return self.db.admin_command('replSetGetConfig')
+        try:
+            if self.db.server_version() > tuple("2.4.0".split(".")):
+                output = self.db.admin_command('replSetGetConfig')
+                return output['config']
+            else:
+                return self.connection['local'].system.replset.find_one()
+        except Exception, e:
+            raise Exception, "Error getting replica set config! Error: %s" % e, None
 
     def find_desirable_secondary(self):
         rs_status    = self.get_rs_status()
@@ -65,7 +75,7 @@ class ReplsetHandler:
                 log_data    = {}
 
                 hidden_weight = 0.20
-                for member_config in rs_config['config']['members']:
+                for member_config in rs_config['members']:
                     if member_config['host'] == member['name']:
                         if 'hidden' in member_config and member_config['hidden'] == True:
                             score += (score * hidden_weight)

@@ -36,7 +36,7 @@ class DB:
     def auth_if_required(self):
         if self.username is not None and self.password is not None:
             try:
-                logging.debug("Authenticating MongoDB connection")
+                logging.debug("Authenticating connection with username: %s" % self.username)
                 self._conn[self.authdb].authenticate(self.username, self.password)
             except Exception, e:
                 logging.fatal("Unable to authenticate with host %s:%s: %s" % (self.host, self.port, e))
@@ -59,6 +59,14 @@ class DB:
         if not status:
             raise Exception, "Could not get output from command: '%s' after %i retries!" % (admin_command, self.retries), None
         return status
+
+    def server_version(self):
+        status  = self.admin_command('serverStatus')
+        if 'version' in status:
+            version = status['version'].split('-')[0]
+            return tuple(version.split('.'))
+        else:
+            raise Exception, "Could not get server version using admin command 'serverStatus'! Error: %s"  % e, None
 
     def connection(self):
         return self._conn
