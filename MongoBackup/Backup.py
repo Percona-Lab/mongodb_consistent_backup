@@ -20,7 +20,9 @@ from Upload import UploadS3
 
 class Backup(object):
     def __init__(self, options):
-        self.program_name = 'mongodb-consistent-backup'
+        self.program_name = None
+        self.version = None
+        self.git_commit = None
         self.host = 'localhost'
         self.port = 27017
         self.authdb = 'admin'
@@ -30,7 +32,7 @@ class Backup(object):
         self.max_repl_lag_secs = 5
         self.backup_name = None
         self.backup_binary = None
-        self.backup_location = "/backups"
+        self.backup_location = None
         self.dump_gzip = False
         self.balancer_wait_secs = 300
         self.balancer_sleep = 10
@@ -73,6 +75,14 @@ class Backup(object):
         # Setup options are properies and connection to node
         for option in vars(options):
             setattr(self, option, getattr(options, option))
+
+        # Check for required fields:
+        required = ['program_name', 'version', 'git_commit', 'backup_name', 'backup_binary', 'backup_location'] 
+        for field in required:
+            try:
+                getattr(self, field)
+            except Exception:
+                raise Exception, 'Field: %s is required by %s!' % (field, __name__), None
 
         # Set default lock file:
 	if not self.lock_file:
@@ -155,6 +165,8 @@ class Backup(object):
         return self.cleanup_and_exit(None, None)
 
     def run(self):
+        logging.info("Starting %s version %s (git commit hash: %s)" % (self.program_name, self.version, self.git_commit))
+
         try:
             self._lock = Lock(self.lock_file)
         except Exception, e:
@@ -162,7 +174,7 @@ class Backup(object):
             sys.exit(1)
 
         if not self.is_mongos:
-            logging.info("Starting backup of %s:%s in replset mode" % (self.host, self.port))
+            logging.info("Running backup of %s:%s in replset mode" % (self.host, self.port))
 
             try:
                 self.mongodumper = Mongodumper(
@@ -183,7 +195,7 @@ class Backup(object):
                 self.exception("Problem performing replset mongodump! Error: %s" % e)
 
         else:
-            logging.info("Starting backup of %s:%s in sharded mode" % (self.host, self.port))
+            logging.info("Running backup of %s:%s in sharded mode" % (self.host, self.port))
 
             # connect to balancer and stop it
             try:
