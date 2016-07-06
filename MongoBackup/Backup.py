@@ -36,8 +36,8 @@ class Backup(object):
         self.dump_gzip = False
         self.balancer_wait_secs = 300
         self.balancer_sleep = 10
-        self.archiver_threads = None
-        self.resolver_threads = None
+        self.archiver_threads = 1
+        self.resolver_threads = 1
         self.notify_nsca = None
         self.nsca_server = None
         self.nsca_password = None
@@ -175,6 +175,8 @@ class Backup(object):
 
         if not self.is_mongos:
             logging.info("Running backup of %s:%s in replset mode" % (self.host, self.port))
+
+            self.archiver_threads = 1
 
             try:
                 self.mongodumper = Mongodumper(
