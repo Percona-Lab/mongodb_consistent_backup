@@ -5,7 +5,7 @@ from multiprocessing import Process, Queue
 from time import sleep
 
 
-from DB import DB
+from Common import DB
 from Mongodump import Mongodump
 from ReplsetHandler import ReplsetHandler, ReplsetHandlerSharded
 

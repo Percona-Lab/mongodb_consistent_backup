@@ -8,8 +8,7 @@ from multiprocessing import current_process
 from signal import signal, SIGINT, SIGTERM
 from time import time
 
-from Common import Lock
-from DB import DB
+from Common import DB, Lock
 from ShardingHandler import ShardingHandler
 from Mongodumper import Mongodumper
 from Oplog import OplogTailer, OplogResolver

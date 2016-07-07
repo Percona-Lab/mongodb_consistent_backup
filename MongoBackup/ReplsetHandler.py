@@ -3,7 +3,7 @@ import logging
 from math import ceil
 from time import mktime
 
-from DB import DB
+from Common import DB
 from ShardingHandler import ShardingHandler
 
 
