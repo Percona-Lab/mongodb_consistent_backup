@@ -6,9 +6,8 @@ from Common import DB
 
 
 class ShardingHandler:
-    def __init__(self, host, port, user, password, authdb='admin', balancer_wait_secs=300, balancer_sleep=10):
-        self.host               = host
-        self.port               = port
+    def __init__(self, db, user=None, password=None, authdb='admin', balancer_wait_secs=300, balancer_sleep=10):
+        self.db                 = db
         self.user               = user
         self.password           = password
         self.authdb             = authdb
@@ -17,8 +16,14 @@ class ShardingHandler:
 
         self._balancer_state_start = None
 
+        # Get a DB connection
         try:
-            self.connection = DB(self.host, self.port, self.user, self.password, self.authdb).connection()
+            if self.db.__class__.__name__ == "DB":
+                self.connection = self.db.connection()
+                if not self.connection.is_mongos:
+                    raise Exception, 'MongoDB connection is not to a mongos!', None
+            else:
+                raise Exception, "'db' field is an instance of %s, not 'DB'!" % self.db.__class__.__name__, None
         except Exception, e:
             logging.fatal("Could not get DB connection! Error: %s" % e)
             raise e

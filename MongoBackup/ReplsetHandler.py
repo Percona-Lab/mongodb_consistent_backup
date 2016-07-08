@@ -17,10 +17,10 @@ class ReplsetHandler:
 
         # Get a DB connection
         try:
-            if self.db.__name__ == "DB":
+            if self.db.__class__.__name__ == "DB":
                 self.connection = self.db.connection()
-            else
-                raise Exception, "'db' field is an instance of %s, not 'DB'!" % self.db.__name__, None
+            else:
+                raise Exception, "'db' field is an instance of %s, not 'DB'!" % self.db.__class__.__name__, None
         except Exception, e:
             logging.fatal("Could not get DB connection! Error: %s" % e)
             raise e
@@ -121,9 +121,9 @@ class ReplsetHandler:
 
 
 class ReplsetHandlerSharded:
-    def __init__(self, host, port, user, password, authdb, max_lag_secs):
-        self.host         = host
-        self.port         = port
+    def __init__(self, sharding, db, user, password, authdb, max_lag_secs):
+        self.sharding     = sharding
+        self.db           = db
         self.user         = user
         self.password     = password
         self.authdb       = authdb
@@ -131,10 +131,20 @@ class ReplsetHandlerSharded:
 
         self.replset = None
 
+        # Check ShardingHandler class:
+        if not self.sharding.__class__.__name__ == "ShardingHandler":
+            raise Exception, "'sharding' field is an instance of %s, not 'ShardingHandler'!" % self.sharding.__class__.__name__, None
+
+        # Get a DB connection
         try:
-            self.sharding = ShardingHandler(self.host, self.port, self.user, self.password, self.authdb)
+            if self.db.__class__.__name__ == "DB":
+                self.connection = self.db.connection()
+                if not self.connection.is_mongos:
+                    raise Exception, 'MongoDB connection is not to a mongos!', None
+            else:
+                raise Exception, "'db' field is an instance of %s, not 'DB'!" % self.db.__class__.__name__, None
         except Exception, e:
-            logging.fatal("Cannot get sharding connection! Error: %s" % e)
+            logging.fatal("Could not get DB connection! Error: %s" % e)
             raise e
 
     def find_desirable_secondaries(self):
@@ -144,10 +154,13 @@ class ReplsetHandlerSharded:
                 shard_name, members = shard['host'].split('/')
                 host, port          = members.split(',')[0].split(":")
 
-                self.replset = ReplsetHandler(host, port, self.user, self.password, self.authdb, self.max_lag_secs)
+                db           = DB(host, port, self.user, self.password, self.authdb) 
+                self.replset = ReplsetHandler(db, self.user, self.password, self.authdb, self.max_lag_secs)
                 secondary    = self.replset.find_desirable_secondary()
                 shard_secondaries[shard_name] = secondary
+
                 self.replset.close()
+                db.close()
         return shard_secondaries
 
     def close(self):

@@ -10,7 +10,7 @@ from time import time
 
 from Common import DB, Lock
 from ShardingHandler import ShardingHandler
-from Mongodumper import Mongodumper
+from Methods import Mongodumper
 from Oplog import OplogTailer, OplogResolver
 from Archiver import Archiver
 from Notify import NotifyNSCA
