@@ -7,7 +7,7 @@ Creates cluster-consistent point-in-time backups of MongoDB via wrapping 'mongod
 ### Features
 
 - Works on a single replset (2+ members) or a sharded cluster
-- Auto-discovers healthy members for backup by considering replication lag, replication 'priority' and by prefering 'hidden' members.
+- Auto-discovers healthy members for backup by considering replication lag, replication 'priority' and by preferring 'hidden' members.
 - Creates cluster-consistent backups across many separate shards
 - Archives and compresses backups (*inline compression with mongodump 3.2+*)
 - Transparent restore process (*just add --oplogReplay flag to your mongorestore command*)
