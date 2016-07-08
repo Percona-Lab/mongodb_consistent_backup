@@ -8,8 +8,8 @@ from MongoBackup.Methods import Mongodump
 
 
 class Mongodumper:
-    def __init__(self, secondaries, base_dir, binary, dump_gzip=False, user=None, password=None, authdb='admin', 
-                     config_server=None, verbose=False):
+    def __init__(self, secondaries, base_dir, binary, dump_gzip=False, user=None, password=None,
+                 authdb='admin', config_server=None, verbose=False):
         self.secondaries   = secondaries
         self.base_dir      = base_dir
         self.binary        = binary
@@ -25,7 +25,7 @@ class Mongodumper:
         self._summary       = {}
 
         if not isinstance(self.secondaries, dict):
-            raise Exception, "Field 'secondaries' must be a dictionary of secondary info by shard!", None
+            raise Exception, "Field 'secondaries' must be a dictionary of secondary info (by shard)!", None
 
         with hide('running', 'warnings'), settings(warn_only=True):
             self.version = local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary, capture=True)

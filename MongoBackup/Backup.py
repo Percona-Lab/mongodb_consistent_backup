@@ -189,7 +189,7 @@ class Backup(object):
                     self.auth_db,
                     self.max_repl_lag_secs
                 )
-                secondary    = self.replset.find_desirable_secondary()
+                secondary    = self.replset.find_secondary()
                 replset_name = secondary['replSet']
 
                 self.secondaries[replset_name] = secondary
@@ -238,7 +238,7 @@ class Backup(object):
                     self.authdb,
                     self.max_repl_lag_secs
                 )
-                self.secondaries = self.replset.find_desirable_secondaries()
+                self.secondaries = self.replset.find_secondaries()
                 self.replset.close()
             except Exception, e:
                 self.exception("Problem getting shard secondaries! Error: %s" % e)

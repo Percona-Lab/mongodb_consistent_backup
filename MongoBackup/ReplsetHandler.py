@@ -44,7 +44,7 @@ class ReplsetHandler:
         except Exception, e:
             raise Exception, "Error getting replica set config! Error: %s" % e, None
 
-    def find_desirable_secondary(self):
+    def find_secondary(self):
         rs_status    = self.get_rs_status()
         rs_config    = self.get_rs_config()
         rs_name      = rs_status['set']
@@ -147,7 +147,7 @@ class ReplsetHandlerSharded:
             logging.fatal("Could not get DB connection! Error: %s" % e)
             raise e
 
-    def find_desirable_secondaries(self):
+    def find_secondaries(self):
         shard_secondaries = {}
         if self.sharding:
             for shard in self.sharding.shards():
@@ -156,7 +156,7 @@ class ReplsetHandlerSharded:
 
                 db           = DB(host, port, self.user, self.password, self.authdb) 
                 self.replset = ReplsetHandler(db, self.user, self.password, self.authdb, self.max_lag_secs)
-                secondary    = self.replset.find_desirable_secondary()
+                secondary    = self.replset.find_secondary()
                 shard_secondaries[shard_name] = secondary
 
                 self.replset.close()

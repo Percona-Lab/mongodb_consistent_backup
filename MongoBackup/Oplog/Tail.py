@@ -13,8 +13,8 @@ from MongoBackup.Common import DB, LocalCommand
 
 
 class OplogTail(Process):
-    def __init__(self, response_queue, backup_name, base_dir, host, port, dump_gzip=False, user=None, password=None,
-                 authdb='admin'):
+    def __init__(self, response_queue, backup_name, base_dir, host, port, dump_gzip=False, user=None,
+                 password=None, authdb='admin'):
         Process.__init__(self)
         self.response_queue = response_queue
         self.backup_name    = backup_name
