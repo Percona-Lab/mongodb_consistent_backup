@@ -189,7 +189,7 @@ class Backup(object):
                     self.db,
                     self.user,
                     self.password,
-                    self.auth_db,
+                    self.authdb,
                     self.max_repl_lag_secs
                 )
                 secondary    = self.replset.find_secondary()
