@@ -7,7 +7,7 @@ from MongoBackup.Oplog import OplogTail
 
 
 class OplogTailer:
-    def __init__(self, secondaries, backup_name, base_dir, dump_gzip, user=None,
+    def __init__(self, secondaries, backup_name, base_dir, dump_gzip=False, user=None,
                  password=None, authdb='admin'):
         self.secondaries = secondaries
         self.backup_name = backup_name
