@@ -19,6 +19,7 @@ class DB:
         self.auth_if_required()
 
     def connect(self):
+        print "Connecting to %s:%s" % (self.host, self.port)
         try:
             logging.debug("Getting MongoDB connection to %s:%s" % (self.host, self.port))
             conn = MongoClient(

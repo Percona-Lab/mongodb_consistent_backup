@@ -157,6 +157,7 @@ class ReplsetHandlerSharded:
                 db           = DB(host, port, self.user, self.password, self.authdb) 
                 self.replset = ReplsetHandler(db, self.user, self.password, self.authdb, self.max_lag_secs)
                 secondary    = self.replset.find_desirable_secondary()
+                secondary.pop('replSet')
                 shard_secondaries[shard_name] = secondary
 
                 self.replset.close()
