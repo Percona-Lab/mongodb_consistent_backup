@@ -58,6 +58,7 @@ class Backup(object):
         self.upload_s3_chunk_size_mb = None
         self.archiver = None
         self.sharding = None
+        self.replset  = None
         self.mongodumper = None
         self.oplogtailer = None
         self.oplog_resolver = None
@@ -69,6 +70,7 @@ class Backup(object):
         self.start_time = time()
         self.oplog_threads = []
         self.oplog_summary = {}
+        self.secondaries   = {}
         self.mongodumper_summary = {}
 
         # Setup options are properies and connection to node
@@ -108,9 +110,9 @@ class Backup(object):
 
         # Get a DB connection
         try:
-            connection = DB(self.host, self.port, self.user, self.password, self.authdb).connection()
-            self.is_mongos = connection.is_mongos
-            connection.close()
+            self.db         = DB(self.host, self.port, self.user, self.password, self.authdb)
+            self.connection = self.db.connection()
+            self.is_sharded = connection.is_mongos
         except Exception, e:
             raise e
 
@@ -140,7 +142,7 @@ class Backup(object):
         if current_process().name == "MainProcess":
             logging.info("Starting cleanup and exit procedure! Killing running threads")
 
-            submodules = ['sharding', 'mongodumper', 'oplogtailer', 'archiver', 'uploader_s3']
+            submodules = ['replset', 'sharding', 'mongodumper', 'oplogtailer', 'archiver', 'uploader_s3']
             for submodule_name in submodules:
                 submodule = getattr(self, submodule_name)
                 if submodule:
@@ -172,22 +174,34 @@ class Backup(object):
             logging.fatal("Could not acquire lock! Is another %s process running? Exiting" % self.program_name)
             sys.exit(1)
 
-        if not self.is_mongos:
+        if not self.is_sharded:
             logging.info("Running backup of %s:%s in replset mode" % (self.host, self.port))
 
             self.archiver_threads = 1
 
+            # get shard secondary
             try:
-                self.mongodumper = Mongodumper(
-                    self.host,
-                    self.port,
+                self.replset = ReplsetHandler(
+                    self.db,
                     self.user,
                     self.password,
-                    self.authdb,
+                    self.auth_db,
+                    self.max_repl_lag_secs
+                )
+                secondary    = self.replset.find_desirable_secondary()
+                replset_name = secondary['replSet']
+
+                self.secondaries[replset_name] = secondary
+                self.replset.close()
+            except Exception, e:
+                self.exception("Problem getting shard secondaries! Error: %s" % e)
+
+            try:
+                self.mongodumper = Mongodumper(
+                    self.secondaries,
                     self.backup_root_directory,
                     self.backup_binary,
                     self.dump_gzip,
-                    self.max_repl_lag_secs,
                     None,
                     self.verbose
                 )
@@ -201,8 +215,7 @@ class Backup(object):
             # connect to balancer and stop it
             try:
                 self.sharding = ShardingHandler(
-                    self.host,
-                    self.port,
+                    self.db,
                     self.user,
                     self.password,
                     self.authdb,
@@ -214,21 +227,31 @@ class Backup(object):
             except Exception, e:
                 self.exception("Problem connecting-to and/or stopping balancer! Error: %s" % e)
 
+            # get shard secondaries
+            try:
+                self.replset = ReplsetHandlerSharded(
+                    self.sharding,
+                    self.db,
+                    self.user,
+                    self.password,
+                    self.auth_db,
+                    self.max_repl_lag_secs
+                )
+                self.secondaries = self.replset.find_desirable_secondaries()
+                self.replset.close()
+            except Exception, e:
+                self.exception("Problem getting shard secondaries! Error: %s" % e)
+
             # start the oplog tailer threads
             if self.no_oplog_tailer:
                 logging.warning("Oplog tailing disabled! Skipping")
             else:
                 try:
                     self.oplogtailer = OplogTailer(
+                        self.secondaries,
                         self.backup_name,
                         self.backup_root_directory,
-                        self.host,
-                        self.port,
-                        self.dump_gzip,
-                        self.max_repl_lag_secs,
-                        self.user,
-                        self.password,
-                        self.authdb
+                        self.dump_gzip
                     )
                     self.oplogtailer.run()
                 except Exception, e:
@@ -237,15 +260,10 @@ class Backup(object):
             # start the mongodumper threads
             try:
                 self.mongodumper = Mongodumper(
-                    self.host,
-                    self.port,
-                    self.user,
-                    self.password,
-                    self.authdb,
+                    self.secondaries, 
                     self.backup_root_directory,
                     self.backup_binary,
                     self.dump_gzip,
-                    self.max_repl_lag_secs,
                     self.sharding.get_configserver(),
                     self.verbose
                 )
