@@ -233,9 +233,8 @@ class Backup(object):
                     self.balancer_sleep
                 )
                 self.sharding.get_start_state()
-                self.sharding.stop_balancer()
             except Exception, e:
-                self.exception("Problem connecting-to and/or stopping balancer! Error: %s" % e)
+                self.exception("Problem connecting to the balancer! Error: %s" % e)
 
             # get shard secondaries
             try:
@@ -248,9 +247,14 @@ class Backup(object):
                     self.max_repl_lag_secs
                 )
                 self.secondaries = self.replset.find_secondaries()
-                self.replset.close()
             except Exception, e:
                 self.exception("Problem getting shard secondaries! Error: %s" % e)
+
+            # Stop the balancer:    
+            try:
+                self.sharding.stop_balancer()
+            except Exception, e:
+                self.exception("Problem stopping the balancer! Error: %s" % e)
 
             # start the oplog tailer threads
             if self.no_oplog_tailer:

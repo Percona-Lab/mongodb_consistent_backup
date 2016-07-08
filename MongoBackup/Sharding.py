@@ -27,12 +27,11 @@ class Sharding:
             raise e
 
     def close(self):
-        self.restore_balancer_state()
-        return self.connection.close()
+        return self.restore_balancer_state()
 
     def get_start_state(self):
         self._balancer_state_start = self.get_balancer_state()
-        logging.info("Began with balancer state: %s" % str(self._balancer_state_start))
+        logging.info("Began with balancer state running: %s" % str(self._balancer_state_start))
         return self._balancer_state_start
 
     def shards(self):
@@ -96,7 +95,7 @@ class Sharding:
         raise Exception, "Could not stop balancer: %s:%i" % (self.host, self.port), None
 
     def get_configserver(self):
-        cmdlineopts = self.connection['admin'].command("getCmdLineOpts")
+        cmdlineopts = self.db.admin_command("getCmdLineOpts")
         config_string = None
         if cmdlineopts.get('parsed').get('configdb'):
             config_string = cmdlineopts.get('parsed').get('configdb')

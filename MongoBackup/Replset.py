@@ -26,7 +26,7 @@ class Replset:
             raise e
 
     def close(self):
-        return self.connection.close()
+        pass
 
     def get_rs_status(self):
         try:
@@ -154,16 +154,15 @@ class ReplsetSharded:
                 shard_name, members = shard['host'].split('/')
                 host, port          = members.split(',')[0].split(":")
 
-                db           = DB(host, port, self.user, self.password, self.authdb) 
-                self.replset = Replset(db, self.user, self.password, self.authdb, self.max_lag_secs)
+                replset_db   = DB(host, port, self.user, self.password, self.authdb) 
+                self.replset = Replset(replset_db, self.user, self.password, self.authdb, self.max_lag_secs)
                 secondary    = self.replset.find_secondary()
                 shard_secondaries[shard_name] = secondary
 
                 self.replset.close()
-                db.close()
+                replset_db.close()
         return shard_secondaries
 
     def close(self):
         if self.replset:
             self.replset.close()
-        self.sharding.close()
