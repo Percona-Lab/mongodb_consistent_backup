@@ -49,7 +49,7 @@ class Mongodump(Process):
             self.port
         ))
 
-        mongodump_flags = ["-h", self.host_port, "--oplog", "-o", "%s/dump" % self.backup_dir]
+        mongodump_flags = ["-h", str(self.host_port), "--oplog", "-o", "%s/dump" % str(self.backup_dir)]
         if self.dump_gzip:
             logging.debug("Enabling inline mongodump compression using --gzip flag")
             mongodump_flags.extend(["--gzip"])

@@ -203,6 +203,9 @@ class Backup(object):
                     self.backup_root_directory,
                     self.backup_binary,
                     self.dump_gzip,
+                    self.user,
+                    self.password,
+                    self.authdb,
                     None,
                     self.verbose
                 )
@@ -268,6 +271,9 @@ class Backup(object):
                     self.backup_root_directory,
                     self.backup_binary,
                     self.dump_gzip,
+                    self.user,
+                    self.password,
+                    self.authdb,
                     self.sharding.get_configserver(),
                     self.verbose
                 )
