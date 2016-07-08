@@ -8,17 +8,19 @@ from ShardingHandler import ShardingHandler
 
 
 class ReplsetHandler:
-    def __init__(self, host, port, user, password, authdb, max_lag_secs):
-        self.host         = host
-        self.port         = port
+    def __init__(self, db, user, password, authdb, max_lag_secs):
+        self.db           = db
         self.user         = user
         self.password     = password
         self.authdb       = authdb
         self.max_lag_secs = max_lag_secs
 
+        # Get a DB connection
         try:
-            self.db         = DB(self.host, self.port, self.user, self.password, self.authdb)
-            self.connection = self.db.connection()
+            if self.db.__name__ == "DB":
+                self.connection = self.db.connection()
+            else
+                raise Exception, "'db' field is an instance of %s, not 'DB'!" % self.db.__name__, None
         except Exception, e:
             logging.fatal("Could not get DB connection! Error: %s" % e)
             raise e
