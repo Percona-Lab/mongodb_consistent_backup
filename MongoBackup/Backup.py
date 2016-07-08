@@ -155,6 +155,9 @@ class Backup(object):
                     self.backup_name
                 ))
 
+            if self.db:
+                self.db.close()
+
             if self._lock:
                 self._lock.release()
 
@@ -339,6 +342,9 @@ class Backup(object):
                 ))
             except Exception, e:
                 self.exception("Problem running NSCA notifier! Error: %s" % e)
+
+        if self.db:
+            self.db.close()
 
         self._lock.release()
 
