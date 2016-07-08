@@ -35,7 +35,7 @@ class Backup(object):
         self.backup_location = None
         self.dump_gzip = False
         self.balancer_wait_secs = 300
-        self.balancer_sleep = 10
+        self.balancer_sleep = 5 
         self.archiver_threads = 1
         self.resolver_threads = 1
         self.notify_nsca = None

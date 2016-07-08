@@ -4,7 +4,7 @@ from time import sleep
 
 
 class Sharding:
-    def __init__(self, db, user=None, password=None, authdb='admin', balancer_wait_secs=300, balancer_sleep=10):
+    def __init__(self, db, user=None, password=None, authdb='admin', balancer_wait_secs=300, balancer_sleep=5):
         self.db                 = db
         self.user               = user
         self.password           = password
