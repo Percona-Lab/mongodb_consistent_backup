@@ -60,7 +60,7 @@ class ReplsetHandler:
                 optime = member['optime']
                 if 'ts' in member['optime']:
                     optime = member['optime']['ts']
-                logging.debug("Found PRIMARY: %s/%s with optime %s" % (
+                logging.info("Found PRIMARY: %s/%s with optime %s" % (
                     rs_name,
                     member['name'],
                     str(optime)
@@ -107,7 +107,7 @@ class ReplsetHandler:
                 if 'ts' in member['optime']:
                     log_data['optime'] = member['optime']['ts']
                 log_data['score']  = int(score)
-                logging.debug("%s: %s" % (log_msg, str(log_data)))
+                logging.info("%s: %s" % (log_msg, str(log_data)))
         if secondary is None or (secondary['count'] + 1) < quorum_count:
             logging.fatal("Not enough secondaries in replset %s to take backup! Num replset members: %i, required quorum: %i" % (
                 rs_name,
@@ -116,7 +116,7 @@ class ReplsetHandler:
             ))
             raise Exception, "Not enough secondaries in replset %s to safely take backup!" % rs_name, None
 
-        logging.debug("Choosing SECONDARY %s for replica set %s (score: %i)" % (secondary['host'], rs_name, secondary['score']))
+        logging.info("Choosing SECONDARY %s for replica set %s (score: %i)" % (secondary['host'], rs_name, secondary['score']))
         return secondary
 
 

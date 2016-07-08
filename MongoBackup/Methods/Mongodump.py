@@ -5,8 +5,8 @@ from multiprocessing import Process
 from signal import signal, SIGINT, SIGTERM
 from time import time
 
-from Common import LocalCommand
-from Oplog import OplogInfo
+from MongoBackup.Common import LocalCommand
+from MongoBackup.Oplog import OplogInfo
 
 
 # noinspection PyStringFormat

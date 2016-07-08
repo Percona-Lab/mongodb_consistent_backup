@@ -4,21 +4,17 @@ from multiprocessing import Queue
 from time import sleep
 
 from MongoBackup.Oplog import OplogTail
-from MongoBackup.ReplsetHandler import ReplsetHandlerSharded
 
 
 class OplogTailer:
-    def __init__(self, backup_name, base_dir, host, port, dump_gzip, max_repl_lag_secs, user=None, password=None,
-                 authdb='admin'):
-        self.backup_name       = backup_name
-        self.base_dir          = base_dir
-        self.host              = host
-        self.port              = port
-        self.dump_gzip         = dump_gzip
-        self.max_repl_lag_secs = max_repl_lag_secs
-        self.user              = user
-        self.password          = password
-        self.authdb            = authdb
+    def __init__(self, secondaries, backup_name, base_dir, dump_gzip, user=None, password=None, authdb='admin'):
+        self.secondaries = secondaries
+        self.backup_name = backup_name
+        self.base_dir    = base_dir
+        self.dump_gzip   = dump_gzip
+        self.user        = user
+        self.password    = password
+        self.authdb      = authdb
 
         self.response_queue = Queue()
         self.threads        = []
@@ -28,11 +24,8 @@ class OplogTailer:
         return self._summary
 
     def run(self):
-        replset_sharded = ReplsetHandlerSharded(self.host, self.port, self.user, self.password, self.authdb,
-                                                self.max_repl_lag_secs)
-        secondaries = replset_sharded.find_desirable_secondaries()
-        for shard in secondaries:
-            secondary = secondaries[shard]
+        for shard in self.secondaries:
+            secondary  = self.secondaries[shard]
             shard_name = secondary['replSet']
             host, port = secondary['host'].split(":")
             thread = OplogTail(

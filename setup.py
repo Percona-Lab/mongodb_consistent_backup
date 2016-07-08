@@ -12,6 +12,7 @@ setup(
     packages=[
         'MongoBackup',
         'MongoBackup.Common',
+        'MongoBackup.Methods',
         'MongoBackup.Oplog',
         'MongoBackup.Notify',
         'MongoBackup.Upload'

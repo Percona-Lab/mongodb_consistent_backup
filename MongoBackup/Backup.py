@@ -8,12 +8,13 @@ from multiprocessing import current_process
 from signal import signal, SIGINT, SIGTERM
 from time import time
 
-from Common import DB, Lock
-from ShardingHandler import ShardingHandler
-from Methods import Mongodumper
-from Oplog import OplogTailer, OplogResolver
 from Archiver import Archiver
+from Common import DB, Lock
+from Methods import Mongodumper
 from Notify import NotifyNSCA
+from Oplog import OplogTailer, OplogResolver
+from ReplsetHandler import ReplsetHandler, ReplsetHandlerSharded
+from ShardingHandler import ShardingHandler
 from Upload import UploadS3
 
 
@@ -112,7 +113,7 @@ class Backup(object):
         try:
             self.db         = DB(self.host, self.port, self.user, self.password, self.authdb)
             self.connection = self.db.connection()
-            self.is_sharded = connection.is_mongos
+            self.is_sharded = self.connection.is_mongos
         except Exception, e:
             raise e
 
@@ -234,7 +235,7 @@ class Backup(object):
                     self.db,
                     self.user,
                     self.password,
-                    self.auth_db,
+                    self.authdb,
                     self.max_repl_lag_secs
                 )
                 self.secondaries = self.replset.find_desirable_secondaries()
@@ -251,7 +252,10 @@ class Backup(object):
                         self.secondaries,
                         self.backup_name,
                         self.backup_root_directory,
-                        self.dump_gzip
+                        self.dump_gzip,
+                        self.user,
+                        self.password,
+                        self.authdb
                     )
                     self.oplogtailer.run()
                 except Exception, e:
