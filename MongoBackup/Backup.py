@@ -13,8 +13,8 @@ from Common import DB, Lock
 from Methods import Mongodumper
 from Notify import NotifyNSCA
 from Oplog import OplogTailer, OplogResolver
-from ReplsetHandler import ReplsetHandler, ReplsetHandlerSharded
-from ShardingHandler import ShardingHandler
+from Replset import Replset, ReplsetSharded
+from Sharding import Sharding
 from Upload import UploadS3
 
 
@@ -185,7 +185,7 @@ class Backup(object):
 
             # get shard secondary
             try:
-                self.replset = ReplsetHandler(
+                self.replset = Replset(
                     self.db,
                     self.user,
                     self.password,
@@ -221,7 +221,7 @@ class Backup(object):
 
             # connect to balancer and stop it
             try:
-                self.sharding = ShardingHandler(
+                self.sharding = Sharding(
                     self.db,
                     self.user,
                     self.password,
@@ -236,7 +236,7 @@ class Backup(object):
 
             # get shard secondaries
             try:
-                self.replset = ReplsetHandlerSharded(
+                self.replset = ReplsetSharded(
                     self.sharding,
                     self.db,
                     self.user,

@@ -4,10 +4,10 @@ from math import ceil
 from time import mktime
 
 from Common import DB
-from ShardingHandler import ShardingHandler
+from Sharding import Sharding
 
 
-class ReplsetHandler:
+class Replset:
     def __init__(self, db, user, password, authdb, max_lag_secs):
         self.db           = db
         self.user         = user
@@ -120,7 +120,7 @@ class ReplsetHandler:
         return secondary
 
 
-class ReplsetHandlerSharded:
+class ReplsetSharded:
     def __init__(self, sharding, db, user, password, authdb, max_lag_secs):
         self.sharding     = sharding
         self.db           = db
@@ -131,9 +131,9 @@ class ReplsetHandlerSharded:
 
         self.replset = None
 
-        # Check ShardingHandler class:
-        if not self.sharding.__class__.__name__ == "ShardingHandler":
-            raise Exception, "'sharding' field is an instance of %s, not 'ShardingHandler'!" % self.sharding.__class__.__name__, None
+        # Check Sharding class:
+        if not self.sharding.__class__.__name__ == "Sharding":
+            raise Exception, "'sharding' field is an instance of %s, not 'Sharding'!" % self.sharding.__class__.__name__, None
 
         # Get a DB connection
         try:
@@ -155,7 +155,7 @@ class ReplsetHandlerSharded:
                 host, port          = members.split(',')[0].split(":")
 
                 db           = DB(host, port, self.user, self.password, self.authdb) 
-                self.replset = ReplsetHandler(db, self.user, self.password, self.authdb, self.max_lag_secs)
+                self.replset = Replset(db, self.user, self.password, self.authdb, self.max_lag_secs)
                 secondary    = self.replset.find_secondary()
                 shard_secondaries[shard_name] = secondary
 

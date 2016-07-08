@@ -3,7 +3,7 @@ import logging
 from time import sleep
 
 
-class ShardingHandler:
+class Sharding:
     def __init__(self, db, user=None, password=None, authdb='admin', balancer_wait_secs=300, balancer_sleep=10):
         self.db                 = db
         self.user               = user
