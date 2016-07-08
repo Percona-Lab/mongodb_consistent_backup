@@ -51,7 +51,6 @@ class Mongodump(Process):
 
         mongodump_flags = ["-h", self.host_port, "--oplog", "-o", "%s/dump" % self.backup_dir]
         if self.dump_gzip:
-            logging.debug("Enabling inline mongodump compression using --gzip flag")
             mongodump_flags.extend(["--gzip"])
         if self.authdb and self.authdb != "admin":
             logging.debug("Using database %s for authentication" % self.authdb)
