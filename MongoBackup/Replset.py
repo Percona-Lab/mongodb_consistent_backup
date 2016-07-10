@@ -75,7 +75,6 @@ class Replset:
     def find_secondary(self):
         rs_status    = self.get_rs_status()
         rs_config    = self.get_rs_config()
-        rs_primary   = self.find_primary()
         rs_name      = rs_status['set']
         quorum_count = ceil(len(rs_status['members']) / 2.0)
 
