@@ -15,6 +15,10 @@ class Replset:
         self.authdb       = authdb
         self.max_lag_secs = max_lag_secs
 
+        self.rs_status = None
+        self.primary   = None
+        self.secondary = None
+
         # Get a DB connection
         try:
             if self.db.__class__.__name__ == "DB":
@@ -28,9 +32,11 @@ class Replset:
     def close(self):
         pass
 
-    def get_rs_status(self):
+    def get_rs_status(self, force=False):
         try:
-            return self.db.admin_command('replSetGetStatus')
+            if force or not self.rs_status:
+                self.rs_status = self.db.admin_command('replSetGetStatus')
+            return self.rs_status
         except Exception, e:
             raise Exception, "Error getting replica set status! Error: %s" % e, None
 
@@ -44,16 +50,12 @@ class Replset:
         except Exception, e:
             raise Exception, "Error getting replica set config! Error: %s" % e, None
 
-    def find_secondary(self):
-        rs_status    = self.get_rs_status()
-        rs_config    = self.get_rs_config()
-        rs_name      = rs_status['set']
-        quorum_count = ceil(len(rs_status['members']) / 2.0)
-
-        primary = None
+    def find_primary(self):
+        rs_status = self.get_rs_status()
+        rs_name   = rs_status['set']
         for member in rs_status['members']:
             if member['stateStr'] == 'PRIMARY' and member['health'] > 0:
-                primary = {
+                self.primary = {
                     'host': member['name'],
                     'optime': member['optimeDate']
                 }
@@ -65,11 +67,18 @@ class Replset:
                     member['name'],
                     str(optime)
                 ))
-        if primary is None:
+        if self.primary is None:
             logging.fatal("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
             raise Exception, "Unable to locate a PRIMARY member for replset %s, giving up" % rs_name, None
-    
-        secondary = None
+        return self.primary
+
+    def find_secondary(self):
+        rs_status    = self.get_rs_status()
+        rs_config    = self.get_rs_config()
+        rs_primary   = self.find_primary()
+        rs_name      = rs_status['set']
+        quorum_count = ceil(len(rs_status['members']) / 2.0)
+
         for member in rs_status['members']:
             if member['stateStr'] == 'SECONDARY' and member['health'] > 0:
                 score       = self.max_lag_secs * 10
@@ -88,13 +97,13 @@ class Replset:
                                 score = score - member_config['priority']
                         break
 
-                rep_lag = (mktime(primary['optime'].timetuple()) - mktime(member['optimeDate'].timetuple()))
+                rep_lag = (mktime(self.primary_optime().timetuple()) - mktime(member['optimeDate'].timetuple()))
                 score = ceil((score - rep_lag) * score_scale)
                 if rep_lag < self.max_lag_secs:
-                    if secondary is None or score > secondary['score']:
-                        secondary = {
+                    if self.secondary is None or score > self.secondary['score']:
+                        self.secondary = {
                             'replSet': rs_name,
-                            'count': 1 if secondary is None else secondary['count'] + 1,
+                            'count': 1 if self.secondary is None else self.secondary['count'] + 1,
                             'host': member['name'],
                             'optime': member['optimeDate'],
                             'score': score
@@ -108,16 +117,22 @@ class Replset:
                     log_data['optime'] = member['optime']['ts']
                 log_data['score']  = int(score)
                 logging.info("%s: %s" % (log_msg, str(log_data)))
-        if secondary is None or (secondary['count'] + 1) < quorum_count:
+        if self.secondary is None or (self.secondary['count'] + 1) < quorum_count:
             logging.fatal("Not enough secondaries in replset %s to take backup! Num replset members: %i, required quorum: %i" % (
                 rs_name,
-                secondary['count'] + 1,
+                self.secondary['count'] + 1,
                 quorum_count
             ))
             raise Exception, "Not enough secondaries in replset %s to safely take backup!" % rs_name, None
 
-        logging.info("Choosing SECONDARY %s for replica set %s (score: %i)" % (secondary['host'], rs_name, secondary['score']))
-        return secondary
+        logging.info("Choosing SECONDARY %s for replica set %s (score: %i)" % (self.secondary['host'], rs_name, self.secondary['score']))
+        return self.secondary
+
+    def primary_optime(self):
+        rs_status  = self.get_rs_status()
+        rs_primary = self.find_primary()
+        if 'optime' in rs_primary:
+            return rs_primary['optime']
 
 
 class ReplsetSharded:
