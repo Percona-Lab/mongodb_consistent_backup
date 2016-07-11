@@ -7,7 +7,7 @@ from Sharding import Sharding
 
 
 class Replset:
-    def __init__(self, db, user, password, authdb, max_lag_secs):
+    def __init__(self, db, user=None, password=None, authdb='admin', max_lag_secs=5):
         self.db           = db
         self.user         = user
         self.password     = password
@@ -49,8 +49,8 @@ class Replset:
         except Exception, e:
             raise Exception, "Error getting replica set config! Error: %s" % e, None
 
-    def find_primary(self):
-        rs_status = self.get_rs_status()
+    def find_primary(self, force=False):
+        rs_status = self.get_rs_status(force)
         rs_name   = rs_status['set']
         for member in rs_status['members']:
             if member['stateStr'] == 'PRIMARY' and member['health'] > 0:
@@ -130,14 +130,13 @@ class Replset:
         return self.secondary
 
     def primary_optime(self):
-        rs_status  = self.get_rs_status()
-        rs_primary = self.find_primary()
+        rs_primary = self.find_primary(True)
         if 'optime' in rs_primary:
             return rs_primary['optime']
 
 
 class ReplsetSharded:
-    def __init__(self, sharding, db, user, password, authdb, max_lag_secs):
+    def __init__(self, sharding, db, user=None, password=None, authdb='admin', max_lag_secs=5):
         self.sharding     = sharding
         self.db           = db
         self.user         = user
@@ -195,7 +194,7 @@ class ReplsetSharded:
             shard_secondaries[rs_name] = replset.find_secondary()
         return shard_secondaries
 
-    def get_primary_optimes(self):
+    def primary_optimes(self):
         primary_optimes = {}
         for rs_name in self.get_replsets():
             replset = self.replsets[rs_name]
