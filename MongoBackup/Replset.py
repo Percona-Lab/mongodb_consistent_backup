@@ -184,7 +184,6 @@ class ReplsetSharded:
                 except Exception, e:
                     logging.fatal("Could not get Replset class object for replset %s! Error: %s" % (rs_name, e))
                     raise e
-        print self.replsets
         return self.replsets
 
     def find_secondaries(self):
