@@ -2,7 +2,7 @@ import logging
 
 from time import sleep
 
-from DB import DB
+from Common import DB
 
 
 class ShardingHandler:
