@@ -143,9 +143,6 @@ class Backup(object):
         if current_process().name == "MainProcess":
             logging.info("Starting cleanup and exit procedure! Killing running threads")
 
-            if self.sharding:
-                self.sharding.restore_balancer_state()
-
             submodules = ['replset', 'sharding', 'mongodumper', 'oplogtailer', 'archiver', 'uploader_s3']
             for submodule_name in submodules:
                 submodule = getattr(self, submodule_name)
