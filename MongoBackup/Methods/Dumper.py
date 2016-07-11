@@ -4,10 +4,10 @@ from fabric.api import hide, settings, local
 from multiprocessing import Process, Queue
 from time import sleep
 
-from MongoBackup.Methods import Mongodump
+from MongoBackup.Methods import Dump
 
 
-class Mongodumper:
+class Dumper:
     def __init__(self, secondaries, base_dir, binary, dump_gzip=False, user=None, password=None,
                  authdb='admin', config_server=None, verbose=False):
         self.secondaries   = secondaries
@@ -37,7 +37,7 @@ class Mongodumper:
         # backup a secondary from each shard:
         for shard in self.secondaries:
             secondary = self.secondaries[shard]
-            thread = Mongodump(
+            thread = Dump(
                 self.response_queue,
                 secondary['replSet'],
                 secondary['host'],
@@ -53,7 +53,7 @@ class Mongodumper:
 
         # backup a single config server:
         if self.config_server:
-            thread = Mongodump(
+            thread = Dump(
                 self.response_queue,
                 'config',
                 self.config_server,

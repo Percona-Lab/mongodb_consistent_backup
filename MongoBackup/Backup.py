@@ -10,7 +10,7 @@ from time import time
 
 from Archiver import Archiver
 from Common import DB, Lock
-from Methods import Mongodumper
+from Methods import Dumper
 from Notify import NotifyNSCA
 from Oplog import OplogTailer, OplogResolver
 from Replset import Replset, ReplsetSharded
@@ -201,7 +201,7 @@ class Backup(object):
                 self.exception("Problem getting shard secondaries! Error: %s" % e)
 
             try:
-                self.mongodumper = Mongodumper(
+                self.mongodumper = Dumper(
                     self.secondaries,
                     self.backup_root_directory,
                     self.backup_binary,
@@ -273,7 +273,7 @@ class Backup(object):
 
             # start the mongodumper threads
             try:
-                self.mongodumper = Mongodumper(
+                self.mongodumper = Dumper(
                     self.secondaries, 
                     self.backup_root_directory,
                     self.backup_binary,
