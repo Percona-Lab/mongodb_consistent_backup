@@ -195,7 +195,7 @@ class ReplsetSharded:
         return shard_secondaries
 
     def close(self):
-        for conn_name in self.replset_conns:
-            self.replset_conns[conn_name].close()
         for rs_name in self.replsets:
             self.replsets[rs_name].close()
+        for conn_name in self.replset_conns:
+            self.replset_conns[conn_name].close()
