@@ -1,7 +1,6 @@
 import logging
 
 from math import ceil
-from time import mktime
 
 from Common import DB
 from Sharding import Sharding
@@ -55,17 +54,17 @@ class Replset:
         rs_name   = rs_status['set']
         for member in rs_status['members']:
             if member['stateStr'] == 'PRIMARY' and member['health'] > 0:
+                optime_ts = member['optime']
+                if isinstance(member['optime'], dict) and 'ts' in member['optime']:
+                    optime_ts = member['optime']['ts']
                 self.primary = {
                     'host': member['name'],
-                    'optime': member['optimeDate']
+                    'optime': optime_ts
                 }
-                optime = member['optime']
-                if isinstance(member['optime'], dict) and 'ts' in member['optime']:
-                    optime = member['optime']['ts']
                 logging.info("Found PRIMARY: %s/%s with optime %s" % (
                     rs_name,
                     member['name'],
-                    str(optime)
+                    str(optime_ts)
                 ))
         if self.primary is None:
             logging.fatal("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
@@ -96,7 +95,11 @@ class Replset:
                                 score = score - member_config['priority']
                         break
 
-                rep_lag = (mktime(self.primary_optime().timetuple()) - mktime(member['optimeDate'].timetuple()))
+                optime_ts = member['optime']
+                if isinstance(member['optime'], dict) and 'ts' in member['optime']:
+                    optime_ts = member['optime']['ts']
+
+                rep_lag = (self.primary_optime().time - optime_ts.time)
                 score = ceil((score - rep_lag) * score_scale)
                 if rep_lag < self.max_lag_secs:
                     if self.secondary is None or score > self.secondary['score']:
@@ -104,16 +107,15 @@ class Replset:
                             'replSet': rs_name,
                             'count': 1 if self.secondary is None else self.secondary['count'] + 1,
                             'host': member['name'],
-                            'optime': member['optimeDate'],
+                            'optime': optime_ts,
                             'score': score
                         }
                     log_msg = "Found SECONDARY %s/%s" % (rs_name, member['name'])
                 else:
                     log_msg = "Found SECONDARY %s/%s with too-high replication lag! Skipping" % (rs_name, member['name'])
 
-                log_data['optime'] = member['optime']
-                if isinstance(member['optime'], dict) and 'ts' in member['optime']:
-                    log_data['optime'] = member['optime']['ts']
+                log_data['lag']    = rep_lag
+                log_data['optime'] = optime_ts
                 log_data['score']  = int(score)
                 logging.info("%s: %s" % (log_msg, str(log_data)))
         if self.secondary is None or (self.secondary['count'] + 1) < quorum_count:
@@ -189,10 +191,16 @@ class ReplsetSharded:
     def find_secondaries(self):
         shard_secondaries = {}
         for rs_name in self.get_replsets():
-            replset   = self.replsets[rs_name]
-            secondary = replset.find_secondary()
-            shard_secondaries[rs_name] = secondary
+            replset = self.replsets[rs_name]
+            shard_secondaries[rs_name] = replset.find_secondary()
         return shard_secondaries
+
+    def get_primary_optimes(self):
+        primary_optimes = {}
+        for rs_name in self.get_replsets():
+            replset = self.replsets[rs_name]
+            primary_optimes[rs_name] = replset.primary_optime()
+        return primary_optimes
 
     def close(self):
         for rs_name in self.replsets:
