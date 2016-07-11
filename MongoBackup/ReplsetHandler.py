@@ -56,7 +56,7 @@ class ReplsetHandler:
                     'optime': member['optimeDate']
                 }
                 optime = member['optime']
-                if 'ts' in member['optime']:
+                if isinstance(member['optime'], dict) and 'ts' in member['optime']:
                     optime = member['optime']['ts']
                 logging.debug("Found PRIMARY: %s/%s with optime %s" % (
                     rs_name,
@@ -102,7 +102,7 @@ class ReplsetHandler:
                     log_msg = "Found SECONDARY %s/%s with too-high replication lag! Skipping" % (rs_name, member['name'])
 
                 log_data['optime'] = member['optime']
-                if 'ts' in member['optime']:
+                if isinstance(member['optime'], dict) and 'ts' in member['optime']:
                     log_data['optime'] = member['optime']['ts']
                 log_data['score']  = int(score)
                 logging.debug("%s: %s" % (log_msg, str(log_data)))
