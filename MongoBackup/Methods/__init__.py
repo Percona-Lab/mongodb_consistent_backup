@@ -1,2 +1,2 @@
-from Mongodump import Mongodump
-from Mongodumper import Mongodumper
+from Dump import Dump
+from Dumper import Dumper

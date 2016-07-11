@@ -10,7 +10,7 @@ from MongoBackup.Oplog import OplogInfo
 
 
 # noinspection PyStringFormat
-class Mongodump(Process):
+class Dump(Process):
     def __init__(self, response_queue, backup_name, host_port, user, password, authdb, base_dir, binary,
                  dump_gzip=False, verbose=False):
         Process.__init__(self)

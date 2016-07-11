@@ -10,7 +10,7 @@ from time import time
 
 from Archiver import Archiver
 from Common import DB, Lock
-from Methods import Mongodumper
+from Methods import Dumper
 from Notify import NotifyNSCA
 from Oplog import OplogTailer, OplogResolver
 from Replset import Replset, ReplsetSharded
@@ -143,9 +143,6 @@ class Backup(object):
         if current_process().name == "MainProcess":
             logging.info("Starting cleanup and exit procedure! Killing running threads")
 
-            if self.sharding:
-                self.sharding.restore_balancer_state()
-
             submodules = ['replset', 'sharding', 'mongodumper', 'oplogtailer', 'archiver', 'uploader_s3']
             for submodule_name in submodules:
                 submodule = getattr(self, submodule_name)
@@ -204,7 +201,7 @@ class Backup(object):
                 self.exception("Problem getting shard secondaries! Error: %s" % e)
 
             try:
-                self.mongodumper = Mongodumper(
+                self.mongodumper = Dumper(
                     self.secondaries,
                     self.backup_root_directory,
                     self.backup_binary,
@@ -276,7 +273,7 @@ class Backup(object):
 
             # start the mongodumper threads
             try:
-                self.mongodumper = Mongodumper(
+                self.mongodumper = Dumper(
                     self.secondaries, 
                     self.backup_root_directory,
                     self.backup_binary,
