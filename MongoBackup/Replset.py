@@ -36,7 +36,7 @@ class Replset:
 
     def get_rs_config(self):
         try:
-            if self.db.server_version() >= tuple("2.6.0".split(".")):
+            if self.db.server_version() >= tuple("3.0.0".split(".")):
                 output = self.db.admin_command('replSetGetConfig')
                 return output['config']
             else:
@@ -58,7 +58,7 @@ class Replset:
                     'optime': member['optimeDate']
                 }
                 optime = member['optime']
-                if 'ts' in member['optime']:
+                if isinstance(member['optime'], dict) and 'ts' in member['optime']:
                     optime = member['optime']['ts']
                 logging.info("Found PRIMARY: %s/%s with optime %s" % (
                     rs_name,
@@ -104,7 +104,7 @@ class Replset:
                     log_msg = "Found SECONDARY %s/%s with too-high replication lag! Skipping" % (rs_name, member['name'])
 
                 log_data['optime'] = member['optime']
-                if 'ts' in member['optime']:
+                if isinstance(member['optime'], dict) and 'ts' in member['optime']:
                     log_data['optime'] = member['optime']['ts']
                 log_data['score']  = int(score)
                 logging.info("%s: %s" % (log_msg, str(log_data)))
