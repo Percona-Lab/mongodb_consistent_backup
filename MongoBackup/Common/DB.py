@@ -58,7 +58,7 @@ class DB:
                 tries += 1
                 sleep(1)
         if not status:
-            raise Exception, "Could not get output from command: '%s' after %i retries!" % (admin_command, retries), None
+            raise Exception, "Could not get output from command: '%s' after %i retries!" % (admin_command, self.retries), None
         return status
 
     def server_version(self):
