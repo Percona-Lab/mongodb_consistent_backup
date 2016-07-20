@@ -18,17 +18,17 @@ class ReplsetSharded:
         self.replset_conns = {}
 
         # Check Sharding class:
-        if not self.sharding.__class__.__name__ == "Sharding":
-            raise Exception, "'sharding' field is an instance of %s, not 'Sharding'!" % self.sharding.__class__.__name__, None
+        if not isinstance(self.sharding, Sharding):
+            raise Exception, "'sharding' field is not an instance of class: 'Sharding'!", None
 
         # Get a DB connection
         try:
-            if self.db.__class__.__name__ == "DB":
+            if isinstance(self.db, DB):
                 self.connection = self.db.connection()
                 if not self.connection.is_mongos:
                     raise Exception, 'MongoDB connection is not to a mongos!', None
             else:
-                raise Exception, "'db' field is an instance of %s, not 'DB'!" % self.db.__class__.__name__, None
+                raise Exception, "'db' field is not an instance of class: 'DB'!", None
         except Exception, e:
             logging.fatal("Could not get DB connection! Error: %s" % e)
             raise e

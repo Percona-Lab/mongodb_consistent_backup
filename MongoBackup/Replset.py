@@ -2,6 +2,8 @@ import logging
 
 from math import ceil
 
+from Common import DB
+
 
 class Replset:
     def __init__(self, db, user=None, password=None, authdb='admin', max_lag_secs=5):
@@ -18,10 +20,10 @@ class Replset:
 
         # Get a DB connection
         try:
-            if self.db.__class__.__name__ == "DB":
+            if isinstance(self.db, DB):
                 self.connection = self.db.connection()
             else:
-                raise Exception, "'db' field is an instance of %s, not 'DB'!" % self.db.__class__.__name__, None
+                raise Exception, "'db' field is not an instance of class: 'DB'!", None
         except Exception, e:
             logging.fatal("Could not get DB connection! Error: %s" % e)
             raise e
