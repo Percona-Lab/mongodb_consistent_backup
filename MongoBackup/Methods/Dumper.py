@@ -93,7 +93,7 @@ class Dumper:
 
         # backup a single non-replset config server, if exists:
         if not self.config_replset and isinstance(self.config_server, dict):
-            logging.info("Using non-replset backup method for config server")
+            logging.info("Using non-replset backup method for config server mongodump")
             thread = Dump(
                 self.response_queue,
                 'configsvr',
