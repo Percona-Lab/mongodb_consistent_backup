@@ -107,8 +107,6 @@ class Dumper:
                 self.verbose
             )]
             self.threads[0].start()
-            if not len(self.threads) == 1:
-                raise Exception, 'No backup threads started!', None
             self.wait()
 
         return self._summary
