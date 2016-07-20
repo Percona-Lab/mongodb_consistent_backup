@@ -2,6 +2,8 @@ import logging
 
 from time import sleep
 
+from Common import DB
+
 
 class Sharding:
     def __init__(self, db, user=None, password=None, authdb='admin', balancer_wait_secs=300, balancer_sleep=5):
@@ -16,12 +18,12 @@ class Sharding:
 
         # Get a DB connection
         try:
-            if self.db.__class__.__name__ == "DB":
+            if isinstance(self.db, DB):
                 self.connection = self.db.connection()
                 if not self.connection.is_mongos:
                     raise Exception, 'MongoDB connection is not to a mongos!', None
             else:
-                raise Exception, "'db' field is an instance of %s, not 'DB'!" % self.db.__class__.__name__, None
+                raise Exception, "'db' field is not an instance of class: 'DB'!", None
         except Exception, e:
             logging.fatal("Could not get DB connection! Error: %s" % e)
             raise e
