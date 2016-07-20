@@ -20,7 +20,6 @@ class Dumper:
         self.config_server = config_server
         self.verbose       = verbose
 
-        self.config_replset = False
         self.response_queue = Queue()
         self.threads        = []
         self._summary       = {}
@@ -53,11 +52,11 @@ class Dumper:
             self.threads.append(thread)
 
         # backup a single config server:
-        if self.config_server:
+        if self.config_server and self.config_server['is_replset']:
             thread = Dump(
                 self.response_queue,
                 'config',
-                self.config_server,
+                self.config_server['host'],
                 self.user,
                 self.password,
                 self.authdb,

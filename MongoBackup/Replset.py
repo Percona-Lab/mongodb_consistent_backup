@@ -28,10 +28,10 @@ class Replset:
     def close(self):
         pass
 
-    def get_rs_status(self, force=False, retry=True):
+    def get_rs_status(self, force=False, retry=True, quiet=False):
         try:
             if force or not self.rs_status:
-                self.rs_status = self.db.admin_command('replSetGetStatus', retry)
+                self.rs_status = self.db.admin_command('replSetGetStatus', retry, quiet)
             return self.rs_status
         except Exception, e:
             raise Exception, "Error getting replica set status! Error: %s" % e, None
