@@ -94,7 +94,7 @@ class Dumper:
         # backup a single non-replset config server, if exists:
         if not self.config_replset and isinstance(self.config_server, dict):
             logging.info("Using non-replset backup method for config server mongodump")
-            thread = Dump(
+            self.threads = [Dump(
                 self.response_queue,
                 'configsvr',
                 self.config_server['host'],
@@ -105,8 +105,7 @@ class Dumper:
                 self.binary,
                 self.dump_gzip,
                 self.verbose
-            )
-            self.threads = [thread]
+            )]
             self.threads[0].start()
             if not len(self.threads) == 1:
                 raise Exception, 'No backup threads started!', None
