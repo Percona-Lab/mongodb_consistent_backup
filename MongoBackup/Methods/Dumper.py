@@ -52,7 +52,7 @@ class Dumper:
             self.threads.append(thread)
 
         # backup a single config server:
-        if self.config_server and self.config_server['is_replset']:
+        if self.config_server and self.config_server['replset']:
             thread = Dump(
                 self.response_queue,
                 'config',

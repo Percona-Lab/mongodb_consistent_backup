@@ -44,7 +44,7 @@ class DB:
         else:
             pass
 
-    def admin_command(self, admin_command, retry=True, quiet=False):
+    def admin_command(self, admin_command, quiet=False):
         tries  = 0
         status = None
         while not status and tries < self.retries:
@@ -53,8 +53,6 @@ class DB:
                 if not status:
                     raise e
             except Exception, e:
-                if not retry:
-                    tries = self.retries
                 if not quiet:
                     logging.error("Error running admin command '%s': %s" % (admin_command, e))
                 tries += 1

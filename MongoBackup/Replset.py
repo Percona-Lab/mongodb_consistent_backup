@@ -28,23 +28,26 @@ class Replset:
     def close(self):
         pass
 
-    def get_rs_status(self, force=False, retry=True, quiet=False):
+    def get_rs_status(self, force=False, quiet=False):
         try:
             if force or not self.rs_status:
-                self.rs_status = self.db.admin_command('replSetGetStatus', retry, quiet)
+                self.rs_status = self.db.admin_command('replSetGetStatus', quiet)
             return self.rs_status
         except Exception, e:
             raise Exception, "Error getting replica set status! Error: %s" % e, None
 
-    def get_rs_config(self, retry=True):
+    def get_rs_config(self, quiet=False):
         try:
             if self.db.server_version() >= tuple("3.0.0".split(".")):
-                output = self.db.admin_command('replSetGetConfig', retry)
+                output = self.db.admin_command('replSetGetConfig', quiet)
                 return output['config']
             else:
                 return self.connection['local'].system.replset.find_one()
         except Exception, e:
             raise Exception, "Error getting replica set config! Error: %s" % e, None
+
+    def rs_name(self):
+        return self.get_rs_status['set']
 
     def find_primary(self, force=False):
         rs_status = self.get_rs_status(force)
