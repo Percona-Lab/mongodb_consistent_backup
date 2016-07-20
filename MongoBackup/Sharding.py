@@ -113,9 +113,10 @@ class Sharding:
                 except Exception:
                     config_list = [config_string]
 
+                config_server  = config_list[0]
                 config_replset = False
                 try:
-                    config_host, config_port = config_list[0].split(":")
+                    config_host, config_port = config_server.split(":")
                     db = DB(config_host, config_port, self.user, self.password, self.authdb)
                     rs = Replset(db, self.user, self.password, self.authdb)
                     try:
@@ -126,7 +127,10 @@ class Sharding:
                 except Exception, e:
                     raise e             
 
-                self.config_server = {'host': config_list[0], 'is_replset': config_replset}
+                if config_replset:
+                    config_server = rs.find_secondary()
+
+                self.config_server = {'host': config_server, 'is_replset': config_replset}
             else:
                 logging.fatal("Unable to locate config servers for %s:%i!" % (self.host, self.port))
                 raise Exception, "Unable to locate config servers for %s:%i!" % (self.host, self.port), None

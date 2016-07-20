@@ -116,9 +116,10 @@ class Replset:
                 log_data['score']  = int(score)
                 logging.info("%s: %s" % (log_msg, str(log_data)))
         if self.secondary is None or (self.secondary['count'] + 1) < quorum_count:
+            secondary_count = self.secondary['count'] + 1 if self.secondary else 0
             logging.fatal("Not enough secondaries in replset %s to take backup! Num replset members: %i, required quorum: %i" % (
                 rs_name,
-                self.secondary['count'] + 1,
+                secondary_count,
                 quorum_count
             ))
             raise Exception, "Not enough secondaries in replset %s to safely take backup!" % rs_name, None
