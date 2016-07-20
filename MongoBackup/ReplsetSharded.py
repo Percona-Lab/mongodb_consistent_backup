@@ -1,6 +1,7 @@
 import logging
 
 from Common import DB
+from Replset import Replset
 from Sharding import Sharding
 
 
@@ -52,7 +53,7 @@ class ReplsetSharded:
                     rs_db = self.get_replset_connection(host, port)
                     self.replsets[shard_name] = Replset(rs_db, self.user, self.password, self.authdb, self.max_lag_secs)
                 except Exception, e:
-                    logging.fatal("Could not get Replset class object for replset %s! Error: %s" % (rs_name, e))
+                    logging.fatal("Could not get Replset class object for replset %s! Error: %s" % (shard_name, e))
                     raise e
         return self.replsets
 

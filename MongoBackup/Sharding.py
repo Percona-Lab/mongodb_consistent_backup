@@ -119,7 +119,7 @@ class Sharding:
                     db = DB(config_host, config_port, self.user, self.password, self.authdb)
                     rs = Replset(db, self.user, self.password, self.authdb)
                     try:
-                        self.config_server = rs.find_secondary()
+                        self.config_server = rs.find_secondary(True, True)
                     except Exception:
                         self.config_server = {'host': config_list[0], 'replSet': None}
                 except Exception, e:
