@@ -55,6 +55,12 @@ class ReplsetSharded:
                 except Exception, e:
                     logging.fatal("Could not get Replset class object for replset %s! Error: %s" % (shard_name, e))
                     raise e
+
+        configsvr = self.sharding.get_config_server()
+        if configsvr and isinstance(configsvr, Replset):
+            config_rs_name = configsvr.get_rs_name()
+            self.replsets[config_rs_name] = configsvr
+
         return self.replsets
 
     def find_secondaries(self):

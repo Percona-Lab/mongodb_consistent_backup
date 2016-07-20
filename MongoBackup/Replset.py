@@ -49,8 +49,8 @@ class Replset:
                 raise Exception, "Error getting replica set config! Error: %s" % e, None
         return self.rs_config
 
-    def rs_name(self):
-        return self.get_rs_status['set']
+    def get_rs_name(self):
+        return self.get_rs_status()['set']
 
     def find_primary(self, force=False, quiet=False):
         rs_status = self.get_rs_status(force, quiet)
@@ -70,7 +70,7 @@ class Replset:
                     str(optime_ts)
                 ))
         if self.primary is None:
-            logging.fatal("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
+            logging.error("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
             raise Exception, "Unable to locate a PRIMARY member for replset %s, giving up" % rs_name, None
         return self.primary
 
@@ -123,7 +123,7 @@ class Replset:
                 logging.info("%s: %s" % (log_msg, str(log_data)))
         if self.secondary is None or (self.secondary['count'] + 1) < quorum_count:
             secondary_count = self.secondary['count'] + 1 if self.secondary else 0
-            logging.fatal("Not enough secondaries in replset %s to take backup! Num replset members: %i, required quorum: %i" % (
+            logging.error("Not enough secondaries in replset %s to take backup! Num replset members: %i, required quorum: %i" % (
                 rs_name,
                 secondary_count,
                 quorum_count

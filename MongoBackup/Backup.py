@@ -282,7 +282,7 @@ class Backup(object):
                     self.user,
                     self.password,
                     self.authdb,
-                    self.sharding.get_configserver(),
+                    self.sharding.get_config_server(),
                     self.verbose
                 )
                 self.mongodumper_summary = self.mongodumper.run()

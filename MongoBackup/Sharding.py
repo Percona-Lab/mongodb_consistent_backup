@@ -16,6 +16,7 @@ class Sharding:
         self.balancer_sleep     = balancer_sleep
 
         self.config_server         = None
+        self.config_db             = None
         self._balancer_state_start = None
 
         # Get a DB connection
@@ -31,6 +32,8 @@ class Sharding:
             raise e
 
     def close(self):
+        if self.config_db:
+            self.config_db.close()
         return self.restore_balancer_state()
 
     def get_start_state(self):
@@ -98,8 +101,8 @@ class Sharding:
         logging.fatal("Could not stop balancer: %s:%i!" % (self.host, self.port))
         raise Exception, "Could not stop balancer: %s:%i" % (self.host, self.port), None
 
-    def get_configserver(self, force=False):
-        if force or not self.config_server:
+    def get_configdb_hosts(self):
+        try:
             cmdlineopts = self.db.admin_command("getCmdLineOpts")
             config_string = None
             if cmdlineopts.get('parsed').get('configdb'):
@@ -109,26 +112,33 @@ class Sharding:
             if config_string:
                 # noinspection PyBroadException
                 try:
-                    config_list = config_string.split(",")
+                    return config_string.split(',')
                 except Exception:
-                    config_list = [config_string]
+                    return [config_string]
+            else:
+                logging.fatal("Unable to locate config servers for %s:%i!" % (self.host, self.port))
+                raise Exception, "Unable to locate config servers for %s:%i!" % (self.host, self.port), None
+        except Exception, e:
+            raise e
 
-                db = None
+    def get_config_server(self, force=False):
+        if force or not self.config_server:
+            configdb_hosts = self.get_configdb_hosts()
+            try:
+                config_host, config_port = configdb_hosts[0].split(":")
+                logging.info("Found sharding config server: %s" % (config_host))
+
+                self.config_db = DB(config_host, config_port, self.user, self.password, self.authdb)
+                rs = Replset(self.config_db, self.user, self.password, self.authdb)
                 try:
-                    config_host, config_port = config_list[0].split(":")
-                    db = DB(config_host, config_port, self.user, self.password, self.authdb)
-                    rs = Replset(db, self.user, self.password, self.authdb)
-                    try:
-                        self.config_server = rs.find_secondary(True, True)
-                    except Exception:
-                        self.config_server = {'host': config_list[0], 'replSet': None}
-                except Exception, e:
-                    raise e
+                    rs_status = rs.get_rs_status(False, True)
+                    self.config_server = rs
+                except Exception:
+                    self.config_server = {'host': configdb_hosts[0]}
                 finally:
-                    if db:
-                        db.close()
-
-                logging.debug("Found sharding config server: %s" % (self.config_server['host']))
+                    return self.config_server
+            except Exception, e:
+                raise e
             else:
                 logging.fatal("Unable to locate config servers for %s:%i!" % (self.host, self.port))
                 raise Exception, "Unable to locate config servers for %s:%i!" % (self.host, self.port), None

@@ -20,9 +20,13 @@ class Dumper:
         self.config_server = config_server
         self.verbose       = verbose
 
+        self.config_replset = False
         self.response_queue = Queue()
         self.threads        = []
         self._summary       = {}
+
+        if not isinstance(self.config_server, dict) and self.config_server in self.secondaries:
+            self.config_replset = True
 
         if not isinstance(self.secondaries, dict):
             raise Exception, "Field 'secondaries' must be a dictionary of secondary info (by shard)!", None
@@ -77,22 +81,6 @@ class Dumper:
             )
             self.threads.append(thread)
 
-        # backup a single replica-set config server alongside the shards, if exists:
-        if self.config_server and self.config_server['replSet']:
-            thread = Dump(
-                self.response_queue,
-                'config',
-                self.config_server['host'],
-                self.user,
-                self.password,
-                self.authdb,
-                self.base_dir,
-                self.binary,
-                self.dump_gzip,
-                self.verbose
-            )
-            self.threads.append(thread)
-
         if not len(self.threads) > 0:
             raise Exception, 'No backup threads started!', None
 
@@ -104,11 +92,11 @@ class Dumper:
         self.wait()
 
         # backup a single non-replset config server, if exists:
-        if self.config_server and not self.config_server['replSet']:
-            logging.debug("Using non-replset backup method for config server")
+        if not self.config_replset and isinstance(self.config_server, dict):
+            logging.info("Using non-replset backup method for config server")
             thread = Dump(
                 self.response_queue,
-                'config',
+                'configsvr',
                 self.config_server['host'],
                 self.user,
                 self.password,
