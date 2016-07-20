@@ -20,6 +20,7 @@ class Dumper:
         self.config_server = config_server
         self.verbose       = verbose
 
+        self.config_replset = False
         self.response_queue = Queue()
         self.threads        = []
         self._summary       = {}

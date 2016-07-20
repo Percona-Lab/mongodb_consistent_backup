@@ -2,6 +2,9 @@ import logging
 
 from time import sleep
 
+from Common import DB
+from Replset import Replset
+
 
 class Sharding:
     def __init__(self, db, user=None, password=None, authdb='admin', balancer_wait_secs=300, balancer_sleep=5):
@@ -12,6 +15,7 @@ class Sharding:
         self.balancer_wait_secs = balancer_wait_secs
         self.balancer_sleep     = balancer_sleep
 
+        self.config_server         = None
         self._balancer_state_start = None
 
         # Get a DB connection
@@ -94,20 +98,37 @@ class Sharding:
         logging.fatal("Could not stop balancer: %s:%i!" % (self.host, self.port))
         raise Exception, "Could not stop balancer: %s:%i" % (self.host, self.port), None
 
-    def get_configserver(self):
-        cmdlineopts = self.db.admin_command("getCmdLineOpts")
-        config_string = None
-        if cmdlineopts.get('parsed').get('configdb'):
-            config_string = cmdlineopts.get('parsed').get('configdb')
-        elif cmdlineopts.get('parsed').get('sharding').get('configDB'):
-            config_string = cmdlineopts.get('parsed').get('sharding').get('configDB')
-        if config_string:
-            # noinspection PyBroadException
+    def get_configserver(self, force=False):
+        if force or not self.config_server:
+            cmdlineopts = self.db.admin_command("getCmdLineOpts")
+            config_string = None
+            if cmdlineopts.get('parsed').get('configdb'):
+                config_string = cmdlineopts.get('parsed').get('configdb')
+            elif cmdlineopts.get('parsed').get('sharding').get('configDB'):
+                config_string = cmdlineopts.get('parsed').get('sharding').get('configDB')
+            if config_string:
+                # noinspection PyBroadException
+                try:
+                    config_list = config_string.split(",")
+                except Exception:
+                    config_list = [config_string]
+                self.config_server = config_list[0]
+            else:
+                logging.fatal("Unable to locate config servers for %s:%i!" % (self.host, self.port))
+                raise Exception, "Unable to locate config servers for %s:%i!" % (self.host, self.port), None
+        return self.config_server
+
+    def is_config_replset(self):
+        try:
+            config_server = self.get_configserver()
+            config_host, config_port = config_server.split(":")
+            db = DB(config_host, config_port, self.user, self.password, self.authdb)
+            rs = Replset(db, self.user, self.password, self.authdb)
             try:
-                config_list = config_string.split(",")
+                rs.get_rs_status(True, False)
+                return 
             except Exception:
-                config_list = [config_string]
-            return config_list[0]
-        else:
-            logging.fatal("Unable to locate config servers for %s:%i!" % (self.host, self.port))
-            raise Exception, "Unable to locate config servers for %s:%i!" % (self.host, self.port), None
+                return False
+        except Exception, e:
+            raise e             
+

@@ -13,7 +13,8 @@ from Common import DB, Lock
 from Methods import Dumper
 from Notify import NotifyNSCA
 from Oplog import OplogTailer, OplogResolver
-from Replset import Replset, ReplsetSharded
+from Replset import Replset
+from ReplsetSharded import ReplsetSharded
 from Sharding import Sharding
 from Upload import UploadS3
 

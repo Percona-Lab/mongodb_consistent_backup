@@ -44,10 +44,10 @@ class DB:
         else:
             pass
 
-    def admin_command(self, admin_command):
+    def admin_command(self, admin_command, retry=True):
         tries  = 0
         status = None
-        while not status and tries < self.retries:
+        while retry and not status and tries < self.retries:
             try:
                 status = self._conn['admin'].command(admin_command)
                 if not status:
@@ -57,7 +57,7 @@ class DB:
                 tries += 1
                 sleep(1)
         if not status:
-            raise Exception, "Could not get output from command: '%s' after %i retries!" % (admin_command, self.retries), None
+            raise Exception, "Could not get output from command: '%s' after %i retries!" % (admin_command, retries), None
         return status
 
     def server_version(self):
