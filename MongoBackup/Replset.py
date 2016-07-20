@@ -117,6 +117,9 @@ class Replset:
                 else:
                     log_msg = "Found SECONDARY %s/%s with too-high replication lag! Skipping" % (rs_name, member['name'])
 
+                if 'configsvr' in rs_status and rs_status['configsvr']:
+                    log_data['configsvr'] = True
+
                 log_data['lag']    = rep_lag
                 log_data['optime'] = optime_ts
                 log_data['score']  = int(score)
@@ -128,10 +131,6 @@ class Replset:
                 secondary_count,
                 quorum_count
             ))
-
-            import pprint
-            pprint.pprint(rs_status)
-
             raise Exception, "Not enough secondaries in replset %s to safely take backup!" % rs_name, None
 
         logging.info("Choosing SECONDARY %s for replica set %s (score: %i)" % (self.secondary['host'], rs_name, self.secondary['score']))
