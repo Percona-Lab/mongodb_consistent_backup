@@ -5,10 +5,9 @@ from time import sleep
 from Common import DB
 
 
-class ShardingHandler:
-    def __init__(self, host, port, user, password, authdb='admin', balancer_wait_secs=300, balancer_sleep=10):
-        self.host               = host
-        self.port               = port
+class Sharding:
+    def __init__(self, db, user=None, password=None, authdb='admin', balancer_wait_secs=300, balancer_sleep=5):
+        self.db                 = db
         self.user               = user
         self.password           = password
         self.authdb             = authdb
@@ -17,19 +16,24 @@ class ShardingHandler:
 
         self._balancer_state_start = None
 
+        # Get a DB connection
         try:
-            self.connection = DB(self.host, self.port, self.user, self.password, self.authdb).connection()
+            if isinstance(self.db, DB):
+                self.connection = self.db.connection()
+                if not self.connection.is_mongos:
+                    raise Exception, 'MongoDB connection is not to a mongos!', None
+            else:
+                raise Exception, "'db' field is not an instance of class: 'DB'!", None
         except Exception, e:
             logging.fatal("Could not get DB connection! Error: %s" % e)
             raise e
 
     def close(self):
-        self.restore_balancer_state()
-        return self.connection.close()
+        return self.restore_balancer_state()
 
     def get_start_state(self):
         self._balancer_state_start = self.get_balancer_state()
-        logging.info("Began with balancer state: %s" % str(self._balancer_state_start))
+        logging.info("Began with balancer state running: %s" % str(self._balancer_state_start))
         return self._balancer_state_start
 
     def shards(self):
@@ -93,7 +97,7 @@ class ShardingHandler:
         raise Exception, "Could not stop balancer: %s:%i" % (self.host, self.port), None
 
     def get_configserver(self):
-        cmdlineopts = self.connection['admin'].command("getCmdLineOpts")
+        cmdlineopts = self.db.admin_command("getCmdLineOpts")
         config_string = None
         if cmdlineopts.get('parsed').get('configdb'):
             config_string = cmdlineopts.get('parsed').get('configdb')

@@ -8,12 +8,13 @@ from multiprocessing import current_process
 from signal import signal, SIGINT, SIGTERM
 from time import time
 
-from Common import DB, Lock
-from ShardingHandler import ShardingHandler
-from Mongodumper import Mongodumper
-from Oplog import OplogTailer, OplogResolver
 from Archiver import Archiver
+from Common import DB, Lock
+from Methods import Dumper
 from Notify import NotifyNSCA
+from Oplog import OplogTailer, OplogResolver
+from Replset import Replset, ReplsetSharded
+from Sharding import Sharding
 from Upload import UploadS3
 
 
@@ -34,7 +35,7 @@ class Backup(object):
         self.backup_location = None
         self.dump_gzip = False
         self.balancer_wait_secs = 300
-        self.balancer_sleep = 10
+        self.balancer_sleep = 5 
         self.archiver_threads = 1
         self.resolver_threads = 1
         self.notify_nsca = None
@@ -58,6 +59,7 @@ class Backup(object):
         self.upload_s3_chunk_size_mb = None
         self.archiver = None
         self.sharding = None
+        self.replset  = None
         self.mongodumper = None
         self.oplogtailer = None
         self.oplog_resolver = None
@@ -69,6 +71,7 @@ class Backup(object):
         self.start_time = time()
         self.oplog_threads = []
         self.oplog_summary = {}
+        self.secondaries   = {}
         self.mongodumper_summary = {}
 
         # Setup options are properies and connection to node
@@ -108,9 +111,9 @@ class Backup(object):
 
         # Get a DB connection
         try:
-            connection = DB(self.host, self.port, self.user, self.password, self.authdb).connection()
-            self.is_mongos = connection.is_mongos
-            connection.close()
+            self.db         = DB(self.host, self.port, self.user, self.password, self.authdb)
+            self.connection = self.db.connection()
+            self.is_sharded = self.connection.is_mongos
         except Exception, e:
             raise e
 
@@ -140,7 +143,7 @@ class Backup(object):
         if current_process().name == "MainProcess":
             logging.info("Starting cleanup and exit procedure! Killing running threads")
 
-            submodules = ['sharding', 'mongodumper', 'oplogtailer', 'archiver', 'uploader_s3']
+            submodules = ['replset', 'sharding', 'mongodumper', 'oplogtailer', 'archiver', 'uploader_s3']
             for submodule_name in submodules:
                 submodule = getattr(self, submodule_name)
                 if submodule:
@@ -151,6 +154,9 @@ class Backup(object):
                     self.program_name,
                     self.backup_name
                 ))
+
+            if self.db:
+                self.db.close()
 
             if self._lock:
                 self._lock.release()
@@ -172,22 +178,37 @@ class Backup(object):
             logging.fatal("Could not acquire lock! Is another %s process running? Exiting" % self.program_name)
             sys.exit(1)
 
-        if not self.is_mongos:
+        if not self.is_sharded:
             logging.info("Running backup of %s:%s in replset mode" % (self.host, self.port))
 
             self.archiver_threads = 1
 
+            # get shard secondary
             try:
-                self.mongodumper = Mongodumper(
-                    self.host,
-                    self.port,
+                self.replset = Replset(
+                    self.db,
                     self.user,
                     self.password,
                     self.authdb,
+                    self.max_repl_lag_secs
+                )
+                secondary    = self.replset.find_secondary()
+                replset_name = secondary['replSet']
+
+                self.secondaries[replset_name] = secondary
+                self.replset.close()
+            except Exception, e:
+                self.exception("Problem getting shard secondaries! Error: %s" % e)
+
+            try:
+                self.mongodumper = Dumper(
+                    self.secondaries,
                     self.backup_root_directory,
                     self.backup_binary,
                     self.dump_gzip,
-                    self.max_repl_lag_secs,
+                    self.user,
+                    self.password,
+                    self.authdb,
                     None,
                     self.verbose
                 )
@@ -200,9 +221,8 @@ class Backup(object):
 
             # connect to balancer and stop it
             try:
-                self.sharding = ShardingHandler(
-                    self.host,
-                    self.port,
+                self.sharding = Sharding(
+                    self.db,
                     self.user,
                     self.password,
                     self.authdb,
@@ -210,9 +230,28 @@ class Backup(object):
                     self.balancer_sleep
                 )
                 self.sharding.get_start_state()
+            except Exception, e:
+                self.exception("Problem connecting to the balancer! Error: %s" % e)
+
+            # get shard secondaries
+            try:
+                self.replset = ReplsetSharded(
+                    self.sharding,
+                    self.db,
+                    self.user,
+                    self.password,
+                    self.authdb,
+                    self.max_repl_lag_secs
+                )
+                self.secondaries = self.replset.find_secondaries()
+            except Exception, e:
+                self.exception("Problem getting shard secondaries! Error: %s" % e)
+
+            # Stop the balancer:    
+            try:
                 self.sharding.stop_balancer()
             except Exception, e:
-                self.exception("Problem connecting-to and/or stopping balancer! Error: %s" % e)
+                self.exception("Problem stopping the balancer! Error: %s" % e)
 
             # start the oplog tailer threads
             if self.no_oplog_tailer:
@@ -220,12 +259,10 @@ class Backup(object):
             else:
                 try:
                     self.oplogtailer = OplogTailer(
+                        self.secondaries,
                         self.backup_name,
                         self.backup_root_directory,
-                        self.host,
-                        self.port,
                         self.dump_gzip,
-                        self.max_repl_lag_secs,
                         self.user,
                         self.password,
                         self.authdb
@@ -236,16 +273,14 @@ class Backup(object):
 
             # start the mongodumper threads
             try:
-                self.mongodumper = Mongodumper(
-                    self.host,
-                    self.port,
-                    self.user,
-                    self.password,
-                    self.authdb,
+                self.mongodumper = Dumper(
+                    self.secondaries, 
                     self.backup_root_directory,
                     self.backup_binary,
                     self.dump_gzip,
-                    self.max_repl_lag_secs,
+                    self.user,
+                    self.password,
+                    self.authdb,
                     self.sharding.get_configserver(),
                     self.verbose
                 )
@@ -311,6 +346,9 @@ class Backup(object):
                 ))
             except Exception, e:
                 self.exception("Problem running NSCA notifier! Error: %s" % e)
+
+        if self.db:
+            self.db.close()
 
         self._lock.release()
 
