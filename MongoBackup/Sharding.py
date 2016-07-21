@@ -92,7 +92,7 @@ class Sharding:
         while wait_cnt < self.balancer_wait_secs:
             if self.check_balancer_running():
                 wait_cnt += self.balancer_sleep
-                logging.info("Balancer is still running, waiting a max of %i sec" % self.balancer_sleep)
+                logging.info("Balancer is still running, sleeping for %i sec(s)" % self.balancer_sleep)
                 sleep(self.balancer_sleep)
             else:
                 sleep(self.balancer_sleep)
