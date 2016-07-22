@@ -91,7 +91,7 @@ class Replset:
                 hidden_weight = 0.20
                 for member_config in rs_config['members']:
                     if member_config['host'] == member['name']:
-                        if 'hidden' in member_config and member_config['hidden'] == True:
+                        if 'hidden' in member_config and member_config['hidden']:
                             score += (score * hidden_weight)
                             log_data['hidden'] = True
                         if 'priority' in member_config:
