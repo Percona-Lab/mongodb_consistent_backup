@@ -57,7 +57,11 @@ class OplogResolver:
                 backup_oplog = self.backup_oplogs[host][port]
                 if host in self.tailed_oplogs and port in self.tailed_oplogs[host]:
                     tailed_oplog = self.tailed_oplogs[host][port]
-                    tailed_oplogs.append(tailed_oplog['file'])
+                    tailed_oplogs.append({
+                        'host': host,
+                        'port': port,
+                        'file': tailed_oplog['file']
+                    })
 
                     if backup_oplog['last_ts'] is None and tailed_oplog['last_ts'] is None:
                         logging.info("No oplog changes to resolve for %s:%s" % (host, port))
@@ -86,8 +90,8 @@ class OplogResolver:
 
         for oplog_file in tailed_oplogs:
             try:
-                logging.debug("Deleting tailed oplog file for %s:%s" % (host, port))
-                os.remove(oplog_file)
+                logging.debug("Deleting tailed oplog file for %s:%s" % (oplog_file['host'], oplog_file['port']))
+                os.remove(oplog_file['file'])
             except Exception, e:
                 logging.fatal("Deleting of tailed oplog file %s failed! Error: %s" % (tailed_oplog, e))
                 raise e
