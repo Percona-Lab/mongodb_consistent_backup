@@ -76,7 +76,7 @@ class Backup(object):
         self.secondaries   = {}
         self.mongodumper_summary = {}
 
-        # Setup options are properies and connection to node
+        # Setup options are properties and connection to node
         for option in vars(options):
             setattr(self, option, getattr(options, option))
 
