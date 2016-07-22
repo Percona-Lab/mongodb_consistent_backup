@@ -13,7 +13,8 @@ from Common import DB, Lock
 from Methods import Dumper
 from Notify import NotifyNSCA
 from Oplog import OplogTailer, OplogResolver
-from Replset import Replset, ReplsetSharded
+from Replset import Replset
+from ReplsetSharded import ReplsetSharded
 from Sharding import Sharding
 from Upload import UploadS3
 
@@ -281,7 +282,7 @@ class Backup(object):
                     self.user,
                     self.password,
                     self.authdb,
-                    self.sharding.get_configserver(),
+                    self.sharding.get_config_server(),
                     self.verbose
                 )
                 self.mongodumper_summary = self.mongodumper.run()

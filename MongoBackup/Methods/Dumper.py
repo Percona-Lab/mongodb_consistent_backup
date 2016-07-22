@@ -20,9 +20,13 @@ class Dumper:
         self.config_server = config_server
         self.verbose       = verbose
 
+        self.config_replset = False
         self.response_queue = Queue()
         self.threads        = []
         self._summary       = {}
+
+        if not isinstance(self.config_server, dict) and self.config_server in self.secondaries:
+            self.config_replset = True
 
         if not isinstance(self.secondaries, dict):
             raise Exception, "Field 'secondaries' must be a dictionary of secondary info (by shard)!", None
@@ -33,49 +37,7 @@ class Dumper:
     def summary(self):
         return self._summary
 
-    def run(self):
-        # backup a secondary from each shard:
-        for shard in self.secondaries:
-            secondary = self.secondaries[shard]
-            thread = Dump(
-                self.response_queue,
-                secondary['replSet'],
-                secondary['host'],
-                self.user,
-                self.password,
-                self.authdb,
-                self.base_dir,
-                self.binary,
-                self.dump_gzip,
-                self.verbose
-            )
-            self.threads.append(thread)
-
-        # backup a single config server:
-        if self.config_server:
-            thread = Dump(
-                self.response_queue,
-                'config',
-                self.config_server,
-                self.user,
-                self.password,
-                self.authdb,
-                self.base_dir,
-                self.binary,
-                self.dump_gzip,
-                self.verbose
-            )
-            self.threads.append(thread)
-
-        if not len(self.threads) > 0:
-            raise Exception, 'No backup threads started!', None
-
-        # start all threads
-        logging.info(
-            "Starting backups in threads using mongodump %s (inline gzip: %s)" % (self.version, str(self.dump_gzip)))
-        for thread in self.threads:
-            thread.start()
-
+    def wait(self):
         # wait for all threads to finish
         for thread in self.threads:
             thread.join()
@@ -100,6 +62,52 @@ class Dumper:
             logging.info("All mongodump backups completed")
         else:
             raise Exception, "Not all mongodump threads completed successfully!", None
+
+    def run(self):
+        # backup a secondary from each shard:
+        for shard in self.secondaries:
+            secondary = self.secondaries[shard]
+            thread = Dump(
+                self.response_queue,
+                secondary['replSet'],
+                secondary['host'],
+                self.user,
+                self.password,
+                self.authdb,
+                self.base_dir,
+                self.binary,
+                self.dump_gzip,
+                self.verbose
+            )
+            self.threads.append(thread)
+
+        if not len(self.threads) > 0:
+            raise Exception, 'No backup threads started!', None
+
+        # start all threads and wait
+        logging.info(
+            "Starting backups in threads using mongodump %s (inline gzip: %s)" % (self.version, str(self.dump_gzip)))
+        for thread in self.threads:
+            thread.start()
+        self.wait()
+
+        # backup a single non-replset config server, if exists:
+        if not self.config_replset and isinstance(self.config_server, dict):
+            logging.info("Using non-replset backup method for config server mongodump")
+            self.threads = [Dump(
+                self.response_queue,
+                'configsvr',
+                self.config_server['host'],
+                self.user,
+                self.password,
+                self.authdb,
+                self.base_dir,
+                self.binary,
+                self.dump_gzip,
+                self.verbose
+            )]
+            self.threads[0].start()
+            self.wait()
 
         return self._summary
 
