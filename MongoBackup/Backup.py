@@ -88,7 +88,7 @@ class Backup(object):
                 raise Exception, 'Field: %s is required by %s!' % (field, __name__), None
 
         # Set default lock file:
-	if not self.lock_file:
+        if not self.lock_file:
             self.lock_file = '/tmp/%s.lock' % self.program_name
 
         # Setup logging
