@@ -50,14 +50,14 @@ class OplogResolver:
     def run(self):
         logging.info("Resolving oplogs using %i threads max" % self.thread_count)
 
-        tailed_oplogs = []
+        delete_oplogs = []
         self.end_ts   = self.get_consistent_end_ts()
         for host in self.backup_oplogs:
             for port in self.backup_oplogs[host]:
                 backup_oplog = self.backup_oplogs[host][port]
                 if host in self.tailed_oplogs and port in self.tailed_oplogs[host]:
                     tailed_oplog = self.tailed_oplogs[host][port]
-                    tailed_oplogs.append({
+                    delete_oplogs.append({
                         'host': host,
                         'port': port,
                         'file': tailed_oplog['file']
@@ -88,10 +88,10 @@ class OplogResolver:
         self._pool.close()
         self._pool.join()
 
-        for oplog_file in tailed_oplogs:
+        for delete_oplog in delete_oplogs:
             try:
-                logging.debug("Deleting tailed oplog file for %s:%s" % (oplog_file['host'], oplog_file['port']))
-                os.remove(oplog_file['file'])
+                logging.debug("Deleting tailed oplog file for %s:%s" % (delete_oplog['host'], delete_oplog['port']))
+                os.remove(delete_oplog['file'])
             except Exception, e:
                 logging.fatal("Deleting of tailed oplog file %s failed! Error: %s" % (oplog_file, e))
                 raise e
