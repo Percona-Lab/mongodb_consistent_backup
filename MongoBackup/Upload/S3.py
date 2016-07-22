@@ -23,6 +23,11 @@ class S3:
         self._conn = None
         self.connect()
 
+    def close(self):
+        if not self._conn:
+            self._conn.close()
+        pass
+
     def connect(self):
         if not self._conn:
             try:
