@@ -88,13 +88,13 @@ class OplogResolver:
         self._pool.close()
         self._pool.join()
 
-        for delete_oplog in self.delete_oplogs:
+        for oplog_file in self.delete_oplogs:
             try:
                 logging.debug("Deleting tailed oplog file for %s:%i" % (
-                    self.delete_oplogs[delete_oplog]['host'],
-                    self.delete_oplogs[delete_oplog]['port']
+                    self.delete_oplogs[oplog_file]['host'],
+                    self.delete_oplogs[oplog_file]['port']
                 ))
-                os.remove(delete_oplog)
+                os.remove(oplog_file)
             except Exception, e:
                 logging.fatal("Deleting of tailed oplog file %s failed! Error: %s" % (oplog_file, e))
                 raise e
