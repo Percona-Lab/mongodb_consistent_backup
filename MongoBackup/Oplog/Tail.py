@@ -56,7 +56,9 @@ class OplogTail(Process):
     def stop(self):
         self._stop.set()
 
-    def close(self, code=None, frame=None):
+    def close(self, exit_code=None, frame=None):
+        del exit_code
+        del frame
         return self.stop()
 
     def stopped(self):

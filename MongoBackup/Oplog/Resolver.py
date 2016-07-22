@@ -89,7 +89,7 @@ class OplogResolver:
                 logging.debug("Deleting tailed oplog file for %s:%s" % (host, port))
                 os.remove(oplog_file)
             except Exception, e:
-                logging.fatal("Deleting of tailed oplog file %s failed! Error: %s" % (tailed_oplog, e))
+                logging.fatal("Deleting of tailed oplog file %s failed! Error: %s" % (oplog_file, e))
                 raise e
 
         logging.info("Done resolving oplogs")

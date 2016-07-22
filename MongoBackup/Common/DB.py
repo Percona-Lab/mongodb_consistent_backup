@@ -50,8 +50,6 @@ class DB:
         while not status and tries < self.retries:
             try:
                 status = self._conn['admin'].command(admin_command)
-                if not status:
-                    raise e
             except Exception, e:
                 if not quiet:
                     logging.error("Error running admin command '%s': %s" % (admin_command, e))
@@ -63,11 +61,12 @@ class DB:
 
     def server_version(self):
         status  = self.admin_command('serverStatus')
-        if 'version' in status:
-            version = status['version'].split('-')[0]
-            return tuple(version.split('.'))
-        else:
-            raise Exception, "Could not get server version using admin command 'serverStatus'! Error: %s"  % e, None
+        try:
+            if 'version' in status:
+                version = status['version'].split('-')[0]
+                return tuple(version.split('.'))
+        except Exception:
+            raise Exception, "Unable to determine version from serverStatus!", None
 
     def connection(self):
         return self._conn
