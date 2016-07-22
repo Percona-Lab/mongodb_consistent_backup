@@ -27,6 +27,7 @@ class OplogResolver:
         self.thread_count  = thread_count
 
         self.end_ts = None
+        self.delete_oplogs = {}
 
         if self.thread_count is None:
             self.thread_count = cpu_count() * 2
@@ -50,18 +51,17 @@ class OplogResolver:
     def run(self):
         logging.info("Resolving oplogs using %i threads max" % self.thread_count)
 
-        delete_oplogs = []
         self.end_ts   = self.get_consistent_end_ts()
         for host in self.backup_oplogs:
             for port in self.backup_oplogs[host]:
                 backup_oplog = self.backup_oplogs[host][port]
                 if host in self.tailed_oplogs and port in self.tailed_oplogs[host]:
                     tailed_oplog = self.tailed_oplogs[host][port]
-                    delete_oplogs.append({
+                    tailed_oplog_file = tailed_oplog['file']
+                    self.delete_oplogs[tailed_oplog_file] = {
                         'host': host,
-                        'port': port,
-                        'file': tailed_oplog['file']
-                    })
+                        'port': port
+                    }
 
                     if backup_oplog['last_ts'] is None and tailed_oplog['last_ts'] is None:
                         logging.info("No oplog changes to resolve for %s:%s" % (host, port))
@@ -88,10 +88,13 @@ class OplogResolver:
         self._pool.close()
         self._pool.join()
 
-        for delete_oplog in delete_oplogs:
+        for delete_oplog in self.delete_oplogs:
             try:
-                logging.debug("Deleting tailed oplog file for %s:%s" % (delete_oplog['host'], delete_oplog['port']))
-                os.remove(delete_oplog['file'])
+                logging.debug("Deleting tailed oplog file for %s:%i" % (
+                    self.delete_oplogs[delete_oplog]['host'],
+                    self.delete_oplogs[delete_oplog]['port']
+                ))
+                os.remove(delete_oplog)
             except Exception, e:
                 logging.fatal("Deleting of tailed oplog file %s failed! Error: %s" % (oplog_file, e))
                 raise e
