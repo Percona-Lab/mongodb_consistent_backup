@@ -1,8 +1,9 @@
 import logging
 
 from fabric.api import hide, settings, local
-from multiprocessing import Process, Queue
+from multiprocessing import Queue
 from time import sleep
+
 
 from MongoBackup.Methods import Dump
 

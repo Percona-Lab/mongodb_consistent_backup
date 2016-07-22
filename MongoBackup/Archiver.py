@@ -35,6 +35,8 @@ class Archive:
     def close(self, exit_code=None, frame=None):
         if self._command:
             logging.debug("Killing running subprocess/command: %s" % self._command.command)
+            del exit_code
+            del frame
             self._command.close()
 
     def run(self):

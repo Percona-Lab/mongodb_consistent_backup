@@ -17,7 +17,7 @@ class Lock:
             flock(self._lock, LOCK_EX | LOCK_NB)
             logging.debug("Acquired exclusive lock on file: %s" % self.lock_file)
             return self._lock
-        except Exception, e:
+        except Exception:
             logging.debug("Error acquiring lock on file: %s" % self.lock_file)
             if self._lock:
                 self._lock.close()

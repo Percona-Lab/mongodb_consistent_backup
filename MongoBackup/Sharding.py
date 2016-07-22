@@ -92,14 +92,14 @@ class Sharding:
         while wait_cnt < self.balancer_wait_secs:
             if self.check_balancer_running():
                 wait_cnt += self.balancer_sleep
-                logging.info("Balancer is still running, waiting a max of %i sec" % self.balancer_sleep)
+                logging.info("Balancer is still running, sleeping for %i sec(s)" % self.balancer_sleep)
                 sleep(self.balancer_sleep)
             else:
                 sleep(self.balancer_sleep)
                 logging.info("Balancer is now stopped")
                 return
-        logging.fatal("Could not stop balancer: %s:%i!" % (self.host, self.port))
-        raise Exception, "Could not stop balancer: %s:%i" % (self.host, self.port), None
+        logging.fatal("Could not stop balancer: %s:%i!" % (self.db.host, self.db.port))
+        raise Exception, "Could not stop balancer: %s:%i" % (self.db.host, self.db.port), None
 
     def get_configdb_hosts(self):
         try:
@@ -116,8 +116,8 @@ class Sharding:
                 except Exception:
                     return [config_string]
             else:
-                logging.fatal("Unable to locate config servers for %s:%i!" % (self.host, self.port))
-                raise Exception, "Unable to locate config servers for %s:%i!" % (self.host, self.port), None
+                logging.fatal("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))
+                raise Exception, "Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port), None
         except Exception, e:
             raise e
 
@@ -131,15 +131,14 @@ class Sharding:
                 self.config_db = DB(config_host, config_port, self.user, self.password, self.authdb)
                 rs = Replset(self.config_db, self.user, self.password, self.authdb)
                 try:
-                    rs_status = rs.get_rs_status(False, True)
-                    self.config_server = rs
+                    if rs.get_rs_status(False, True):
+                        self.config_server = rs
                 except Exception:
                     self.config_server = {'host': configdb_hosts[0]}
                 finally:
                     return self.config_server
             except Exception, e:
+                logging.fatal("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))
                 raise e
-            else:
-                logging.fatal("Unable to locate config servers for %s:%i!" % (self.host, self.port))
-                raise Exception, "Unable to locate config servers for %s:%i!" % (self.host, self.port), None
+
         return self.config_server

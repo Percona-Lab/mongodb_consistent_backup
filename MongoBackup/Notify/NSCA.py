@@ -15,7 +15,7 @@ class NotifyNSCA:
         self.critical   = 2
         self.notifier   = None
 
-	split = self.server.split(":")
+        split = self.server.split(":")
         self.server_name = split[0]
         self.server_port = 5667
         if len(split) == 2:
