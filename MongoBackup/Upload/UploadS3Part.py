@@ -37,5 +37,5 @@ class UploadS3Part:
                     logging.debug("Uploaded file: %s (part num: %s)" % (self.file_name, self.part_num))
                     break
         except Exception, e:
-            logging.error("AWS S3 multipart upload failed! Retries: %s Error %s" % (self.retries, e))
+            logging.error("AWS S3 multipart upload failed after %i retries! Error: %s" % (self.retries, e))
             raise e
