@@ -5,7 +5,9 @@ from time import sleep
 
 
 class LocalCommand:
-    def __init__(self, command, command_flags=[], verbose=False):
+    def __init__(self, command, command_flags=None, verbose=False):
+        if command_flags is None:
+            command_flags = []
         self.command       = command
         self.command_flags = command_flags
         self.verbose       = verbose
@@ -49,7 +51,7 @@ class LocalCommand:
             if len(self.output) > 0:
                 logging.debug("%s command completed with output:\n\t%s" % (self.command, "\n".join(self.output)))
             else:
-                logging.debug("%s command completed" % (self.command))
+                logging.debug("%s command completed" % self.command)
 
     def close(self):
         if self._process:

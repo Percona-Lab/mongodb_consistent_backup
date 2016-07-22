@@ -34,7 +34,7 @@ def handle_options(parser):
 
     return options
 
-def printPythonVersions():
+def print_python_versions():
     import platform
     print "Python version: %s" % platform.python_version()
     print "Python modules:"
@@ -94,7 +94,7 @@ def run():
     if options.print_version:
         print "%s version: %s, git commit hash: %s" % (prog_name, __version__, git_commit)
         if options.verbose:
-            printPythonVersions()
+            print_python_versions()
         sys.exit(0)
     if not options.backup_name:
         parser.error('-n/--name flag is required!')

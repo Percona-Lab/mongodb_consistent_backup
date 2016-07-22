@@ -173,9 +173,10 @@ class Backup(object):
     def run(self):
         logging.info("Starting %s version %s (git commit hash: %s)" % (self.program_name, self.version, self.git_commit))
 
+        # noinspection PyBroadException
         try:
             self._lock = Lock(self.lock_file)
-        except Exception, e:
+        except Exception:
             logging.fatal("Could not acquire lock! Is another %s process running? Exiting" % self.program_name)
             sys.exit(1)
 
@@ -335,7 +336,7 @@ class Backup(object):
                 )
                 self.uploader_s3.run()
             except Exception, e:
-                self.die("Problem performing AWS S3 multipart upload! Error: %s" % e)
+                self.exception("Problem performing AWS S3 multipart upload! Error: %s" % e)
 
         # send notifications of backup state
         if self.notify_nsca:
