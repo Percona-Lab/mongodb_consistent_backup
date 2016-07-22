@@ -61,6 +61,7 @@ class Backup(object):
         self.archiver = None
         self.sharding = None
         self.replset  = None
+        self.replset_sharded = None
         self.mongodumper = None
         self.oplogtailer = None
         self.oplog_resolver = None
@@ -198,7 +199,6 @@ class Backup(object):
                 replset_name = secondary['replSet']
 
                 self.secondaries[replset_name] = secondary
-                self.replset.close()
             except Exception, e:
                 self.exception("Problem getting shard secondaries! Error: %s" % e)
 
@@ -237,7 +237,7 @@ class Backup(object):
 
             # get shard secondaries
             try:
-                self.replset = ReplsetSharded(
+                self.replset_sharded = ReplsetSharded(
                     self.sharding,
                     self.db,
                     self.user,
@@ -245,7 +245,7 @@ class Backup(object):
                     self.authdb,
                     self.max_repl_lag_secs
                 )
-                self.secondaries = self.replset.find_secondaries()
+                self.secondaries = self.replset_sharded.find_secondaries()
             except Exception, e:
                 self.exception("Problem getting shard secondaries! Error: %s" % e)
 
