@@ -1,0 +1,8 @@
+approve_by_comment: true
+approve_regex: '^(Approved|:\+1:)'
+reset_on_push: true
+reviewers:
+    required: 1
+    members:
+        - dbmurphy
+        - timvaillancourt
