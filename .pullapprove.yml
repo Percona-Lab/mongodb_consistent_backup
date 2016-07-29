@@ -1,8 +1,11 @@
 approve_by_comment: true
 approve_regex: '^(Approved|:\+1:)'
-reset_on_push: true
+reject_regex: ^Rejected
+reset_on_push: false
 reviewers:
+    name: pullapprove
     required: 1
     members:
         - dbmurphy
         - timvaillancourt
+        - vadimtk
