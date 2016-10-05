@@ -19,7 +19,7 @@ if [ -z "$python_bin" ]; then
 	if [[ "`uname`" =~ "Darwin" ]]; then
 		python_bin=$(which python)
 	else
-		python_bin=$(whereis -b python | tr ' ' '\n' | egrep "/python([0-9].[0-9])?$" | head -1)
+		python_bin=$(whereis -b python | tr ' ' '\n' | egrep "/python(2\.7)?$" | head -1)
 	fi
 fi
 if [ -z "$python_bin" ]; then
