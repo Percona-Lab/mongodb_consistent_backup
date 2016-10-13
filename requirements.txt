@@ -1,7 +1,8 @@
 multiprocessing
 Fabric
-pymongo
+pymongo>=3.2
 pynsca
 PyYAML
 boto
 filechunkio
+yconf>=0.3.3
