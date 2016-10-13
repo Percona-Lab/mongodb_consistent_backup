@@ -11,7 +11,7 @@ git_commit  = 'GIT_COMMIT_HASH'
 
 class PrintVersions(Action):
 	def __init__(self, option_strings, dest, nargs=None, **kwargs):
-		super(PrintVersions, self).__init__(option_strings=option_strings, dest=dest, nargs=0)
+		super(PrintVersions, self).__init__(option_strings=option_strings, dest=dest, nargs=0, **kwargs)
 
 	def __call__(self, parser, namespace, values, option_string=None):
 		print "mongodb_consistent_backup version: %s, git commit hash: %s" % (__version__, git_commit)
@@ -34,7 +34,7 @@ class PrintVersions(Action):
 class ConfigParser(BaseConfiguration):
 	def makeParser(self):
 		parser = super(ConfigParser, self).makeParser()
-		parser.add_argument("-V", "-version", dest="print_version", help="Print version info and exit", default=False, type=bool, action=PrintVersions, test='123132')
+		parser.add_argument("-V", "-version", dest="print_version", help="Print version info and exit", default=False, type=bool, action=PrintVersions)
 		parser.add_argument("-v", "-verbose", dest="verbose", help="Verbose output", default=False, action="store_true")
 		parser.add_argument("-n", "-name", dest="name", help="Name of the backup set (required)", required=True, type=str)
 		parser.add_argument("-l", "-location", dest="location", help="Base path to store the backup data (required)", required=True, type=str)
@@ -62,7 +62,6 @@ class Config(object):
 		if not self.cmdline:
 			self.cmdline = sys.argv[1:]
 		self._config = ConfigParser()
-		#self._config = ConfigParser(True, False)
 		self.parse()
 
 	def parse_children(self):
