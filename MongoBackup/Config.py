@@ -1,12 +1,40 @@
 import sys
+import pkgutil
 
+from argparse import Action
 from yconf import BaseConfiguration
+
+
+__version__ = '#.#.#'
+git_commit  = 'GIT_COMMIT_HASH'
+
+
+class PrintVersions(Action):
+	def __init__(self, option_strings, dest, nargs=None, **kwargs):
+		super(PrintVersions, self).__init__(option_strings=option_strings, dest=dest, nargs=0)
+
+	def __call__(self, parser, namespace, values, option_string=None):
+		print "mongodb_consistent_backup version: %s, git commit hash: %s" % (__version__, git_commit)
+
+		import platform
+		print "Python version: %s" % platform.python_version()
+		print "Python modules:"
+
+		import fabric.version
+		print "\t%s: %s" % ('Fabric', fabric.version.get_version())
+
+		modules = ['pymongo', 'multiprocessing', 'yaml', 'boto', 'filechunkio']
+		for module_name in modules:
+			module = __import__(module_name)
+			if hasattr(module, '__version__'):
+				print "\t%s: %s" % (module_name, module.__version__)
+		sys.exit(0)
 
 
 class ConfigParser(BaseConfiguration):
 	def makeParser(self):
 		parser = super(ConfigParser, self).makeParser()
-		parser.add_argument("-V", "-version", dest="print_version", help="Print version info and exit", default=False, action="store_true")
+		parser.add_argument("-V", "-version", dest="print_version", help="Print version info and exit", default=False, type=bool, action=PrintVersions, test='123132')
 		parser.add_argument("-v", "-verbose", dest="verbose", help="Verbose output", default=False, action="store_true")
 		parser.add_argument("-n", "-name", dest="name", help="Name of the backup set (required)", required=True, type=str)
 		parser.add_argument("-l", "-location", dest="location", help="Base path to store the backup data (required)", required=True, type=str)
@@ -29,16 +57,19 @@ class ConfigParser(BaseConfiguration):
 
 
 class Config(object):
-	def __init__(self, children, cmdline=None):
+	def __init__(self, cmdline=None):
 		self.cmdline = cmdline
 		if not self.cmdline:
 			self.cmdline = sys.argv[1:]
-		self._config = ConfigParser(True, False)
+		self._config = ConfigParser()
+		#self._config = ConfigParser(True, False)
 		self.parse()
 
-	def parse(self, children=[]):
-		for child in children:
-			child.parse_arguments(self._config)
+	def parse_children(self):
+		return	
+
+	def parse(self):
+		self.parse_children()
 		return self._config.parse(self.cmdline)
 
 	def __getattr__(self, key):
