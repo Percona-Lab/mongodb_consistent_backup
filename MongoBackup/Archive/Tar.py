@@ -19,7 +19,7 @@ def _reduce_method(m):
 pickle(MethodType, _reduce_method)
 
 
-class Archive:
+class ArchiveTar:
     def __init__(self, backup_dir, output_file, no_gzip=False, verbose=False, binary="tar"):
         self.backup_dir  = backup_dir
         self.output_file = output_file
@@ -67,7 +67,7 @@ class Archive:
                 raise Exception, "Output file %s already exists!" % self.output_file, None
 
 
-class Archiver:
+class ArchiverTar:
     def __init__(self, backup_base_dir, no_gzip=False, thread_count=None, verbose=False):
         self.backup_base_dir = backup_base_dir
         self.no_gzip         = no_gzip
@@ -94,7 +94,7 @@ class Archiver:
                     if self.no_gzip:
                         output_file = "%s.tar" % subdir_name
 
-                    self._pool.apply_async(Archive(subdir_name, output_file, self.no_gzip, self.verbose, self.binary).run)
+                    self._pool.apply_async(ArchiveTar(subdir_name, output_file, self.no_gzip, self.verbose, self.binary).run)
             except Exception, e:
                 self._pool.terminate()
                 logging.fatal("Could not create archiving thread! Error: %s" % e)

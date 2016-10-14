@@ -20,7 +20,7 @@ from Upload import UploadS3
 
 
 class Backup(object):
-    def __init__(self, options):
+    def __init__(self, config):
         # TODO-timv
         """
         We should move the layout to look like
@@ -38,6 +38,7 @@ class Backup(object):
             }
         Also all options should have defaults  for example program_name should always be something
         """
+        self.config = config
         self.program_name = None
         self.version = None
         self.git_commit = None
@@ -94,16 +95,16 @@ class Backup(object):
         self.mongodumper_summary = {}
 
         # Setup options are properties and connection to node
-        for option in vars(options):
-            setattr(self, option, getattr(options, option))
+        #for option in vars(config):
+        #    setattr(self, option, getattr(options, option))
 
         # Check for required fields:
-        required = ['program_name', 'version', 'git_commit', 'backup_name', 'backup_binary', 'backup_location'] 
-        for field in required:
-            try:
-                getattr(self, field)
-            except Exception:
-                raise Exception, 'Field: %s is required by %s!' % (field, __name__), None
+        #required = ['program_name', 'version', 'git_commit', 'backup_name', 'backup_binary', 'backup_location'] 
+        #for field in required:
+        #    try:
+        #        getattr(self, field)
+        #    except Exception:
+        #        raise Exception, 'Field: %s is required by %s!' % (field, __name__), None
 
         # Setup signal handler:
         signal(SIGINT, self.cleanup_and_exit)
