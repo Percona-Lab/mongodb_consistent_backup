@@ -43,13 +43,13 @@ class Backup(object):
         self.sharding = None
         self.replset  = None
         self.replset_sharded = None
-	self.notify = None
+        self.notify = None
         self.mongodumper = None
         self.oplogtailer = None
         self.oplog_resolver = None
         self.backup_duration = None
         self.end_time = None
-	self.uploader = None
+        self.uploader = None
         self._lock = None
         self.start_time = time()
         self.oplog_threads = []
@@ -105,9 +105,9 @@ class Backup(object):
 
         # TODO Move to notifier module called NSCA
         # Setup the notifier:
-	if self.config.notify.method == "none":
+        if self.config.notify.method == "none":
             logger.info("Notifying disabled! Skipping.")
-	#elif self.config.notify.method == "nsca":
+        #elif self.config.notify.method == "nsca":
         #    if self.config.notify.nsca.server and self.config.notify.nsca.check_name:
         #        try:
         #            self.notify = NotifyNSCA(
@@ -328,9 +328,9 @@ class Backup(object):
         self.backup_duration = self.end_time - self.start_time
 
         # uploader
-	if self.config.upload.method == "none":
-	    logging.info("Uploading disabled! Skipping")
-	if self.config.upload.method == "s3" and self.config.upload.s3.bucket_name and self.config.upload.s3.bucket_prefix and self.config.upload.s3.access_key and self.config.upload.s3.secret_key:
+        if self.config.upload.method == "none":
+            logging.info("Uploading disabled! Skipping")
+        if self.config.upload.method == "s3" and self.config.upload.s3.bucket_name and self.config.upload.s3.bucket_prefix and self.config.upload.s3.access_key and self.config.upload.s3.secret_key:
             # AWS S3 secure multipart uploader
             try:
                 self.uploader = UploadS3(
@@ -352,7 +352,7 @@ class Backup(object):
         # send notifications of backup state
         if self.config.notify.method == "none":
             logging.info("Notifying disabled! Skipping")
-	#elif self.config.notify.method == "nsca":
+        #elif self.config.notify.method == "nsca":
         #    try:
         #        self.notify.notify(self.notify.success, "%s: backup '%s' succeeded in %s secs" % (
         #            self.program_name,
