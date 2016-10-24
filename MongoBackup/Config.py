@@ -51,25 +51,28 @@ class ConfigParser(BaseConfiguration):
 		parser.add_argument("-sharding.balancer_wait_secs", dest="sharding.balancer_wait_secs", help="Maximum time to wait for balancer to stop, in seconds (default: 300)", default=300, type=int)
 		parser.add_argument("-sharding.balancer_ping_secs", dest="sharding.balancer_ping_secs", help="Interval to check balancer state, in seconds (default: 3)", default=3, type=int)
 
-		children = ['Archive','Notify','Upload']
-		for child in children:
-			try:
-				child_mod = __import__(child)
-				op = getattr(child_mod, 'config', None)
-				if callable(op):
-					parser = child_mod.config(parser)
-			except Exception, e:
-				print 'Error parsing configuration for MongoBackup.%s: "%s"' % e
-
+#		children = ['MongoBackup.Archive','MongoBackup.Notify','MongoBackup.Upload']
+#		for child in children:
+#			try:
+#				child_mod = __import__(child)
+#				op = getattr(child_mod, 'config', None)
+#				if callable(op):
+#					parser = child_mod.config(parser)
+#			except Exception, e:
+#				print 'ERROR: cannot parse configuration for %s: "%s"' % (child, e)
+#
 		return parser
 
 
 class Config(object):
-	def __init__(self, cmdline=None):
+	def __init__(self, cmdline=None, **args):
 		self.cmdline = cmdline
 		if not self.cmdline:
 			self.cmdline = sys.argv[1:]
 		self._config = ConfigParser()
+		for child in args['children']:
+			print child
+			print child.config(self._config)
 		self.parse()
 
 		self.version    = __version__

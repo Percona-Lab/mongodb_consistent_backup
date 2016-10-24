@@ -11,6 +11,7 @@ setup(
     url='https://github.com/percona/MongoToolsAndSnippets/rdba/mongo_backup',
     packages=[
         'MongoBackup',
+        'MongoBackup.Archive',
         'MongoBackup.Common',
         'MongoBackup.Methods',
         'MongoBackup.Oplog',

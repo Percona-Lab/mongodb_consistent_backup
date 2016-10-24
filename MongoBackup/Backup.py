@@ -8,7 +8,7 @@ from multiprocessing import current_process
 from signal import signal, SIGINT, SIGTERM
 from time import time
 
-from Archiver import Archiver
+from Archive import ArchiveTar
 from Common import DB, Lock
 from Methods import Dumper
 from Notify import NotifyNSCA
@@ -357,7 +357,7 @@ class Backup(object):
             logging.warning("Archiving disabled! Skipping")
         else:
             try:
-                self.archiver = Archiver(self.backup_root_directory, self.no_archiver_gzip, self.archiver_threads, self.verbose)
+                self.archiver = ArchiverTar(self.backup_root_directory, self.no_archiver_gzip, self.archiver_threads, self.verbose)
                 self.archiver.run()
             except Exception, e:
                 self.exception("Problem performing archiving! Error: %s" % e)
