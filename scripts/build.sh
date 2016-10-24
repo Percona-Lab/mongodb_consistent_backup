@@ -65,7 +65,7 @@ if [ -d ${srcdir} ]; then
 		else
 			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/setup.py
 			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/${mod_name}/__init__.py
-			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/${mod_name}/Config.py
+			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/${mod_name}/Common/Config.py
 		fi
 	else
 		echo "Cannot find version file $version_file!"
@@ -77,7 +77,7 @@ if [ -d ${srcdir} ]; then
 		echo "Warning: cannot find git commit hash!"
 	else
 		sed -i -e s@GIT_COMMIT_HASH@${git_commit}@g ${builddir}/${mod_name}/__init__.py
-		sed -i -e s@GIT_COMMIT_HASH@${git_commit}@g ${builddir}/${mod_name}/Config.py
+		sed -i -e s@GIT_COMMIT_HASH@${git_commit}@g ${builddir}/${mod_name}/Common/Config.py
 	fi
 
 	${python_bin} ${virtualenv_bin} -p ${python_bin} ${venvdir}

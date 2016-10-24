@@ -14,6 +14,7 @@ def run():
     try:
         config = Config(submodules=[
 		Archive,
+		Methods,
 		Notify,
 		Oplog,
 		Replication,
