@@ -1,8 +1,8 @@
 import logging
 
-from Common import DB
+from MongoBackup.Common import DB
+from MongoBackup.Sharding import Sharding
 from Replset import Replset
-from Sharding import Sharding
 
 
 class ReplsetSharded:

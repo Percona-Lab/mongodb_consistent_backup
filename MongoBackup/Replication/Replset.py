@@ -2,7 +2,7 @@ import logging
 
 from math import ceil
 
-from Common import DB
+from MongoBackup.Common import DB
 
 
 class Replset:

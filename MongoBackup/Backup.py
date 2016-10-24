@@ -13,8 +13,7 @@ from Common import DB, Lock
 from Methods import Dumper
 from Notify import NotifyNSCA
 from Oplog import OplogTailer, OplogResolver
-from Replset import Replset
-from ReplsetSharded import ReplsetSharded
+from Replication import Replset, ReplsetSharded
 from Sharding import Sharding
 from Upload import UploadS3
 
@@ -112,8 +111,8 @@ class Backup(object):
 
         # TODO Move to function
         # Set default lock file:
-        if not self.lock_file:
-            self.lock_file = '/tmp/%s.lock' % self.program_name
+        if not self.config.lockfile:
+            self.config.lockfile = '/tmp/%s.lock' % self.program_name
 
         # TODO Move to function
         # Setup backup dir name:

@@ -3,7 +3,7 @@ import logging
 from time import sleep
 
 from Common import DB
-from Replset import Replset
+from MongoBackup.Replication import Replset
 
 
 class Sharding:

@@ -2,7 +2,7 @@ import os
 import sys
 
 from Backup import Backup
-from Config import Config
+from Common import Config
 
 
 __version__ = '#.#.#'
@@ -15,6 +15,7 @@ def run():
         config = Config(submodules=[
 		Archive,
 		Notify,
+		Replication,
 		Upload
 	])
     except Exception, e:

@@ -44,8 +44,6 @@ class ConfigParser(BaseConfiguration):
 		parser.add_argument("-a", "-authdb", dest="authdb", help="MongoDB Auth Database (default: admin)", default='admin', type=str)
 		parser.add_argument("-lockfile", dest="lockfile", help="Location of lock file (default: /tmp/mongodb_consistent_backup.lock)", default='/tmp/mongodb_consistent_backup.lock', type=str)
 		parser.add_argument("-backup.method", dest="backup.method", help="Backup method type (default: mongodump)", default='mongodump', choices=['mongodump'])
-		parser.add_argument("-replication.max_lag_secs", dest="replication.max_lag_secs", help="Maximum replication lag of chosen backup replica(s), in seconds (default: 5)", default=5, type=int)
-		parser.add_argument("-replication.use_hidden", dest="replication.use_hidden", help="Use hidden secondary/replica members only for backup (default: false)", default=False, action="store_true")
 		parser.add_argument("-resolver.threads", dest="resolver.threads", help="Number of threads to use during resolver step (default: 1-per-CPU)", default=0, type=int)
 		parser.add_argument("-sharding.balancer_wait_secs", dest="sharding.balancer_wait_secs", help="Maximum time to wait for balancer to stop, in seconds (default: 300)", default=300, type=int)
 		parser.add_argument("-sharding.balancer_ping_secs", dest="sharding.balancer_ping_secs", help="Interval to check balancer state, in seconds (default: 3)", default=3, type=int)

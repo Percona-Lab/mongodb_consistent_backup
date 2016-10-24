@@ -16,5 +16,6 @@ setup(
         'MongoBackup.Methods',
         'MongoBackup.Oplog',
         'MongoBackup.Notify',
+        'MongoBackup.Replication',
         'MongoBackup.Upload'
     ])
