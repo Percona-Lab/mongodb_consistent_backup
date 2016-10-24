@@ -15,6 +15,7 @@ def run():
         config = Config(submodules=[
 		Archive,
 		Notify,
+		Oplog,
 		Replication,
 		Upload
 	])
