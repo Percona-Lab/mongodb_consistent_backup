@@ -6,5 +6,5 @@ from Tailer import OplogTailer
 
 
 def config(parser):
-	parser.add_argument("-oplog.resolver.threads", dest="oplog.resolver.threads", help="Number of threads to use during resolver step (default: 1-per-CPU)", default=0, type=int)
+	parser.add_argument("-oplog.resolver_threads", dest="oplog.resolver_threads", help="Number of threads to use during resolver step (default: 1-per-CPU)", default=0, type=int)
 	return parser
