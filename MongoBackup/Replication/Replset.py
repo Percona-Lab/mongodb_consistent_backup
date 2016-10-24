@@ -6,12 +6,14 @@ from MongoBackup.Common import DB
 
 
 class Replset:
-    def __init__(self, db, user=None, password=None, authdb='admin', max_lag_secs=5):
+    def __init__(self, db, user=None, password=None, authdb='admin', max_lag_secs=5, min_priority=0, max_priority=1000):
         self.db           = db
         self.user         = user
         self.password     = password
         self.authdb       = authdb
         self.max_lag_secs = max_lag_secs
+        self.min_priority = min_priority
+        self.max_priority = max_priority
 
         self.rs_config = None
         self.rs_status = None
@@ -88,6 +90,7 @@ class Replset:
                 score_scale = 100 / score
                 log_data    = {}
 
+                priority = 0
                 hidden_weight = 0.20
                 for member_config in rs_config['members']:
                     if member_config['host'] == member['name']:
@@ -95,29 +98,33 @@ class Replset:
                             score += (score * hidden_weight)
                             log_data['hidden'] = True
                         if 'priority' in member_config:
-                            log_data['priority'] = int(member_config['priority'])
+                            priority = int(member_config['priority'])
+                            log_data['priority'] = priority
                             if member_config['priority'] > 0:
-                                score = score - member_config['priority']
+                                score = score - priority
                         break
 
                 optime_ts = member['optime']
                 if isinstance(member['optime'], dict) and 'ts' in member['optime']:
                     optime_ts = member['optime']['ts']
 
-                rep_lag = (self.primary_optime().time - optime_ts.time)
-                score = ceil((score - rep_lag) * score_scale)
-                if rep_lag < self.max_lag_secs:
-                    if self.secondary is None or score > self.secondary['score']:
-                        self.secondary = {
-                            'replSet': rs_name,
-                            'count': 1 if self.secondary is None else self.secondary['count'] + 1,
-                            'host': member['name'],
-                            'optime': optime_ts,
-                            'score': score
-                        }
-                    log_msg = "Found SECONDARY %s/%s" % (rs_name, member['name'])
+                if priority < self.min_priority or priority > self.max_priority:
+                    log_msg = "Found SECONDARY %s/%s with out-of-bounds priority! Skipping" % (rs_name, member['name'])
                 else:
-                    log_msg = "Found SECONDARY %s/%s with too-high replication lag! Skipping" % (rs_name, member['name'])
+                    rep_lag = (self.primary_optime().time - optime_ts.time)
+                    score = ceil((score - rep_lag) * score_scale)
+                    if rep_lag < self.max_lag_secs:
+                        if self.secondary is None or score > self.secondary['score']:
+                            self.secondary = {
+                                'replSet': rs_name,
+                                'count': 1 if self.secondary is None else self.secondary['count'] + 1,
+                                'host': member['name'],
+                                'optime': optime_ts,
+                                'score': score
+                            }
+                        log_msg = "Found SECONDARY %s/%s" % (rs_name, member['name'])
+                    else:
+                        log_msg = "Found SECONDARY %s/%s with too-high replication lag! Skipping" % (rs_name, member['name'])
 
                 if 'configsvr' in rs_status and rs_status['configsvr']:
                     log_data['configsvr'] = True

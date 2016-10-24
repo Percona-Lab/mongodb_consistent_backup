@@ -194,7 +194,9 @@ class Backup(object):
                     self.config.user,
                     self.config.password,
                     self.config.authdb,
-                    self.config.replication.max_lag_secs
+                    self.config.replication.max_lag_secs,
+                    self.config.replication.min_priority,
+                    self.config.replication.max_priority
                 )
                 secondary    = self.replset.find_secondary()
                 replset_name = secondary['replSet']
