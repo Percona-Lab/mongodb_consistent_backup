@@ -1,5 +1,4 @@
 import sys
-import pkgutil
 
 from argparse import Action
 from yconf import BaseConfiguration
@@ -50,33 +49,25 @@ class ConfigParser(BaseConfiguration):
 		parser.add_argument("-resolver.threads", dest="resolver.threads", help="Number of threads to use during resolver step (default: 1-per-CPU)", default=0, type=int)
 		parser.add_argument("-sharding.balancer_wait_secs", dest="sharding.balancer_wait_secs", help="Maximum time to wait for balancer to stop, in seconds (default: 300)", default=300, type=int)
 		parser.add_argument("-sharding.balancer_ping_secs", dest="sharding.balancer_ping_secs", help="Interval to check balancer state, in seconds (default: 3)", default=3, type=int)
-
-#		children = ['MongoBackup.Archive','MongoBackup.Notify','MongoBackup.Upload']
-#		for child in children:
-#			try:
-#				child_mod = __import__(child)
-#				op = getattr(child_mod, 'config', None)
-#				if callable(op):
-#					parser = child_mod.config(parser)
-#			except Exception, e:
-#				print 'ERROR: cannot parse configuration for %s: "%s"' % (child, e)
-#
 		return parser
 
 
 class Config(object):
 	def __init__(self, cmdline=None, **args):
-		self.cmdline = cmdline
 		if not self.cmdline:
 			self.cmdline = sys.argv[1:]
 		self._config = ConfigParser()
-		for child in args['children']:
-			print child
-			print child.config(self._config)
+		self.parse_submodules(args)
 		self.parse()
 
 		self.version    = __version__
 		self.git_commit = git_commit
+
+	def parse_submodules(self, args):
+		if 'submodules' in args:
+			parser = self._config.parser
+			for submodule in args['submodules']:
+				submodule.config(parser)
 
 	def parse(self):
 		return self._config.parse(self.cmdline)

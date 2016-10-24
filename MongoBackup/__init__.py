@@ -1,9 +1,6 @@
 import os
 import sys
 
-#from Archive import ArchiveTar
-#from Notify import NotifyNSCA
-#from Upload import Upload
 from Backup import Backup
 from Config import Config
 
@@ -15,7 +12,7 @@ git_commit  = 'GIT_COMMIT_HASH'
 # noinspection PyUnusedLocal
 def run():
     try:
-        config = Config(children=[
+        config = Config(submodules=[
 		Archive,
 		Notify,
 		Upload
