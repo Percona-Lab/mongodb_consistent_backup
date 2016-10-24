@@ -20,10 +20,10 @@ pickle(MethodType, _reduce_method)
 
 
 class ArchiveTar:
-    def __init__(self, backup_dir, output_file, no_gzip=False, verbose=False, binary="tar"):
+    def __init__(self, backup_dir, output_file, do_gzip=False, verbose=False, binary="tar"):
         self.backup_dir  = backup_dir
         self.output_file = output_file
-        self.no_gzip     = no_gzip
+        self.do_gzip     = do_gzip
         self.verbose     = verbose
         self.binary      = binary
 
@@ -47,11 +47,11 @@ class ArchiveTar:
                     backup_base_name = os.path.basename(self.backup_dir)
 
                     log_msg   = "Archiving and compressing directory: %s" % self.backup_dir
-                    cmd_flags = ["-C", backup_base_dir, "-czf", self.output_file, "--remove-files", backup_base_name]
+                    cmd_flags = ["-C", backup_base_dir, "-cf", self.output_file, "--remove-files", backup_base_name]
 
-                    if self.no_gzip:
+                    if self.do_gzip:
                         log_msg   = "Archiving directory: %s" % self.backup_dir
-                        cmd_flags = ["-C", backup_base_dir, "-cf", self.output_file, "--remove-files", backup_base_name]
+                        cmd_flags = ["-C", backup_base_dir, "-czf", self.output_file, "--remove-files", backup_base_name]
 
                     try:
                         logging.info(log_msg)
@@ -68,14 +68,14 @@ class ArchiveTar:
 
 
 class ArchiverTar:
-    def __init__(self, backup_base_dir, no_gzip=False, thread_count=None, verbose=False):
+    def __init__(self, backup_base_dir, compression, thread_count=None, verbose=False):
         self.backup_base_dir = backup_base_dir
-        self.no_gzip         = no_gzip
+        self.compression     = compression
         self.thread_count    = thread_count
         self.verbose         = verbose
         self.binary          = "tar"
 
-        if self.thread_count is None:
+        if self.thread_count is None or self.thread_count == 0:
             self.thread_count = cpu_count()
 
         try:
@@ -90,11 +90,14 @@ class ArchiverTar:
             try:
                 for backup_dir in os.listdir(self.backup_base_dir):
                     subdir_name = "%s/%s" % (self.backup_base_dir, backup_dir)
-                    output_file = "%s.tgz" % subdir_name
-                    if self.no_gzip:
-                        output_file = "%s.tar" % subdir_name
+                    output_file = "%s.tar" % subdir_name
 
-                    self._pool.apply_async(ArchiveTar(subdir_name, output_file, self.no_gzip, self.verbose, self.binary).run)
+                    do_gzip = False
+                    if self.compression == "gzip":
+                        output_file = "%s.tgz" % subdir_name
+                        do_gzip = True
+
+                    self._pool.apply_async(ArchiveTar(subdir_name, output_file, do_gzip, self.verbose, self.binary).run)
             except Exception, e:
                 self._pool.terminate()
                 logging.fatal("Could not create archiving thread! Error: %s" % e)

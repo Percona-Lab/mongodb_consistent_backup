@@ -8,7 +8,7 @@ from multiprocessing import current_process
 from signal import signal, SIGINT, SIGTERM
 from time import time
 
-from Archive import ArchiveTar
+from Archive import ArchiverTar
 from Common import DB, Lock
 from Methods import Dumper
 from Notify import NotifyNSCA
@@ -39,50 +39,17 @@ class Backup(object):
         """
         self.config = config
         self.program_name = "mongodb_consistent_backup"
-#        self.host = 'localhost'
-#        self.port = 27017
-#        self.authdb = 'admin'
-#        self.password = None
-#        self.user = None
-#        self.connection = None
-#        self.max_repl_lag_secs = 5
-#        self.backup_name = None
-#        self.backup_binary = None
-#        self.backup_location = None
-#        self.dump_gzip = False
-#        self.balancer_wait_secs = 300
-#        self.balancer_sleep = 5 
-#        self.archiver_threads = 1
-#        self.resolver_threads = 1
-#        self.notify_nsca = None
-#        self.nsca_server = None
-#        self.nsca_password = None
-#        self.nsca_check_name = None
-#        self.nsca_check_host = None
-#        self.no_archiver = False
-#        self.no_archiver_gzip = False
-#        self.no_oplog_tailer = False
-#        self.verbose = False
-#        self.oplog_tail_extra = 5
-#        self.uploader_s3 = None
-#        self.upload_s3_url = None
-#        self.upload_s3_threads = None
-#        self.upload_s3_bucket_name = None
-#        self.upload_s3_bucket_prefix = None
-#        self.upload_s3_access_key = None
-#        self.upload_s3_secret_key = None
-#        self.upload_s3_remove_uploaded = None
-#        self.upload_s3_chunk_size_mb = None
-
         self.archiver = None
         self.sharding = None
         self.replset  = None
         self.replset_sharded = None
+	self.notify = None
         self.mongodumper = None
         self.oplogtailer = None
         self.oplog_resolver = None
         self.backup_duration = None
         self.end_time = None
+	self.uploader = None
         self._lock = None
         self.start_time = time()
         self.oplog_threads = []
@@ -138,16 +105,19 @@ class Backup(object):
 
         # TODO Move to notifier module called NSCA
         # Setup the notifier:
-        #try:
-        #    if self.nsca_server and self.nsca_check_name:
-        #        self.notify_nsca = NotifyNSCA(
-        #            self.nsca_server,
-        #            self.nsca_check_name,
-        #            self.nsca_check_host,
-        #            self.nsca_password
-        #        )
-        #except Exception, e:
-        #    raise e
+	if self.config.notify.method == "none":
+            logger.info("Notifying disabled! Skipping.")
+	#elif self.config.notify.method == "nsca":
+        #    if self.config.notify.nsca.server and self.config.notify.nsca.check_name:
+        #        try:
+        #            self.notify = NotifyNSCA(
+        #                self.config.notify.nsca.server,
+        #                self.config.notify.nsca.check_name,
+        #                self.config.notify.nsca.check_host,
+        #                self.config.notify.nsca.password
+        #            )
+        #        except Exception, e:
+        #            raise e
 
 
     # TODO Rename class to be more exact as this assumes something went wrong
@@ -158,17 +128,17 @@ class Backup(object):
 
             # TODO Rename the mongodumper module to just "backup" then have submodule in it for the backup type
             # TODO Move submodules into self that populates as used?
-            submodules = ['replset', 'sharding', 'mongodumper', 'oplogtailer', 'archiver', 'uploader_s3']
+            submodules = ['replset', 'sharding', 'mongodumper', 'oplogtailer', 'archiver', 'uploader']
             for submodule_name in submodules:
                 submodule = getattr(self, submodule_name)
                 if submodule:
                     submodule.close()
 
             # TODO Pass to notifier  Notifier(level,mesg) and it will pick the medium
-            if self.notify_nsca:
-                self.notify_nsca.notify(self.notify_nsca.critical, "%s: backup '%s' failed!" % (
+            if self.notify:
+                self.notify.notify(self.notify.critical, "%s: backup '%s' failed!" % (
                     self.program_name,
-                    self.backup_name
+                    self.config.name
                 ))
 
             if self.db:
@@ -338,11 +308,16 @@ class Backup(object):
                 self.oplog_resolver.run()
 
         # archive (and optionally compress) backup directories to archive files (threaded)
-        if self.no_archiver:
+        if self.config.archive.method == "none":
             logging.warning("Archiving disabled! Skipping")
-        else:
+        elif self.config.archive.method == "tar":
             try:
-                self.archiver = ArchiverTar(self.backup_root_directory, self.no_archiver_gzip, self.archiver_threads, self.verbose)
+                self.archiver = ArchiverTar(
+                    self.backup_root_directory, 
+                    self.config.archive.compression,
+                    self.config.archive.threads,
+                    self.config.verbose
+                )
                 self.archiver.run()
             except Exception, e:
                 self.exception("Problem performing archiving! Error: %s" % e)
@@ -350,35 +325,40 @@ class Backup(object):
         self.end_time = time()
         self.backup_duration = self.end_time - self.start_time
 
-        # AWS S3 secure multipart uploader (optional)
-        if self.upload_s3_bucket_name and self.upload_s3_bucket_prefix and self.upload_s3_access_key and self.upload_s3_secret_key:
+        # uploader
+	if self.config.upload.method == "none":
+	    logging.info("Uploading disabled! Skipping")
+	if self.config.upload.method == "s3" and self.config.upload.s3.bucket_name and self.config.upload.s3.bucket_prefix and self.config.upload.s3.access_key and self.config.upload.s3.secret_key:
+            # AWS S3 secure multipart uploader
             try:
-                self.uploader_s3 = UploadS3(
+                self.uploader = UploadS3(
                     self.backup_root_directory,
                     self.backup_root_subdirectory,
-                    self.upload_s3_bucket_name,
-                    self.upload_s3_bucket_prefix,
-                    self.upload_s3_access_key,
-                    self.upload_s3_secret_key,
-                    self.upload_s3_remove_uploaded,
-                    self.upload_s3_url,
-                    self.upload_s3_threads,
-                    self.upload_s3_chunk_size_mb
+                    self.config.upload.s3.bucket_name,
+                    self.config.upload.s3.bucket_prefix,
+                    self.config.upload.s3.access_key,
+                    self.config.upload.s3.secret_key,
+                    self.config.upload.s3.remove_uploaded,
+                    self.config.upload.s3.url,
+                    self.config.upload.s3.threads,
+                    self.config.upload.s3.chunk_size_mb
                 )
-                self.uploader_s3.run()
+                self.uploader.run()
             except Exception, e:
                 self.exception("Problem performing AWS S3 multipart upload! Error: %s" % e)
 
         # send notifications of backup state
-        if self.notify_nsca:
-            try:
-                self.notify_nsca.notify(self.notify_nsca.success, "%s: backup '%s' succeeded in %s secs" % (
-                    self.program_name,
-                    self.backup_name,
-                    self.backup_duration
-                ))
-            except Exception, e:
-                self.exception("Problem running NSCA notifier! Error: %s" % e)
+        if self.config.notify.method == "none":
+            logging.info("Notifying disabled! Skipping")
+	#elif self.config.notify.method == "nsca":
+        #    try:
+        #        self.notify.notify(self.notify.success, "%s: backup '%s' succeeded in %s secs" % (
+        #            self.program_name,
+        #            self.config.name,
+        #            self.backup_duration
+        #        ))
+        #    except Exception, e:
+        #        self.exception("Problem running NSCA notifier! Error: %s" % e)
 
         if self.db:
             self.db.close()
