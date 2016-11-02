@@ -112,6 +112,8 @@ class Sharding:
             if config_string:
                 # noinspection PyBroadException
                 try:
+                    if "/" in config_string:
+                        config_replset, config_string = config_string.split("/")
                     return config_string.split(',')
                 except Exception:
                     return [config_string]
