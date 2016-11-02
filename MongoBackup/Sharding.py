@@ -114,10 +114,7 @@ class Sharding:
                 try:
                     if "/" in config_string:
                         config_replset, config_string = config_string.split("/")
-                    config_hosts = config_string.split(',')
-                    for config_host in config_hosts:
-                        validate_hostname(hostname)
-                    return config_hosts
+                    return config_string.split(',')
                 except Exception:
                     validate_hostname(config_string) 
                     return [config_string]
@@ -132,6 +129,7 @@ class Sharding:
             configdb_hosts = self.get_configdb_hosts()
             try:
                 config_host, config_port = configdb_hosts[0].split(":")
+                validate_hostname(config_host)
                 logging.info("Found sharding config server: %s:%s" % (config_host, config_port))
 
                 self.config_db = DB(config_host, config_port, self.user, self.password, self.authdb)
