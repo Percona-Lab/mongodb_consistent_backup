@@ -57,28 +57,9 @@ class Backup(object):
         self.secondaries   = {}
         self.mongodumper_summary = {}
 
-        # Setup signal handler:
-        signal(SIGINT, self.cleanup_and_exit)
-        signal(SIGTERM, self.cleanup_and_exit)
-
-        # TODO Move to function
-        # Set default lock file:
-        if not self.config.lockfile:
-            self.config.lockfile = '/tmp/%s.lock' % self.program_name
-
-        # TODO Move to function
-        # Setup backup dir name:
-        time_string = datetime.now().strftime("%Y%m%d_%H%M")
-        self.backup_root_subdirectory = "%s/%s" % (self.config.name, time_string)
-        self.backup_root_directory = "%s/%s" % (self.config.location, self.backup_root_subdirectory)
-
-        # TODO Move below to actual functions called by a master run function
-        # Setup logging
-        self.log_level = logging.INFO
-        if self.config.verbose:
-            self.log_level = logging.DEBUG
-        logging.basicConfig(level=self.log_level,
-                            format='[%(asctime)s] [%(levelname)s] [%(processName)s] [%(module)s:%(funcName)s:%(lineno)d] %(message)s')
+        self.setup_signal_handlers()
+        self.setup_logger()
+        self.set_backup_dirs()
 
         # TODO Move any reference to the actual dumping into dumper classes
         # Check mongodump binary and set version + dump_gzip flag if 3.2+
@@ -119,6 +100,39 @@ class Backup(object):
         #        except Exception, e:
         #            raise e
 
+    def setup_logger(self):
+        self.log_level = logging.INFO
+        if self.config.verbose:
+            self.log_level = logging.DEBUG
+        logging.basicConfig(level=self.log_level,
+                            format='[%(asctime)s] [%(levelname)s] [%(processName)s] [%(module)s:%(funcName)s:%(lineno)d] %(message)s')
+
+    def setup_signal_handlers(self):
+        try:
+            signal(SIGINT, self.cleanup_and_exit)
+            signal(SIGTERM, self.cleanup_and_exit)
+        except Exception, e:
+            logger.fatal("Cannot setup signal handlers, error: %s" % e)
+            sys.exit(1)
+
+    def set_backup_dirs(self):
+        self.backup_time = datetime.now().strftime("%Y%m%d_%H%M")
+        self.backup_root_subdirectory = "%s/%s" % (self.config.name, self.backup_time)
+        self.backup_root_directory = "%s/%s" % (self.config.location, self.backup_root_subdirectory)
+
+    def get_lock(self):
+        # noinspection PyBroadException
+        try:
+            if not self.config.lockfile:
+                self.config.lockfile = '/tmp/%s.lock' % self.program_name
+            self._lock = Lock(self.config.lockfile)
+        except Exception:
+            logging.fatal("Could not acquire lock: '%s'! Is another %s process running? Exiting" % (self.config.lockfile, self.program_name))
+            self.cleanup_and_exit(None, None)
+
+    def release_lock(self):
+        if self._lock:
+            self._lock.release()
 
     # TODO Rename class to be more exact as this assumes something went wrong
     # noinspection PyUnusedLocal
@@ -144,8 +158,7 @@ class Backup(object):
             if self.db:
                 self.db.close()
 
-            if self._lock:
-                self._lock.release()
+            self.release_lock()
 
             logging.info("Cleanup complete. Exiting")
 
@@ -175,12 +188,7 @@ class Backup(object):
         """
         logging.info("Starting %s version %s (git commit hash: %s)" % (self.program_name, self.config.version, self.config.git_commit))
 
-        # noinspection PyBroadException
-        try:
-            self._lock = Lock(self.config.lockfile)
-        except Exception:
-            logging.fatal("Could not acquire lock: '%s'! Is another %s process running? Exiting" % (self.config.lockfile, self.program_name))
-            sys.exit(1)
+        self.get_lock()
 
         if not self.is_sharded:
             logging.info("Running backup of %s:%s in replset mode" % (self.config.host, self.config.port))
@@ -344,6 +352,6 @@ class Backup(object):
         if self.db:
             self.db.close()
 
-        self._lock.release()
+        self.release_lock()
 
         logging.info("Backup completed in %s sec" % self.backup_duration)
