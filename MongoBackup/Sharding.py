@@ -116,7 +116,6 @@ class Sharding:
                         config_replset, config_string = config_string.split("/")
                     return config_string.split(',')
                 except Exception:
-                    validate_hostname(config_string) 
                     return [config_string]
             else:
                 logging.fatal("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))
