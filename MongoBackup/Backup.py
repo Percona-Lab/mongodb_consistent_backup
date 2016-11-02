@@ -193,7 +193,7 @@ class Backup(object):
         if not self.is_sharded:
             logging.info("Running backup of %s:%s in replset mode" % (self.config.host, self.config.port))
 
-            self.archiver_threads = 1
+            self.config.archive.threads = 1
 
             # get shard secondary
             try:
