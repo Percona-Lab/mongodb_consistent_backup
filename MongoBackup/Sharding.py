@@ -2,7 +2,7 @@ import logging
 
 from time import sleep
 
-from Common import DB
+from Common import DB, validate_hostname
 from Replset import Replset
 
 
@@ -114,8 +114,12 @@ class Sharding:
                 try:
                     if "/" in config_string:
                         config_replset, config_string = config_string.split("/")
-                    return config_string.split(',')
+                    config_hosts = config_string.split(',')
+                    for config_host in config_hosts:
+                        validate_hostname(hostname)
+                    return config_hosts
                 except Exception:
+                    validate_hostname(config_string) 
                     return [config_string]
             else:
                 logging.fatal("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))

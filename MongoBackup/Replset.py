@@ -2,7 +2,7 @@ import logging
 
 from math import ceil
 
-from Common import DB
+from Common import DB, validate_hostname
 
 
 class Replset:
@@ -66,6 +66,7 @@ class Replset:
                     'host': member['name'],
                     'optime': optime_ts
                 }
+                validate_hostname(self.primary['host'])
                 logging.info("Found PRIMARY: %s/%s with optime %s" % (
                     rs_name,
                     member['name'],
@@ -115,6 +116,7 @@ class Replset:
                             'optime': optime_ts,
                             'score': score
                         }
+                        validate_hostname(self.secondary['host'])
                     log_msg = "Found SECONDARY %s/%s" % (rs_name, member['name'])
                 else:
                     log_msg = "Found SECONDARY %s/%s with too-high replication lag! Skipping" % (rs_name, member['name'])
