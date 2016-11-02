@@ -6,13 +6,14 @@ from Replset import Replset
 
 
 class ReplsetSharded:
-    def __init__(self, sharding, db, user=None, password=None, authdb='admin', max_lag_secs=5):
+    def __init__(self, config, sharding, db):
+        self.config       = config
         self.sharding     = sharding
         self.db           = db
-        self.user         = user
-        self.password     = password
-        self.authdb       = authdb
-        self.max_lag_secs = max_lag_secs
+        self.user         = self.config.user
+        self.password     = self.config.password
+        self.authdb       = self.config.authdb
+        self.max_lag_secs = self.config.replication.max_lag_secs
 
         self.replsets      = {} 
         self.replset_conns = {}
@@ -51,7 +52,7 @@ class ReplsetSharded:
             if force or not shard_name in self.replsets:
                 try:
                     rs_db = self.get_replset_connection(host, port)
-                    self.replsets[shard_name] = Replset(rs_db, self.user, self.password, self.authdb, self.max_lag_secs)
+                    self.replsets[shard_name] = Replset(rs_db, self.config)
                 except Exception, e:
                     logging.fatal("Could not get Replset class object for replset %s! Error: %s" % (shard_name, e))
                     raise e

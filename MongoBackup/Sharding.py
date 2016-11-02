@@ -7,13 +7,14 @@ from MongoBackup.Replication import Replset
 
 
 class Sharding:
-    def __init__(self, db, user=None, password=None, authdb='admin', balancer_wait_secs=300, balancer_sleep=5):
+    def __init__(self, config, db):
+        self.config             = config
         self.db                 = db
-        self.user               = user
-        self.password           = password
-        self.authdb             = authdb
-        self.balancer_wait_secs = balancer_wait_secs
-        self.balancer_sleep     = balancer_sleep
+        self.user               = self.config.user
+        self.password           = self.config.password
+        self.authdb             = self.config.authdb
+        self.balancer_wait_secs = self.config.sharding.balancer_wait_secs
+        self.balancer_sleep     = self.config.sharding.balancer_ping_secs
 
         self.config_server         = None
         self.config_db             = None

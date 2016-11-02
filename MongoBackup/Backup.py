@@ -190,13 +190,8 @@ class Backup(object):
             # get shard secondary
             try:
                 self.replset = Replset(
-                    self.db,
-                    self.config.user,
-                    self.config.password,
-                    self.config.authdb,
-                    self.config.replication.max_lag_secs,
-                    self.config.replication.min_priority,
-                    self.config.replication.max_priority
+                    self.config,
+                    self.db
                 )
                 secondary    = self.replset.find_secondary()
                 replset_name = secondary['replSet']
@@ -222,17 +217,13 @@ class Backup(object):
                 self.exception("Problem performing replset mongodump! Error: %s" % e)
 
         else:
-            logging.info("Running backup of %s:%s in sharded mode" % (self.host, self.port))
+            logging.info("Running backup of %s:%s in sharded mode" % (self.config.host, self.config.port))
 
             # connect to balancer and stop it
             try:
                 self.sharding = Sharding(
-                    self.db,
-                    self.user,
-                    self.password,
-                    self.authdb,
-                    self.balancer_wait_secs,
-                    self.balancer_sleep
+                    self.config,
+                    self.db
                 )
                 self.sharding.get_start_state()
             except Exception, e:
@@ -241,12 +232,9 @@ class Backup(object):
             # get shard secondaries
             try:
                 self.replset_sharded = ReplsetSharded(
+                    self.config,
                     self.sharding,
-                    self.db,
-                    self.user,
-                    self.password,
-                    self.authdb,
-                    self.max_repl_lag_secs
+                    self.db
                 )
                 self.secondaries = self.replset_sharded.find_secondaries()
             except Exception, e:
@@ -267,10 +255,10 @@ class Backup(object):
                         self.secondaries,
                         self.backup_name,
                         self.backup_root_directory,
-                        self.dump_gzip,
-                        self.user,
-                        self.password,
-                        self.authdb
+                        True,
+                        self.config.user,
+                        self.config.password,
+                        self.config.authdb
                     )
                     self.oplogtailer.run()
                 except Exception, e:
@@ -315,10 +303,8 @@ class Backup(object):
         elif self.config.archive.method == "tar":
             try:
                 self.archiver = ArchiverTar(
+                    self.config,
                     self.backup_root_directory, 
-                    self.config.archive.compression,
-                    self.config.archive.threads,
-                    self.config.verbose
                 )
                 self.archiver.run()
             except Exception, e:
@@ -334,16 +320,9 @@ class Backup(object):
             # AWS S3 secure multipart uploader
             try:
                 self.uploader = UploadS3(
+                    self.config,
                     self.backup_root_directory,
-                    self.backup_root_subdirectory,
-                    self.config.upload.s3.bucket_name,
-                    self.config.upload.s3.bucket_prefix,
-                    self.config.upload.s3.access_key,
-                    self.config.upload.s3.secret_key,
-                    self.config.upload.s3.remove_uploaded,
-                    self.config.upload.s3.url,
-                    self.config.upload.s3.threads,
-                    self.config.upload.s3.chunk_size_mb
+                    self.backup_root_subdirectory
                 )
                 self.uploader.run()
             except Exception, e:

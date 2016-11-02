@@ -6,14 +6,15 @@ from MongoBackup.Common import DB
 
 
 class Replset:
-    def __init__(self, db, user=None, password=None, authdb='admin', max_lag_secs=5, min_priority=0, max_priority=1000):
+    def __init__(self, config, db):
+        self.config       = config
         self.db           = db
-        self.user         = user
-        self.password     = password
-        self.authdb       = authdb
-        self.max_lag_secs = max_lag_secs
-        self.min_priority = min_priority
-        self.max_priority = max_priority
+        self.user         = self.config.user
+        self.password     = self.config.password
+        self.authdb       = self.config.authdb
+        self.max_lag_secs = self.config.replication.max_lag_secs
+        self.min_priority = self.config.replication.min_priority
+        self.max_priority = self.config.replication.max_priority
 
         self.rs_config = None
         self.rs_status = None

@@ -20,21 +20,17 @@ pickle(MethodType, _reduce_method)
 
 
 class UploadS3:
-    def __init__(self, source_dir, key_prefix, bucket_name, bucket_prefix, access_key, secret_key, remove_uploaded, s3_host,
-                 thread_count=4, chunk_size_mb=50, retries=5, s3_acl='private', secure=True):
+    def __init__(self, config, source_dir, key_prefix):
+        self.config          = config
         self.source_dir      = source_dir
         self.key_prefix      = key_prefix
-        self.bucket_name     = bucket_name
-        self.bucket_prefix   = bucket_prefix
-        self.access_key      = access_key
-        self.secret_key      = secret_key
-        self.remove_uploaded = remove_uploaded
-        self.s3_host         = s3_host
-        self.thread_count    = thread_count
-        self.chunk_size_mb   = chunk_size_mb
-        self.retries         = retries
-        self.s3_acl          = s3_acl
-        self.secure          = secure
+        self.bucket_name     = self.config.upload.s3.bucket_name
+        self.bucket_prefix   = self.config.upload.s3.bucket_prefix
+        self.access_key      = self.config.upload.s3.access_key
+        self.secret_key      = self.config.upload.s3.secret_key
+        self.remove_uploaded = self.config.upload.s3.remove_uploaded
+        self.thread_count    = self.config.upload.s3.threads
+        self.chunk_size_mb   = self.config.upload.s3.chunk_size_mb
         self.chunk_size      = self.chunk_size_mb * 1024 * 1024
 
         self._pool        = None

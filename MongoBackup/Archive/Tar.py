@@ -68,11 +68,12 @@ class ArchiveTar:
 
 
 class ArchiverTar:
-    def __init__(self, backup_base_dir, compression, thread_count=None, verbose=False):
+    def __init__(self, config, backup_base_dir):
+        self.config          = config
         self.backup_base_dir = backup_base_dir
-        self.compression     = compression
-        self.thread_count    = thread_count
-        self.verbose         = verbose
+        self.compression     = self.config.archive.compression
+        self.thread_count    = self.config.archive.threads
+        self.verbose         = self.config.archive.verbose
         self.binary          = "tar"
 
         if self.thread_count is None or self.thread_count == 0:
