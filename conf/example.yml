@@ -16,6 +16,16 @@ production:
     min_priority: 0
     max_priority: 1000
     use_hidden: false
+  sharding:
+    balancer:
+      wait_secs: 300
+      ping_secs: 3
+  oplog:
+    # resolver_threads: 4
+  archive:
+    method: tar
+    compression: gzip
+    # threads: 2
   notify:
     method: none
     #nsca:
@@ -23,10 +33,6 @@ production:
     #  password:
     #  check_host: 
     #  check_name: mongodb_consistent_backup
-  archive:
-    method: tar
-    compression: gzip
-    # threads: 2
   upload:
     method: none
     #s3:

@@ -13,8 +13,8 @@ class Sharding:
         self.user               = self.config.user
         self.password           = self.config.password
         self.authdb             = self.config.authdb
-        self.balancer_wait_secs = self.config.sharding.balancer_wait_secs
-        self.balancer_sleep     = self.config.sharding.balancer_ping_secs
+        self.balancer_wait_secs = self.config.sharding.balancer.wait_secs
+        self.balancer_sleep     = self.config.sharding.balancer.ping_secs
 
         self.config_server         = None
         self.config_db             = None

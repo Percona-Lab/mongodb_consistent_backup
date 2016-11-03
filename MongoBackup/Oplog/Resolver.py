@@ -25,7 +25,7 @@ class OplogResolver:
         self.tailed_oplogs = tailed_oplogs_summary
         self.backup_oplogs = backup_oplogs_summary
         self.dump_gzip     = dump_gzip
-        self.thread_count  = self.config.oplog.resolver_threads
+        self.thread_count  = self.config.oplog.resolver.threads
 
         self.end_ts = None
         self.delete_oplogs = {}
