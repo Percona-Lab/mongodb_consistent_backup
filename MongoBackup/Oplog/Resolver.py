@@ -20,16 +20,17 @@ pickle(MethodType, _reduce_method)
 
 
 class OplogResolver:
-    def __init__(self, tailed_oplogs_summary, backup_oplogs_summary, dump_gzip=False, thread_count=None):
+    def __init__(self, config, tailed_oplogs_summary, backup_oplogs_summary, dump_gzip=False):
+        self.config        = config
         self.tailed_oplogs = tailed_oplogs_summary
         self.backup_oplogs = backup_oplogs_summary
         self.dump_gzip     = dump_gzip
-        self.thread_count  = thread_count
+        self.thread_count  = self.config.oplog.resolver_threads
 
         self.end_ts = None
         self.delete_oplogs = {}
 
-        if self.thread_count is None:
+        if self.thread_count is None or self.thread_count == 0:
             self.thread_count = cpu_count() * 2
 
         try:

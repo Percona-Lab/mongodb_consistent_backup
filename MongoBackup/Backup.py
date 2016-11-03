@@ -63,6 +63,7 @@ class Backup(object):
 
         # TODO Move any reference to the actual dumping into dumper classes
         # Check mongodump binary and set version + dump_gzip flag if 3.2+
+        self.dump_gzip = False
         if os.path.isfile(self.config.method.mongodump.binary) and os.access(self.config.method.mongodump.binary, os.X_OK):
             with hide('running', 'warnings'), settings(warn_only=True):
                 self.mongodump_version = tuple(
@@ -78,7 +79,7 @@ class Backup(object):
         #TODO should this be in init or a sub-function?
         # Get a DB connection
         try:
-            validate_hostname(self.host)
+            validate_hostname(self.config.host)
             self.db         = DB(self.config.host, self.config.port, self.config.user, self.config.password, self.config.authdb)
             self.connection = self.db.connection()
             self.is_sharded = self.connection.is_mongos
@@ -211,15 +212,10 @@ class Backup(object):
 
             try:
                 self.mongodumper = Dumper(
+                    self.config,
                     self.secondaries,
                     self.backup_root_directory,
-                    self.config.method.mongodump.binary,
-                    self.config.method.mongodump.gzip,
-                    self.config.user,
-                    self.config.password,
-                    self.config.authdb,
-                    None,
-                    self.config.verbose
+                    self.dump_gzip
                 )
                 self.mongodumper.run()
             except Exception, e:
@@ -256,35 +252,28 @@ class Backup(object):
                 self.exception("Problem stopping the balancer! Error: %s" % e)
 
             # start the oplog tailer threads
-            if self.no_oplog_tailer:
-                logging.warning("Oplog tailing disabled! Skipping")
-            else:
-                try:
-                    self.oplogtailer = OplogTailer(
-                        self.secondaries,
-                        self.backup_name,
-                        self.backup_root_directory,
-                        True,
-                        self.config.user,
-                        self.config.password,
-                        self.config.authdb
-                    )
-                    self.oplogtailer.run()
-                except Exception, e:
-                    self.exception("Failed to start oplog tailing threads! Error: %s" % e)
+            #if self.no_oplog_tailer:
+            #    logging.warning("Oplog tailing disabled! Skipping")
+            #else:
+            try:
+                self.oplogtailer = OplogTailer(
+                    self.config,
+                    self.secondaries,
+                    self.backup_root_directory,
+                    self.dump_gzip
+                )
+                self.oplogtailer.run()
+            except Exception, e:
+                self.exception("Failed to start oplog tailing threads! Error: %s" % e)
 
             # start the mongodumper threads
             try:
                 self.mongodumper = Dumper(
+                    self.config,
                     self.secondaries, 
                     self.backup_root_directory,
-                    self.backup_binary,
                     self.dump_gzip,
-                    self.user,
-                    self.password,
-                    self.authdb,
-                    self.sharding.get_config_server(),
-                    self.verbose
+                    self.sharding.get_config_server()
                 )
                 self.mongodumper_summary = self.mongodumper.run()
             except Exception, e:
@@ -302,8 +291,7 @@ class Backup(object):
 
             # resolve/merge tailed oplog into mongodump oplog.bson to a consistent point for all shards
             if self.oplogtailer:
-                self.oplog_resolver = OplogResolver(self.oplog_summary, self.mongodumper_summary, self.dump_gzip,
-                                                    self.resolver_threads)
+                self.oplog_resolver = OplogResolver(self.config, self.oplog_summary, self.mongodumper_summary, self.dump_gzip)
                 self.oplog_resolver.run()
 
         # archive (and optionally compress) backup directories to archive files (threaded)

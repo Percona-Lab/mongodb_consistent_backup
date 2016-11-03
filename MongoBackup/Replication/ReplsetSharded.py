@@ -52,7 +52,7 @@ class ReplsetSharded:
             if force or not shard_name in self.replsets:
                 try:
                     rs_db = self.get_replset_connection(host, port)
-                    self.replsets[shard_name] = Replset(rs_db, self.config)
+                    self.replsets[shard_name] = Replset(self.config, rs_db)
                 except Exception, e:
                     logging.fatal("Could not get Replset class object for replset %s! Error: %s" % (shard_name, e))
                     raise e

@@ -9,17 +9,17 @@ from MongoBackup.Methods import Dump
 
 
 class Dumper:
-    def __init__(self, secondaries, base_dir, binary, dump_gzip=False, user=None, password=None,
-                 authdb='admin', config_server=None, verbose=False):
+    def __init__(self, config, secondaries, base_dir, dump_gzip=False, config_server=None):
+        self.config        = config
         self.secondaries   = secondaries
         self.base_dir      = base_dir
-        self.binary        = binary
         self.dump_gzip     = dump_gzip
-        self.user          = user
-        self.password      = password
-        self.authdb        = authdb
         self.config_server = config_server
-        self.verbose       = verbose
+        self.binary        = self.config.method.mongodump.binary
+        self.user          = self.config.user
+        self.password      = self.config.password
+        self.authdb        = self.config.authdb
+        self.verbose       = self.config.verbose
 
         self.config_replset = False
         self.response_queue = Queue()

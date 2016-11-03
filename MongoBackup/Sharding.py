@@ -133,7 +133,7 @@ class Sharding:
                 logging.info("Found sharding config server: %s:%s" % (config_host, config_port))
 
                 self.config_db = DB(config_host, config_port, self.user, self.password, self.authdb)
-                rs = Replset(self.config_db, self.user, self.password, self.authdb)
+                rs = Replset(self.config, self.config_db)
                 # noinspection PyBroadException
                 try:
                     if rs.get_rs_status(False, True):
