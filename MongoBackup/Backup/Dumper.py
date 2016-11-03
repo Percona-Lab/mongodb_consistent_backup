@@ -5,7 +5,7 @@ from multiprocessing import Queue
 from time import sleep
 
 
-from MongoBackup.Methods import Dump
+from MongoBackup.Backup import Dump
 
 
 class Dumper:
@@ -15,7 +15,7 @@ class Dumper:
         self.base_dir      = base_dir
         self.dump_gzip     = dump_gzip
         self.config_server = config_server
-        self.binary        = self.config.method.mongodump.binary
+        self.binary        = self.config.backup.mongodump.binary
         self.user          = self.config.user
         self.password      = self.config.password
         self.authdb        = self.config.authdb

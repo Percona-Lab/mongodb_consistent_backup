@@ -30,7 +30,7 @@ class OplogResolver:
         self.end_ts = None
         self.delete_oplogs = {}
 
-        if self.thread_count is None or self.thread_count == 0:
+        if self.thread_count is None or self.thread_count < 1:
             self.thread_count = cpu_count() * 2
 
         try:

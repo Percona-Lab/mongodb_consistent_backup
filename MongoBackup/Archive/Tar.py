@@ -76,7 +76,7 @@ class ArchiverTar:
         self.verbose         = self.config.verbose
         self.binary          = "tar"
 
-        if self.thread_count is None or self.thread_count == 0:
+        if self.thread_count is None or self.thread_count < 1:
             self.thread_count = cpu_count()
 
         try:

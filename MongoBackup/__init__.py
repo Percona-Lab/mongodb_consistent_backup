@@ -1,8 +1,8 @@
 import os
 import sys
 
-from Backup import Backup
 from Common import Config
+from Main import MongodbConsistentBackup
 
 
 __version__ = '#.#.#'
@@ -14,7 +14,7 @@ def run():
     try:
         config = Config(submodules=[
                 Archive,
-                Methods,
+                Backup,
                 Notify,
                 Oplog,
                 Replication,
@@ -25,7 +25,7 @@ def run():
         sys.exit(1)
 
     try:
-        Backup(config).run()
+        MongodbConsistentBackup(config).run()
     except Exception, e:
         # noinspection PyUnusedLocal
         print "Backup '%s' failed for mongodb instance %s:%s : %s" % (config.name, config.host, config.port, e)

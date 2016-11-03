@@ -10,7 +10,7 @@ from time import time
 
 from Archive import ArchiverTar
 from Common import DB, Lock, validate_hostname
-from Methods import Dumper
+from Backup import Dumper
 from Notify import NotifyNSCA
 from Oplog import OplogTailer, OplogResolver
 from Replication import Replset, ReplsetSharded
@@ -18,7 +18,7 @@ from Sharding import Sharding
 from Upload import UploadS3
 
 
-class Backup(object):
+class MongodbConsistentBackup(object):
     def __init__(self, config):
         # TODO-timv
         """
@@ -64,16 +64,16 @@ class Backup(object):
         # TODO Move any reference to the actual dumping into dumper classes
         # Check mongodump binary and set version + dump_gzip flag if 3.2+
         self.dump_gzip = False
-        if os.path.isfile(self.config.method.mongodump.binary) and os.access(self.config.method.mongodump.binary, os.X_OK):
+        if os.path.isfile(self.config.backup.mongodump.binary) and os.access(self.config.backup.mongodump.binary, os.X_OK):
             with hide('running', 'warnings'), settings(warn_only=True):
                 self.mongodump_version = tuple(
-                    local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.config.method.mongodump.binary,
+                    local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.config.backup.mongodump.binary,
                           capture=True).split("."))
                 if tuple("3.2.0".split(".")) < self.mongodump_version:
                     self.dump_gzip = True
                     self.no_archiver_gzip = True
         else:
-            logging.fatal("Cannot find or execute the mongodump binary file %s!" % self.config.method.mongodump.binary)
+            logging.fatal("Cannot find or execute the mongodump binary file %s!" % self.config.backup.mongodump.binary)
             sys.exit(1)
 
         #TODO should this be in init or a sub-function?
@@ -119,8 +119,8 @@ class Backup(object):
 
     def set_backup_dirs(self):
         self.backup_time = datetime.now().strftime("%Y%m%d_%H%M")
-        self.backup_root_subdirectory = "%s/%s" % (self.config.name, self.backup_time)
-        self.backup_root_directory = "%s/%s" % (self.config.location, self.backup_root_subdirectory)
+        self.backup_root_subdirectory = "%s/%s" % (self.config.backup.name, self.backup_time)
+        self.backup_root_directory = "%s/%s" % (self.config.backup.location, self.backup_root_subdirectory)
 
     def get_lock(self):
         # noinspection PyBroadException
@@ -153,8 +153,8 @@ class Backup(object):
             # TODO Pass to notifier  Notifier(level,mesg) and it will pick the medium
             if self.notify:
                 self.notify.notify(self.notify.critical, "%s: backup '%s' failed!" % (
-                    self.program_name,
-                    self.config.name
+                    self.config,
+                    self.program_name
                 ))
 
             if self.db:
@@ -332,7 +332,7 @@ class Backup(object):
         #    try:
         #        self.notify.notify(self.notify.success, "%s: backup '%s' succeeded in %s secs" % (
         #            self.program_name,
-        #            self.config.name,
+        #            self.config.backup.name,
         #            self.backup_duration
         #        ))
         #    except Exception, e:
