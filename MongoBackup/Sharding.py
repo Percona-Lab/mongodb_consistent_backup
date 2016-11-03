@@ -2,7 +2,7 @@ import logging
 
 from time import sleep
 
-from Common import DB
+from Common import DB, validate_hostname
 from MongoBackup.Replication import Replset
 
 
@@ -113,6 +113,8 @@ class Sharding:
             if config_string:
                 # noinspection PyBroadException
                 try:
+                    if "/" in config_string:
+                        config_replset, config_string = config_string.split("/")
                     return config_string.split(',')
                 except Exception:
                     return [config_string]
@@ -127,6 +129,7 @@ class Sharding:
             configdb_hosts = self.get_configdb_hosts()
             try:
                 config_host, config_port = configdb_hosts[0].split(":")
+                validate_hostname(config_host)
                 logging.info("Found sharding config server: %s:%s" % (config_host, config_port))
 
                 self.config_db = DB(config_host, config_port, self.user, self.password, self.authdb)

@@ -2,7 +2,7 @@ import logging
 
 from math import ceil
 
-from MongoBackup.Common import DB
+from MongoBackup.Common import DB, validate_hostname
 
 
 class Replset:
@@ -69,6 +69,7 @@ class Replset:
                     'host': member['name'],
                     'optime': optime_ts
                 }
+                validate_hostname(self.primary['host'])
                 logging.info("Found PRIMARY: %s/%s with optime %s" % (
                     rs_name,
                     member['name'],
@@ -111,6 +112,19 @@ class Replset:
 
                 if priority < self.min_priority or priority > self.max_priority:
                     log_msg = "Found SECONDARY %s/%s with out-of-bounds priority! Skipping" % (rs_name, member['name'])
+                rep_lag = (self.primary_optime().time - optime_ts.time)
+                score = ceil((score - rep_lag) * score_scale)
+                if rep_lag < self.max_lag_secs:
+                    if self.secondary is None or score > self.secondary['score']:
+                        self.secondary = {
+                            'replSet': rs_name,
+                            'count': 1 if self.secondary is None else self.secondary['count'] + 1,
+                            'host': member['name'],
+                            'optime': optime_ts,
+                            'score': score
+                        }
+                        validate_hostname(self.secondary['host'])
+                    log_msg = "Found SECONDARY %s/%s" % (rs_name, member['name'])
                 else:
                     rep_lag = (self.primary_optime().time - optime_ts.time)
                     score = ceil((score - rep_lag) * score_scale)

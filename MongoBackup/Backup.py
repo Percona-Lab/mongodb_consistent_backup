@@ -9,7 +9,7 @@ from signal import signal, SIGINT, SIGTERM
 from time import time
 
 from Archive import ArchiverTar
-from Common import DB, Lock
+from Common import DB, Lock, validate_hostname
 from Methods import Dumper
 from Notify import NotifyNSCA
 from Oplog import OplogTailer, OplogResolver
@@ -78,6 +78,7 @@ class Backup(object):
         #TODO should this be in init or a sub-function?
         # Get a DB connection
         try:
+            validate_hostname(self.host)
             self.db         = DB(self.config.host, self.config.port, self.config.user, self.config.password, self.config.authdb)
             self.connection = self.db.connection()
             self.is_sharded = self.connection.is_mongos
