@@ -60,14 +60,35 @@ class Config(object):
                 self.version    = __version__
                 self.git_commit = git_commit
 
+        def _get(self, keys, data=None):
+            if not data:
+                data = self._config
+            if "." in keys:
+                key, rest = keys.split(".", 1)
+                return self._get(rest, data[key])
+            else:
+                return data[keys]
+
         def parse_submodules(self, args):
                 if 'submodules' in args:
                         parser = self._config.parser
                         for submodule in args['submodules']:
                                 submodule.config(parser)
 
+        def check_required(self):
+            required = [
+                'backup.name',
+                'backup.location'
+            ]
+            for key in required:
+                try:
+                    self._get(key)
+                except:
+                    raise Exception, 'Field "%s" must be set via command-line or config file!' % key, None
+
         def parse(self):
-                return self._config.parse(self.cmdline)
+                self._config.parse(self.cmdline)
+                self.check_required()
 
         def __getattr__(self, key):
                 try:
