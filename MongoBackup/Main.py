@@ -1,16 +1,14 @@
-import os
-import sys
 import logging
+import sys
 
 from datetime import datetime
-from fabric.api import local, hide, settings
 from multiprocessing import current_process
 from signal import signal, SIGINT, SIGTERM
 from time import time
 
 from Archive import Archive
+from Backup import Backup
 from Common import DB, Lock, validate_hostname
-from Backup import Dumper
 from Notify import Notify
 from Oplog import OplogTailer, OplogResolver
 from Replication import Replset, ReplsetSharded
@@ -19,62 +17,30 @@ from Upload import Upload
 
 
 class MongodbConsistentBackup(object):
-    def __init__(self, config):
-        # TODO-timv
-        """
-        We should move the layout to look like
-
-            self.options : {
-                "program_name" : None,
-                ...
-                "backup_options": {
-                    "host": localhost,
-                    "port": 27017,
-                },
-                "uploader": {},
-                "notifier": {},
-
-            }
-        Also all options should have defaults  for example program_name should always be something
-        """
-        self.config = config
-        self.program_name = "mongodb_consistent_backup"
-        self.archiver = None
-        self.sharding = None
-        self.replset  = None
+    def __init__(self, config, prog_name="mongodb_consistent_backup"):
+        self.config          = config
+        self.program_name    = prog_name
+        self.backup          = None
+        self.archive         = None
+        self.sharding        = None
+        self.replset         = None
         self.replset_sharded = None
-        self.notify = None
-        self.mongodumper = None
-        self.oplogtailer = None
-        self.oplog_resolver = None
+        self.notify          = None
+        self.oplogtailer     = None
+        self.oplog_resolver  = None
         self.backup_duration = None
-        self.end_time = None
-        self.uploader = None
-        self._lock = None
-        self.start_time = time()
-        self.oplog_threads = []
-        self.oplog_summary = {}
-        self.secondaries   = {}
-        self.mongodumper_summary = {}
+        self.end_time        = None
+        self.upload        = None
+        self._lock           = None
+        self.start_time      = time()
+        self.oplog_threads   = []
+        self.oplog_summary   = {}
+        self.secondaries     = {}
+        self.backup_summary  = {}
 
         self.setup_signal_handlers()
         self.setup_logger()
         self.set_backup_dirs()
-
-        # TODO Move any reference to the actual dumping into dumper classes
-        # Check mongodump binary and set version + dump_gzip flag if 3.2+
-        #self.dump_gzip = False
-        #if os.path.isfile(self.config.backup.mongodump.binary) and os.access(self.config.backup.mongodump.binary, os.X_OK):
-        #    with hide('running', 'warnings'), settings(warn_only=True):
-        #        self.mongodump_version = tuple(
-        #            local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.config.backup.mongodump.binary,
-        #                  capture=True).split("."))
-        #        if tuple("3.2.0".split(".")) < self.mongodump_version:
-        #            self.dump_gzip = True
-        #            self.no_archiver_gzip = True
-        #else:
-        #    logging.fatal("Cannot find or execute the mongodump binary file %s!" % self.config.backup.mongodump.binary)
-        #    sys.exit(1)
 
         #TODO should this be in init or a sub-function?
         # Get a DB connection
@@ -132,9 +98,8 @@ class MongodbConsistentBackup(object):
         if current_process().name == "MainProcess":
             logging.info("Starting cleanup and exit procedure! Killing running threads")
 
-            # TODO Rename the mongodumper module to just "backup" then have submodule in it for the backup type
             # TODO Move submodules into self that populates as used?
-            submodules = ['replset', 'sharding', 'mongodumper', 'oplogtailer', 'archiver', 'uploader']
+            submodules = ['replset', 'sharding', 'backup', 'oplogtailer', 'archive', 'upload']
             for submodule_name in submodules:
                 submodule = getattr(self, submodule_name)
                 if submodule:
@@ -199,13 +164,14 @@ class MongodbConsistentBackup(object):
                 self.exception("Problem getting shard secondaries! Error: %s" % e)
 
             try:
-                self.mongodumper = Dumper(
+                self.backup = Backup(
                     self.config,
-                    self.secondaries,
                     self.backup_root_directory,
-                    self.dump_gzip
+                    self.secondaries
                 )
-                self.mongodumper.run()
+                self.backup.run()
+                if self.backup.is_gzip():
+                    self.config.oplog.gzip = True
             except Exception, e:
                 self.exception("Problem performing replset mongodump! Error: %s" % e)
 
@@ -233,41 +199,36 @@ class MongodbConsistentBackup(object):
             except Exception, e:
                 self.exception("Problem getting shard secondaries! Error: %s" % e)
 
-            # Stop the balancer:    
+            # stop the balancer
             try:
                 self.sharding.stop_balancer()
             except Exception, e:
                 self.exception("Problem stopping the balancer! Error: %s" % e)
 
-            # start the oplog tailer threads
-            #if self.no_oplog_tailer:
-            #    logging.warning("Oplog tailing disabled! Skipping")
-            #else:
+            # start the oplog tailer(s)
             try:
                 self.oplogtailer = OplogTailer(
                     self.config,
                     self.secondaries,
-                    self.backup_root_directory,
-                    self.dump_gzip
+                    self.backup_root_directory
                 )
                 self.oplogtailer.run()
             except Exception, e:
                 self.exception("Failed to start oplog tailing threads! Error: %s" % e)
 
-            # start the mongodumper threads
+            # start the backup
             try:
-                self.mongodumper = Dumper(
+                self.backup = Backup(
                     self.config,
-                    self.secondaries, 
                     self.backup_root_directory,
-                    self.dump_gzip,
+                    self.secondaries, 
                     self.sharding.get_config_server()
                 )
-                self.mongodumper_summary = self.mongodumper.run()
+                self.backup_summary = self.backup.backup()
             except Exception, e:
                 self.exception("Problem performing mongodumps! Error: %s" % e)
 
-            # stop the oplog tailing threads:
+            # stop the oplog tailer(s)
             if self.oplogtailer:
                 self.oplog_summary = self.oplogtailer.stop()
 
@@ -279,39 +240,32 @@ class MongodbConsistentBackup(object):
 
             # resolve/merge tailed oplog into mongodump oplog.bson to a consistent point for all shards
             if self.oplogtailer:
-                self.oplog_resolver = OplogResolver(self.config, self.oplog_summary, self.mongodumper_summary, self.dump_gzip)
+                self.oplog_resolver = OplogResolver(self.config, self.oplog_summary, self.backup_summary, self.config.oplog.gzip)
                 self.oplog_resolver.run()
 
-        # archive (and optionally compress) backup directories to archive files (threaded)
-        if self.config.archive.method == "none":
-            logging.warning("Archiving disabled! Skipping")
-        elif self.config.archive.method == "tar":
-            try:
-                self.archiver = Archive(
-                    self.config,
-                    self.backup_root_directory, 
-                )
-                self.archiver.archive()
-            except Exception, e:
-                self.exception("Problem performing archiving! Error: %s" % e)
+        # archive backup directories
+        try:
+            self.archive = Archive(
+                self.config,
+                self.backup_root_directory, 
+            )
+            self.archive.archive()
+        except Exception, e:
+            self.exception("Problem performing archiving! Error: %s" % e)
 
         self.end_time = time()
         self.backup_duration = self.end_time - self.start_time
 
-        # uploader
-        if self.config.upload.method == "none":
-            logging.info("Uploading disabled! Skipping")
-        if self.config.upload.method == "s3" and self.config.upload.s3.bucket_name and self.config.upload.s3.bucket_prefix and self.config.upload.s3.access_key and self.config.upload.s3.secret_key:
-            # AWS S3 secure multipart uploader
-            try:
-                self.uploader = UploadS3(
-                    self.config,
-                    self.backup_root_directory,
-                    self.backup_root_subdirectory
-                )
-                self.uploader.run()
-            except Exception, e:
-                self.exception("Problem performing AWS S3 multipart upload! Error: %s" % e)
+        # upload backup (optional)
+        try:
+            self.upload = UploadS3(
+                self.config,
+                self.backup_root_directory,
+                self.backup_root_subdirectory
+            )
+            self.upload.upload()
+        except Exception, e:
+            self.exception("Problem performing upload of backup! Error: %s" % e)
 
         # send notifications of backup state
         try:

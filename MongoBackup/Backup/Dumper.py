@@ -1,3 +1,4 @@
+import os
 import logging
 
 from fabric.api import hide, settings, local
@@ -9,11 +10,10 @@ from MongoBackup.Backup import Dump
 
 
 class Dumper:
-    def __init__(self, config, secondaries, base_dir, dump_gzip=False, config_server=None):
+    def __init__(self, config, base_dir, secondaries, config_server=None):
         self.config        = config
-        self.secondaries   = secondaries
         self.base_dir      = base_dir
-        self.dump_gzip     = dump_gzip
+        self.secondaries   = secondaries
         self.config_server = config_server
         self.binary        = self.config.backup.mongodump.binary
         self.user          = self.config.user
@@ -25,6 +25,7 @@ class Dumper:
         self.response_queue = Queue()
         self.threads        = []
         self._summary       = {}
+        self.do_gzip        = self.is_gzip()
 
         if not isinstance(self.config_server, dict) and self.config_server in self.secondaries:
             self.config_replset = True
@@ -35,17 +36,17 @@ class Dumper:
         with hide('running', 'warnings'), settings(warn_only=True):
             self.version = local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary, capture=True)
 
-    def do_gzip(self):
-        # Check mongodump binary and set version + dump_gzip flag if 3.2+
-        if os.path.isfile(self.config.backup.mongodump.binary) and os.access(self.config.backup.mongodump.binary, os.X_OK):
+    def is_gzip(self):
+        if os.path.isfile(self.binary) and os.access(self.binary, os.X_OK):
             with hide('running', 'warnings'), settings(warn_only=True):
                 self.mongodump_version = tuple(
-                    local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.config.backup.mongodump.binary,
+                    local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary,
                           capture=True).split("."))
                 if tuple("3.2.0".split(".")) < self.mongodump_version:
-                    print 'do_gzip'
+                    return True
+                return False
         else:
-            logging.fatal("Cannot find or execute the mongodump binary file %s!" % self.config.backup.mongodump.binary)
+            logging.fatal("Cannot find or execute the mongodump binary file %s!" % self.binary)
             sys.exit(1)
 
     def summary(self):
@@ -90,8 +91,8 @@ class Dumper:
                 self.authdb,
                 self.base_dir,
                 self.binary,
-                self.dump_gzip,
-                self.verbose
+                self.do_gzip,
+                False
             )
             self.threads.append(thread)
 
@@ -100,7 +101,7 @@ class Dumper:
 
         # start all threads and wait
         logging.info(
-            "Starting backups in threads using mongodump %s (inline gzip: %s)" % (self.version, str(self.dump_gzip)))
+            "Starting backups in threads using mongodump %s (inline gzip: %s)" % (self.version, str(self.do_gzip)))
         for thread in self.threads:
             thread.start()
         self.wait()
@@ -117,7 +118,7 @@ class Dumper:
                 self.authdb,
                 self.base_dir,
                 self.binary,
-                self.dump_gzip,
+                self.do_gzip,
                 self.verbose
             )]
             self.threads[0].start()
