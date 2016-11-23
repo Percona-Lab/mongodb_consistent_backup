@@ -92,7 +92,7 @@ class Dumper:
                 self.base_dir,
                 self.binary,
                 self.do_gzip,
-                False
+                self.verbose 
             )
             self.threads.append(thread)
 
