@@ -6,7 +6,7 @@ from pynsca import NSCANotifier
 
 class NotifyNSCA:
     def __init__(self, config):
-	self.config     = config
+        self.config     = config
         self.server     = self.config.notify.nsca.server
         self.check_name = self.config.notify.nsca.check_name
         self.check_host = self.config.notify.nsca.check_host

@@ -7,7 +7,7 @@ class Notify:
     def __init__(self, config):
         self.config = config
 
-	self._notifier = None
+        self._notifier = None
         self.init()
 
     def init(self):
@@ -21,7 +21,7 @@ class Notify:
             logger.info("Notifying disabled, skipping")
 
     def notify(self, message, success=False):
-	if self._notifier:
+        if self._notifier:
             state = self._notifier.failed
             if success:
                 state = self._notifier.success
