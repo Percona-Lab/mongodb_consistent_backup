@@ -1,15 +1,14 @@
 import logging
 
-from Dump import Dump
 from Dumper import Dumper
 
 
 class Backup:
-    def __init__(self, config, backup_root_dir, secondaries, config_server=None):
-        self.config          = config
-        self.backup_root_dir = backup_root_dir
-        self.secondaries     = secondaries
-        self.config_server   = config_server
+    def __init__(self, config, backup_dir, secondaries, config_server=None):
+        self.config        = config
+        self.backup_dir    = backup_dir
+        self.secondaries   = secondaries
+        self.config_server = config_server
 
         self._method = None
         self.init()
@@ -20,7 +19,7 @@ class Backup:
             try:
                 self._method = Dumper(
                     self.config,
-                    self.backup_root_dir,
+                    self.backup_dir,
                     self.secondaries,
                     self.config_server
                 )
