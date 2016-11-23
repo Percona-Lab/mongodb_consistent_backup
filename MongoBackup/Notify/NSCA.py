@@ -5,11 +5,12 @@ from pynsca import NSCANotifier
 
 
 class NotifyNSCA:
-    def __init__(self, server, check_name, check_host, password=None):
-        self.server     = server
-        self.check_name = check_name
-        self.check_host = check_host
-        self.password   = password
+    def __init__(self, config):
+	self.config     = config
+        self.server     = self.config.notify.nsca.server
+        self.check_name = self.config.notify.nsca.check_name
+        self.check_host = self.config.notify.nsca.check_host
+        self.password   = self.config.notify.nsca.password
         self.success    = 0
         self.warning    = 1
         self.critical   = 2

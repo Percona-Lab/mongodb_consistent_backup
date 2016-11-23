@@ -35,6 +35,19 @@ class Dumper:
         with hide('running', 'warnings'), settings(warn_only=True):
             self.version = local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary, capture=True)
 
+    def do_gzip(self):
+        # Check mongodump binary and set version + dump_gzip flag if 3.2+
+        if os.path.isfile(self.config.backup.mongodump.binary) and os.access(self.config.backup.mongodump.binary, os.X_OK):
+            with hide('running', 'warnings'), settings(warn_only=True):
+                self.mongodump_version = tuple(
+                    local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.config.backup.mongodump.binary,
+                          capture=True).split("."))
+                if tuple("3.2.0".split(".")) < self.mongodump_version:
+                    print 'do_gzip'
+        else:
+            logging.fatal("Cannot find or execute the mongodump binary file %s!" % self.config.backup.mongodump.binary)
+            sys.exit(1)
+
     def summary(self):
         return self._summary
 

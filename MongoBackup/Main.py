@@ -8,14 +8,14 @@ from multiprocessing import current_process
 from signal import signal, SIGINT, SIGTERM
 from time import time
 
-from Archive import ArchiverTar
+from Archive import Archive
 from Common import DB, Lock, validate_hostname
 from Backup import Dumper
-from Notify import NotifyNSCA
+from Notify import Notify
 from Oplog import OplogTailer, OplogResolver
 from Replication import Replset, ReplsetSharded
 from Sharding import Sharding
-from Upload import UploadS3
+from Upload import Upload
 
 
 class MongodbConsistentBackup(object):
@@ -63,18 +63,18 @@ class MongodbConsistentBackup(object):
 
         # TODO Move any reference to the actual dumping into dumper classes
         # Check mongodump binary and set version + dump_gzip flag if 3.2+
-        self.dump_gzip = False
-        if os.path.isfile(self.config.backup.mongodump.binary) and os.access(self.config.backup.mongodump.binary, os.X_OK):
-            with hide('running', 'warnings'), settings(warn_only=True):
-                self.mongodump_version = tuple(
-                    local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.config.backup.mongodump.binary,
-                          capture=True).split("."))
-                if tuple("3.2.0".split(".")) < self.mongodump_version:
-                    self.dump_gzip = True
-                    self.no_archiver_gzip = True
-        else:
-            logging.fatal("Cannot find or execute the mongodump binary file %s!" % self.config.backup.mongodump.binary)
-            sys.exit(1)
+        #self.dump_gzip = False
+        #if os.path.isfile(self.config.backup.mongodump.binary) and os.access(self.config.backup.mongodump.binary, os.X_OK):
+        #    with hide('running', 'warnings'), settings(warn_only=True):
+        #        self.mongodump_version = tuple(
+        #            local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.config.backup.mongodump.binary,
+        #                  capture=True).split("."))
+        #        if tuple("3.2.0".split(".")) < self.mongodump_version:
+        #            self.dump_gzip = True
+        #            self.no_archiver_gzip = True
+        #else:
+        #    logging.fatal("Cannot find or execute the mongodump binary file %s!" % self.config.backup.mongodump.binary)
+        #    sys.exit(1)
 
         #TODO should this be in init or a sub-function?
         # Get a DB connection
@@ -86,21 +86,11 @@ class MongodbConsistentBackup(object):
         except Exception, e:
             raise e
 
-        # TODO Move to notifier module called NSCA
         # Setup the notifier:
-        if self.config.notify.method == "none":
-            logger.info("Notifying disabled! Skipping.")
-        #elif self.config.notify.method == "nsca":
-        #    if self.config.notify.nsca.server and self.config.notify.nsca.check_name:
-        #        try:
-        #            self.notify = NotifyNSCA(
-        #                self.config.notify.nsca.server,
-        #                self.config.notify.nsca.check_name,
-        #                self.config.notify.nsca.check_host,
-        #                self.config.notify.nsca.password
-        #            )
-        #        except Exception, e:
-        #            raise e
+        try:
+            self.notify = Notify(self.config)
+        except Exception, e:
+            raise e
 
     def setup_logger(self):
         self.log_level = logging.INFO
@@ -150,12 +140,10 @@ class MongodbConsistentBackup(object):
                 if submodule:
                     submodule.close()
 
-            # TODO Pass to notifier  Notifier(level,mesg) and it will pick the medium
-            if self.notify:
-                self.notify.notify(self.notify.critical, "%s: backup '%s' failed!" % (
-                    self.config,
-                    self.program_name
-                ))
+            self.notify.notify("%s: backup '%s' failed!" % (
+                self.config,
+                self.program_name
+            ), False)
 
             if self.db:
                 self.db.close()
@@ -299,11 +287,11 @@ class MongodbConsistentBackup(object):
             logging.warning("Archiving disabled! Skipping")
         elif self.config.archive.method == "tar":
             try:
-                self.archiver = ArchiverTar(
+                self.archiver = Archive(
                     self.config,
                     self.backup_root_directory, 
                 )
-                self.archiver.run()
+                self.archiver.archive()
             except Exception, e:
                 self.exception("Problem performing archiving! Error: %s" % e)
 
@@ -326,17 +314,14 @@ class MongodbConsistentBackup(object):
                 self.exception("Problem performing AWS S3 multipart upload! Error: %s" % e)
 
         # send notifications of backup state
-        if self.config.notify.method == "none":
-            logging.info("Notifying disabled! Skipping")
-        #elif self.config.notify.method == "nsca":
-        #    try:
-        #        self.notify.notify(self.notify.success, "%s: backup '%s' succeeded in %s secs" % (
-        #            self.program_name,
-        #            self.config.backup.name,
-        #            self.backup_duration
-        #        ))
-        #    except Exception, e:
-        #        self.exception("Problem running NSCA notifier! Error: %s" % e)
+        try:
+            self.notify.notify("%s: backup '%s' succeeded in %s secs" % (
+                self.program_name,
+                self.config.backup.name,
+                self.backup_duration
+            ), True)
+        except Exception, e:
+            self.exception("Problem running Notifier! Error: %s" % e)
 
         if self.db:
             self.db.close()

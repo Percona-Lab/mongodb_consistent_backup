@@ -1,5 +1,5 @@
-from Dump import Dump
-from Dumper import Dumper
+from Backup import Backup
+
 
 def config(parser):
         parser.add_argument("-backup.mongodump.binary", dest="backup.mongodump.binary", help="Path to 'mongodump' binary (default: /usr/bin/mongodump)", default='/usr/bin/mongodump')
