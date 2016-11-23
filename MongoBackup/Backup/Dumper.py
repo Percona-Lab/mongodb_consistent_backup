@@ -6,7 +6,7 @@ from multiprocessing import Queue
 from time import sleep
 
 
-from MongoBackup.Backup import Dump
+from Dump import Dump
 
 
 class Dumper:

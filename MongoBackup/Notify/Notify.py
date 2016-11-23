@@ -1,4 +1,7 @@
+import logging
+
 from NSCA import NotifyNSCA
+
 
 class Notify:
     def __init__(self, config):

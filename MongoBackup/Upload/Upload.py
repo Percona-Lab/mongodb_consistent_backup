@@ -1,3 +1,5 @@
+import logging
+
 from UploadS3 import UploadS3
 
 
@@ -8,12 +10,14 @@ class Upload:
         self.backup_dir = backup_dir
         self._uploader  = None
 
+        self.init()
+
     def init(self):
-        # upload
         if self.config.upload.method == "none":
             logging.info("Uploading disabled! Skipping")
         if self.config.upload.method == "s3" and self.config.upload.s3.bucket_name and self.config.upload.s3.bucket_prefix and self.config.upload.s3.access_key and self.config.upload.s3.secret_key:
             # AWS S3 secure multipart uploader
+            logging.info("Using upload method: S3")
             try:
                 self._uploader = UploadS3(
                     self.config,

@@ -38,19 +38,14 @@ class MongodbConsistentBackup(object):
         self.secondaries     = {}
         self.backup_summary  = {}
 
+        self.connection = None
+        self.db = None
+        self.is_sharded = False
+
         self.setup_signal_handlers()
         self.setup_logger()
         self.set_backup_dirs()
-
-        #TODO should this be in init or a sub-function?
-        # Get a DB connection
-        try:
-            validate_hostname(self.config.host)
-            self.db         = DB(self.config.host, self.config.port, self.config.user, self.config.password, self.config.authdb)
-            self.connection = self.db.connection()
-            self.is_sharded = self.connection.is_mongos
-        except Exception, e:
-            raise e
+        self.get_db_conn()
 
         # Setup the notifier:
         try:
@@ -77,6 +72,15 @@ class MongodbConsistentBackup(object):
         self.backup_time = datetime.now().strftime("%Y%m%d_%H%M")
         self.backup_root_subdirectory = "%s/%s" % (self.config.backup.name, self.backup_time)
         self.backup_root_directory = "%s/%s" % (self.config.backup.location, self.backup_root_subdirectory)
+
+    def get_db_conn(self):
+        try:
+            validate_hostname(self.config.host)
+            self.db         = DB(self.config.host, self.config.port, self.config.user, self.config.password, self.config.authdb)
+            self.connection = self.db.connection()
+            self.is_sharded = self.connection.is_mongos
+        except Exception, e:
+            raise e
 
     def get_lock(self):
         # noinspection PyBroadException
@@ -169,7 +173,7 @@ class MongodbConsistentBackup(object):
                     self.backup_root_directory,
                     self.secondaries
                 )
-                self.backup.run()
+                self.backup.backup()
                 if self.backup.is_gzip():
                     self.config.oplog.gzip = True
             except Exception, e:
@@ -225,6 +229,8 @@ class MongodbConsistentBackup(object):
                     self.sharding.get_config_server()
                 )
                 self.backup_summary = self.backup.backup()
+                if self.backup.is_gzip():
+                    self.config.oplog.gzip = True
             except Exception, e:
                 self.exception("Problem performing mongodumps! Error: %s" % e)
 
@@ -256,9 +262,9 @@ class MongodbConsistentBackup(object):
         self.end_time = time()
         self.backup_duration = self.end_time - self.start_time
 
-        # upload backup (optional)
+        # upload backup
         try:
-            self.upload = UploadS3(
+            self.upload = Upload(
                 self.config,
                 self.backup_root_directory,
                 self.backup_root_subdirectory

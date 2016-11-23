@@ -1,22 +1,26 @@
+import logging
+
 from Tar import ArchiverTar
 
 
 class Archive:
-    def __init__(self, config):
-        self.config = config
-        self._archiver = None
+    def __init__(self, config, backup_dir):
+        self.config     = config
+        self.backup_dir = backup_dir
+        self._archiver  = None
 
         self.init()
 
     def init(self):
         # archive (and optionally compress) backup directories to archive files (threaded)
         if self.config.archive.method == "none":
-            logging.warning("Archiving disabled! Skipping")
+            logging.info("Archiving disabled! Skipping")
         elif self.config.archive.method == "tar":
+            logging.info("Using archiving method: tar")
             try:
-                self._archiver = Archive(
+                self._archiver = ArchiverTar(
                     self.config,
-                    self.backup_root_directory
+                    self.backup_dir
                 )
             except Exception, e:
                 raise e
