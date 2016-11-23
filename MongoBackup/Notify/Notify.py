@@ -18,7 +18,7 @@ class Notify:
                 except Exception, e:
                     raise e
         else:
-            logger.info("Notifying disabled, skipping")
+            logging.info("Notifying disabled, skipping")
 
     def notify(self, message, success=False):
         if self._notifier:

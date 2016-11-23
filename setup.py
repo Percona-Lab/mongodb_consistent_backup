@@ -3,12 +3,12 @@
 from distutils.core import setup
 
 setup(
-    name='MongoBackup',
+    name='mongodb_consistent_backup',
     version='#.#.#',
-    description='Percona MongoDB Consistent Backup Tool',
-    author='Percona',
+    description='Tool for getting consistent backups from MongoDB Clusters and ReplicaSet',
+    author='Percona-Lab',
     author_email='tim.vaillancourt@percona.com',
-    url='https://github.com/percona/MongoToolsAndSnippets/rdba/mongo_backup',
+    url='https://github.com/Percona-Lab/mongodb_consistent_backup',
     packages=[
         'MongoBackup',
         'MongoBackup.Archive',
