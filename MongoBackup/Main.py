@@ -29,25 +29,24 @@ class MongodbConsistentBackup(object):
         self.oplogtailer     = None
         self.oplog_resolver  = None
         self.backup_duration = None
-        self.end_time        = None
-        self.upload        = None
-        self._lock           = None
+        self.upload          = None
+        self.lock            = None
         self.start_time      = time()
-        self.oplog_threads   = []
-        self.oplog_summary   = {}
+        self.end_time        = None
+        self.backup_duration = None
+        self.connection      = None
+        self.db              = None
+        self.is_sharded      = False
         self.secondaries     = {}
+        self.oplog_summary   = {}
         self.backup_summary  = {}
-
-        self.connection = None
-        self.db = None
-        self.is_sharded = False
 
         self.setup_signal_handlers()
         self.setup_logger()
         self.set_backup_dirs()
         self.get_db_conn()
 
-        # Setup the notifier:
+        # Setup the notifier in init so notifications can be sent throughout the code
         try:
             self.notify = Notify(self.config)
         except Exception, e:
@@ -87,14 +86,14 @@ class MongodbConsistentBackup(object):
         try:
             if not self.config.lockfile:
                 self.config.lockfile = '/tmp/%s.lock' % self.program_name
-            self._lock = Lock(self.config.lockfile)
+            self.lock = Lock(self.config.lockfile)
         except Exception:
             logging.fatal("Could not acquire lock: '%s'! Is another %s process running? Exiting" % (self.config.lockfile, self.program_name))
             self.cleanup_and_exit(None, None)
 
     def release_lock(self):
-        if self._lock:
-            self._lock.release()
+        if self.lock:
+            self.lock.release()
 
     # TODO Rename class to be more exact as this assumes something went wrong
     # noinspection PyUnusedLocal
@@ -252,7 +251,7 @@ class MongodbConsistentBackup(object):
                 self.exception("Problem restoring balancer lock! Error: %s" % e)
 
             # resolve/merge tailed oplog into mongodump oplog.bson to a consistent point for all shards
-            if self.oplogtailer:
+            if self.config.backup.method == "mongodump" and self.oplogtailer:
                 self.oplog_resolver = OplogResolver(self.config, self.oplog_summary, self.backup_summary, self.config.oplog.gzip)
                 self.oplog_resolver.run()
 

@@ -21,6 +21,7 @@ production:
       wait_secs: 300
       ping_secs: 3
   oplog:
+    # gzip: false
     # resolver_threads: 4
   archive:
     method: tar
