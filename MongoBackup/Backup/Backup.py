@@ -11,6 +11,7 @@ class Backup:
         self.secondaries     = secondaries
         self.config_server   = config_server
 
+        self._method = None
         self.init()
 
     def init(self):
@@ -25,12 +26,17 @@ class Backup:
                 )
             except Exception, e:
                 raise Exception, "Problem performing mongodump! Error: %s" % e, None
+        else:
+            raise Exception, 'Must specify a backup method!', None
 
     def is_gzip(self):
-        return self._method.is_gzip()
+        if self._method:
+            return self._method.is_gzip()
 
     def backup(self):
-        return self._method.run()
+        if self._method:
+            return self._method.run()
 
     def close(self):
-        return self._method.close()
+        if self._method:
+            return self._method.close()

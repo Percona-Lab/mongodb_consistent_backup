@@ -101,7 +101,7 @@ class Dumper:
 
         # start all threads and wait
         logging.info(
-            "Starting backups in threads using mongodump %s (inline gzip: %s)" % (self.version, str(self.do_gzip)))
+            "Starting backups in threads using mongodump %s (gzip: %s)" % (self.version, str(self.do_gzip)))
         for thread in self.threads:
             thread.start()
         self.wait()

@@ -175,6 +175,7 @@ class MongodbConsistentBackup(object):
                 )
                 self.backup.backup()
                 if self.backup.is_gzip():
+                    self.config.archive.compression = 'none'
                     self.config.oplog.gzip = True
             except Exception, e:
                 self.exception("Problem performing replset mongodump! Error: %s" % e)
@@ -209,6 +210,20 @@ class MongodbConsistentBackup(object):
             except Exception, e:
                 self.exception("Problem stopping the balancer! Error: %s" % e)
 
+            # init the backup
+            try:
+                self.backup = Backup(
+                    self.config,
+                    self.backup_root_directory,
+                    self.secondaries, 
+                    self.sharding.get_config_server()
+                )
+                if self.backup.is_gzip():
+                    self.config.archive.compression = 'none'
+                    self.config.oplog.gzip = True
+            except Exception, e:
+                self.exception("Problem initializing backup! Error: %s" % e)
+
             # start the oplog tailer(s)
             try:
                 self.oplogtailer = OplogTailer(
@@ -220,19 +235,11 @@ class MongodbConsistentBackup(object):
             except Exception, e:
                 self.exception("Failed to start oplog tailing threads! Error: %s" % e)
 
-            # start the backup
+            # run the backup(s)
             try:
-                self.backup = Backup(
-                    self.config,
-                    self.backup_root_directory,
-                    self.secondaries, 
-                    self.sharding.get_config_server()
-                )
                 self.backup_summary = self.backup.backup()
-                if self.backup.is_gzip():
-                    self.config.oplog.gzip = True
             except Exception, e:
-                self.exception("Problem performing mongodumps! Error: %s" % e)
+                self.exception("Problem performing backup! Error: %s" % e)
 
             # stop the oplog tailer(s)
             if self.oplogtailer:

@@ -7,7 +7,7 @@ from MongoBackup.Oplog import OplogTail
 
 
 class OplogTailer:
-    def __init__(self, config, secondaries, base_dir, dump_gzip=False):
+    def __init__(self, config, secondaries, base_dir):
         self.config      = config
         self.secondaries = secondaries
         self.base_dir    = base_dir
@@ -15,7 +15,7 @@ class OplogTailer:
         self.user        = self.config.user
         self.password    = self.config.password
         self.authdb      = self.config.authdb
-        self.dump_gzip   = dump_gzip
+        self.dump_gzip   = self.config.oplog.gzip
 
         self.response_queue = Queue()
         self.threads        = []

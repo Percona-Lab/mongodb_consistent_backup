@@ -65,7 +65,7 @@ class OplogTail(Process):
         return self._stop.is_set()
 
     def run(self):
-        logging.info("Tailing oplog on %s:%i for changes" % (self.host, self.port))
+        logging.info("Tailing oplog on %s:%i for changes (gzip: %s)" % (self.host, self.port, self.dump_gzip))
 
         # open the oplog file for writing:
         try:
