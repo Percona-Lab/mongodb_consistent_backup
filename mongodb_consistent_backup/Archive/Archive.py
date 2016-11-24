@@ -12,7 +12,6 @@ class Archive:
         self.init()
 
     def init(self):
-        # archive (and optionally compress) backup directories to archive files (threaded)
         if self.config.archive.method == "tar":
             logging.info("Using archiving method: tar (compression: %s)" % self.config.archive.compression)
             try:

@@ -11,13 +11,12 @@ class Notify:
         self.init()
 
     def init(self):
-        if self.config.notify.method == "nsca" and self.config.notify.nsca:
-            if self.config.notify.nsca.server and self.config.notify.nsca.check_name:
-                logging.info("Using notify method: nsca")
-                try:
-                    self._notifier = NotifyNSCA(self.config)
-                except Exception, e:
-                    raise e
+        if self.config.notify.method == "nsca":
+            logging.info("Using notify method: nsca")
+            try:
+                self._notifier = NotifyNSCA(self.config)
+            except Exception, e:
+                raise e
         else:
             logging.info("Notifying disabled, skipping")
 

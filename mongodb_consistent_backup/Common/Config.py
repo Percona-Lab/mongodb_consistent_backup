@@ -34,19 +34,19 @@ class PrintVersions(Action):
 class ConfigParser(BaseConfiguration):
     def makeParser(self):
         parser = super(ConfigParser, self).makeParser()
-        parser.add_argument("-V", "-version", dest="version", help="Print mongodb_consistent_backup version info and exit", action=PrintVersions)
-        parser.add_argument("-v", "-verbose", dest="verbose", help="Verbose output", default=False, action="store_true")
-        parser.add_argument("-H", "-host", dest="host", help="MongoDB hostname/IP (default: localhost)", default="localhost", type=str)
-        parser.add_argument("-P", "-port", dest="port", help="MongoDB port (default: 27017)", default=27017, type=int)
-        parser.add_argument("-u", "-user", dest="user", help="MongoDB Authentication Username (for optional auth)", type=str)
-        parser.add_argument("-p", "-password", dest="password", help="MongoDB Authentication Password (for optional auth)", type=str)
-        parser.add_argument("-a", "-authdb", dest="authdb", help="MongoDB Auth Database (for optional auth - default: admin)", default='admin', type=str)
-        parser.add_argument("-n", "-backup.name", dest="backup.name", help="Name of the backup set (required)", type=str)
-        parser.add_argument("-l", "-backup.location", dest="backup.location", help="Base path to store the backup data (required)", type=str)
-        parser.add_argument("-m", "-backup.method", dest="backup.method", help="Method to be used for backup (default: mongodump)", default='mongodump', choices=['mongodump'])
-        parser.add_argument("-lockfile", dest="lockfile", help="Location of lock file (default: /tmp/mongodb_consistent_backup.lock)", default='/tmp/mongodb_consistent_backup.lock', type=str)
-        parser.add_argument("-sharding.balancer.wait_secs", dest="sharding.balancer.wait_secs", help="Maximum time to wait for balancer to stop, in seconds (default: 300)", default=300, type=int)
-        parser.add_argument("-sharding.balancer.ping_secs", dest="sharding.balancer.ping_secs", help="Interval to check balancer state, in seconds (default: 3)", default=3, type=int)
+        parser.add_argument("-V", "--version", dest="version", help="Print mongodb_consistent_backup version info and exit", action=PrintVersions)
+        parser.add_argument("-v", "--verbose", dest="verbose", help="Verbose output", default=False, action="store_true")
+        parser.add_argument("-H", "--host", dest="host", help="MongoDB hostname/IP (default: localhost)", default="localhost", type=str)
+        parser.add_argument("-P", "--port", dest="port", help="MongoDB port (default: 27017)", default=27017, type=int)
+        parser.add_argument("-u", "--user", dest="user", help="MongoDB Authentication Username (for optional auth)", type=str)
+        parser.add_argument("-p", "--password", dest="password", help="MongoDB Authentication Password (for optional auth)", type=str)
+        parser.add_argument("-a", "--authdb", dest="authdb", help="MongoDB Auth Database (for optional auth - default: admin)", default='admin', type=str)
+        parser.add_argument("-n", "--backup.name", dest="backup.name", help="Name of the backup set (required)", type=str)
+        parser.add_argument("-l", "--backup.location", dest="backup.location", help="Base path to store the backup data (required)", type=str)
+        parser.add_argument("-m", "--backup.method", dest="backup.method", help="Method to be used for backup (default: mongodump)", default='mongodump', choices=['mongodump'])
+        parser.add_argument("--lockfile", dest="lockfile", help="Location of lock file (default: /tmp/mongodb_consistent_backup.lock)", default='/tmp/mongodb_consistent_backup.lock', type=str)
+        parser.add_argument("--sharding.balancer.wait_secs", dest="sharding.balancer.wait_secs", help="Maximum time to wait for balancer to stop, in seconds (default: 300)", default=300, type=int)
+        parser.add_argument("--sharding.balancer.ping_secs", dest="sharding.balancer.ping_secs", help="Interval to check balancer state, in seconds (default: 3)", default=3, type=int)
         return parser
 
 
