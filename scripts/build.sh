@@ -97,7 +97,6 @@ if [ -d ${srcdir} ]; then
 	${venvdir}/bin/pex --disable-cache -o ${output_file} -m ${py_entry_point} -r ${require_file} ${builddir}
 	if [ $? -lt 1 ] && [ -x ${output_file} ]; then
 		echo "pex executable written to '$output_file'"
-		rm -rf ${builddir}
 	else
 		echo "Failed to build project using pex!"
 		exit 1
