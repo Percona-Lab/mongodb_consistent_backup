@@ -1,5 +1,5 @@
-import logging
 import sys
+import logging
 
 from datetime import datetime
 from multiprocessing import current_process
@@ -46,7 +46,7 @@ class MongodbConsistentBackup(object):
         self.set_backup_dirs()
         self.get_db_conn()
 
-        # Setup the notifier in init so notifications can be sent throughout the code
+        # Setup the notifier
         try:
             self.notify = Notify(self.config)
         except Exception, e:

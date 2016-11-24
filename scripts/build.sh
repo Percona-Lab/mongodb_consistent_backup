@@ -53,7 +53,7 @@ if [ -d ${srcdir} ]; then
 	[ -e ${builddir} ] && rm -rf ${builddir}
 	mkdir -p ${builddir}
 	cp -dpR ${rootdir}/${mod_name} ${builddir}/${mod_name}
-	cp -dp ${rootdir}/{setup.py,requirements.txt,VERSION} ${builddir}
+	cp -dp ${rootdir}/{setup.py,requirements.txt,README.md,VERSION} ${builddir}
 	find ${builddir} -type f -name "*.pyc" -delete
 
 	# Replace version number in setup.py and MongoBackup/__init__.py with number in VERSION:
