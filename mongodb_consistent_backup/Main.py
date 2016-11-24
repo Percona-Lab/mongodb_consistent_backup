@@ -17,7 +17,7 @@ from Upload import Upload
 
 
 class MongodbConsistentBackup(object):
-    def __init__(self, config, prog_name="mongodb_consistent_backup"):
+    def __init__(self, config, prog_name="mongodb-consistent-backup"):
         self.config          = config
         self.program_name    = prog_name
         self.backup          = None

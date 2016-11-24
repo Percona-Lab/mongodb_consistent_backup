@@ -12,7 +12,7 @@ bin/mongodb-consistent-backup: setup.py requirements.txt VERSION scripts/build.s
 
 install: bin/mongodb-consistent-backup
 	mkdir -p $(BINDIR) || true
-	install -m 0755 bin/mongodb_consistent_backup $(BINDIR)/mongodb_consistent_backup
+	install -m 0755 bin/mongodb-consistent-backup $(BINDIR)/mongodb-consistent-backup
 
 uninstall:
 	rm -f $(BINDIR)/mongodb_consistent_backup

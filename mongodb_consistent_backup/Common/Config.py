@@ -6,7 +6,7 @@ from yconf import BaseConfiguration
 
 __version__ = '#.#.#'
 git_commit  = 'GIT_COMMIT_HASH'
-prog_name   = 'mongodb_consistent_backup'
+prog_name   = 'mongodb-consistent-backup'
 
 
 class PrintVersions(Action):
