@@ -10,7 +10,7 @@ def readme():
 
 setup(
     name='mongodb_consistent_backup',
-    version='#.#.#',
+    version='1.0.0',
     license="ASL-2",
     description='Tool for getting consistent backups from MongoDB Clusters and ReplicaSet',
     long_description=readme(),
