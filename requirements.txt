@@ -1,6 +1,6 @@
 multiprocessing
 Fabric
-pymongo>=3.2
+pymongo>=3.3
 pynsca
 PyYAML
 boto
