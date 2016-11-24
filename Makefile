@@ -7,7 +7,7 @@ VERSION=$(shell cat VERSION)
 
 all: bin/mongodb-consistent-backup
 
-bin/mongodb-consistent-backup: setup.py requirements.txt VERSION scripts/build.sh MongoBackup/*.py MongoBackup/Archive/*.py MongoBackup/Common/*.py MongoBackup/Backup/*.py MongoBackup/Notify/*.py MongoBackup/Oplog/*.py MongoBackup/Replication/*.py MongoBackup/Upload/*.py
+bin/mongodb-consistent-backup: setup.py requirements.txt VERSION scripts/build.sh mongodb-consistent-backup/*.py mongodb-consistent-backup/Archive/*.py mongodb-consistent-backup/Common/*.py mongodb-consistent-backup/Backup/*.py mongodb-consistent-backup/Notify/*.py mongodb-consistent-backup/Oplog/*.py mongodb-consistent-backup/Replication/*.py mongodb-consistent-backup/Upload/*.py
 	PYTHON_BIN=$(PYTHON_BIN) VIRTUALENV_BIN=$(VIRTUALENV_BIN) bash scripts/build.sh
 
 install: bin/mongodb-consistent-backup
@@ -20,7 +20,7 @@ uninstall:
 rpm:
 	rm -rf rpmbuild
 	mkdir -p rpmbuild/{SPECS,SOURCES/mongodb_consistent_backup}
-	cp -dpR MongoBackup conf Makefile setup.py scripts requirements.txt LICENSE README.md VERSION rpmbuild/SOURCES/mongodb_consistent_backup
+	cp -dpR mongodb-consistent-backup conf Makefile setup.py scripts requirements.txt LICENSE README.rst VERSION rpmbuild/SOURCES/mongodb_consistent_backup
 	cp -dp scripts/mongodb_consistent_backup.spec rpmbuild/SPECS/mongodb_consistent_backup.spec
 	tar --remove-files -C rpmbuild/SOURCES -czf rpmbuild/SOURCES/mongodb_consistent_backup.tar.gz mongodb_consistent_backup
 	rpmbuild -D "_topdir $(PWD)/rpmbuild" -D "version $(VERSION)" -bb rpmbuild/SPECS/mongodb_consistent_backup.spec

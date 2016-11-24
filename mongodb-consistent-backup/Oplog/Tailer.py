@@ -3,7 +3,7 @@ import logging
 from multiprocessing import Queue
 from time import sleep
 
-from MongoBackup.Oplog import OplogTail
+from mongodb-consistent-backup.Oplog import OplogTail
 
 
 class OplogTailer:

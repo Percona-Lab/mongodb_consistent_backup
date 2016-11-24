@@ -6,7 +6,7 @@ from copy_reg import pickle
 from multiprocessing import Pool, cpu_count
 from types import MethodType
 
-from MongoBackup.Oplog import OplogResolve
+from mongodb-consistent-backup.Oplog import OplogResolve
 
 
 # Allows pooled .apply_async()s to work on Class-methods:

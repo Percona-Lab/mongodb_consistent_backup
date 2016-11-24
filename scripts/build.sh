@@ -3,7 +3,7 @@
 set -x
 
 name=mongodb-consistent-backup
-mod_name=MongoBackup
+mod_name=mongodb-consistent-backup
 py_entry_point=${mod_name}:run
 rootdir=$(readlink -f $(dirname $0)/..)
 srcdir=${rootdir}/${mod_name}
@@ -56,7 +56,7 @@ if [ -d ${srcdir} ]; then
 	cp -dp ${rootdir}/{setup.py,requirements.txt,README.rst,VERSION} ${builddir}
 	find ${builddir} -type f -name "*.pyc" -delete
 
-	# Replace version number in setup.py and MongoBackup/__init__.py with number in VERSION:
+	# Replace version number in setup.py and mongodb-consistent-backup/__init__.py with number in VERSION:
 	if [ -f "$version_file" ]; then
 		version=$(cat ${version_file})
 		if [ -z "$version" ]; then

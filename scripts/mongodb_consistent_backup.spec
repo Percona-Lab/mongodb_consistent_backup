@@ -36,19 +36,19 @@ make
 
 
 %install
-mkdir -p %{buildroot}%{prefix}/share/%{bin_name}
-install -m 0644 conf/example.yml	%{buildroot}%{prefix}/share/%{bin_name}/%{bin_name}.example.yml
+mkdir -p %{buildroot}%{prefix}/share/%{bin_name} %{buildroot}%{_sysconfdir}
+install -m 0644 conf/example.yml	%{buildroot}%{_sysconfdir}/%{bin_name}.yml
 install -m 0644 LICENSE			%{buildroot}%{prefix}/share/%{bin_name}/LICENSE
-install -m 0644 README.md		%{buildroot}%{prefix}/share/%{bin_name}/README.md
+install -m 0644 README.rst		%{buildroot}%{prefix}/share/%{bin_name}/README.rst
 
 make PREFIX=%{prefix} DESTDIR=%{buildroot} install
 
 
 %files
+%{_sysconfdir}/%{bin_name}.yml
 %{prefix}/bin/%{bin_name}
 %{prefix}/share/%{bin_name}/LICENSE
-%{prefix}/share/%{bin_name}/README.md
-%{prefix}/share/%{bin_name}/%{bin_name}.example.yml
+%{prefix}/share/%{bin_name}/README.rst
 
 
 %changelog

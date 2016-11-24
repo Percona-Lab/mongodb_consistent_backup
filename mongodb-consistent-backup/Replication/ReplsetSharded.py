@@ -1,7 +1,7 @@
 import logging
 
-from MongoBackup.Common import DB
-from MongoBackup.Sharding import Sharding
+from mongodb-consistent-backup.Common import DB
+from mongodb-consistent-backup.Sharding import Sharding
 from Replset import Replset
 
 
