@@ -9,7 +9,7 @@ def readme():
 
 
 setup(
-    name='mongodb_consistent_backup',
+    name='mongodb-consistent-backup',
     version='1.0.0',
     license="ASL-2",
     description='Tool for getting consistent backups from MongoDB Clusters and ReplicaSet',
@@ -20,14 +20,16 @@ setup(
     packages=find_packages(),
     classifiers=[
         'Development Status :: 4 - Beta',
+        'Intended Audience :: System Administrators' ,
         'License :: OSI Approved :: Apache Software License',
         'Operating System :: POSIX',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
         'Topic :: Database',
         'Topic :: System :: Archiving :: Backup',
         'Topic :: System :: Recovery Tools',
         'Topic :: System :: Systems Administration',
-        'Intended Audience :: System Administrators' 
+	'Topic :: Utilities'
     ]
 )

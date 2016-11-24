@@ -1,10 +1,12 @@
 # To install to a different prefix use "make PREFIX=/your/path install, default = /usr/local"
 # 
-PREFIX?=/usr/local
+
 VERSION=$(shell cat VERSION)
-BASEDIR=$(DESTDIR)$(PREFIX)
-BINDIR=$(BASEDIR)/bin
-SHAREDIR=$(BASEDIR)/share/mongodb_consistent_backup
+PREFIX?=/usr/local
+BASEDIR?=$(DESTDIR)$(PREFIX)
+BINDIR?=$(BASEDIR)/bin
+SHAREDIR?=$(BASEDIR)/share/mongodb_consistent_backup
+
 
 all: bin/mongodb-consistent-backup
 
