@@ -28,7 +28,6 @@ class MongodbConsistentBackup(object):
         self.notify          = None
         self.oplogtailer     = None
         self.oplog_resolver  = None
-        self.backup_duration = None
         self.upload          = None
         self.lock            = None
         self.start_time      = time()
@@ -45,12 +44,6 @@ class MongodbConsistentBackup(object):
         self.setup_logger()
         self.set_backup_dirs()
         self.get_db_conn()
-
-        # Setup the notifier
-        try:
-            self.notify = Notify(self.config)
-        except Exception, e:
-            raise e
 
     def setup_logger(self):
         self.log_level = logging.INFO
@@ -148,6 +141,12 @@ class MongodbConsistentBackup(object):
 
         self.get_lock()
 
+        # Setup the notifier
+        try:
+            self.notify = Notify(self.config)
+        except Exception, e:
+            raise e
+
         if not self.is_sharded:
             logging.info("Running backup of %s:%s in replset mode" % (self.config.host, self.config.port))
 
@@ -166,6 +165,7 @@ class MongodbConsistentBackup(object):
             except Exception, e:
                 self.exception("Problem getting shard secondaries! Error: %s" % e)
 
+            # run backup
             try:
                 self.backup = Backup(
                     self.config,
