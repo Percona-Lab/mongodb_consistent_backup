@@ -3,8 +3,7 @@
 set -x
 
 name=mongodb-consistent-backup
-mod_name=mongodb-consistent-backup
-py_entry_point=${mod_name}:run
+mod_name=mongodb_consistent_backup
 rootdir=$(readlink -f $(dirname $0)/..)
 srcdir=${rootdir}/${mod_name}
 bindir=${rootdir}/bin
@@ -56,7 +55,7 @@ if [ -d ${srcdir} ]; then
 	cp -dp ${rootdir}/{setup.py,requirements.txt,README.rst,VERSION} ${builddir}
 	find ${builddir} -type f -name "*.pyc" -delete
 
-	# Replace version number in setup.py and mongodb-consistent-backup/__init__.py with number in VERSION:
+	# Replace version number in setup.py and mongodb_consistent_backup/__init__.py with number in VERSION:
 	if [ -f "$version_file" ]; then
 		version=$(cat ${version_file})
 		if [ -z "$version" ]; then
@@ -94,7 +93,7 @@ if [ -d ${srcdir} ]; then
 	fi
 
 	[ ! -d ${bindir} ] && mkdir -p ${bindir}
-	${venvdir}/bin/pex --disable-cache -o ${output_file} -m ${py_entry_point} -r ${require_file} ${builddir}
+	${venvdir}/bin/pex --disable-cache -o ${output_file} -m ${mod_name} -r ${require_file} ${builddir}
 	if [ $? -lt 1 ] && [ -x ${output_file} ]; then
 		echo "pex executable written to '$output_file'"
 	else

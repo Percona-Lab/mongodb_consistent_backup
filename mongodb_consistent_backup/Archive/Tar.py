@@ -6,7 +6,7 @@ from multiprocessing import Pool, cpu_count
 from signal import signal, SIGINT, SIGTERM
 from types import MethodType
 
-from mongodb-consistent-backup.Common import LocalCommand
+from mongodb_consistent_backup.Common import LocalCommand
 
 
 # Allows pooled .apply_async()s to work on Class-methods:

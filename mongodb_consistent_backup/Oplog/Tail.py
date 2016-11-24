@@ -9,7 +9,7 @@ from pymongo.errors import AutoReconnect
 from signal import signal, SIGINT, SIGTERM
 from time import sleep
 
-from mongodb-consistent-backup.Common import DB, LocalCommand
+from mongodb_consistent_backup.Common import DB, LocalCommand
 
 
 class OplogTail(Process):

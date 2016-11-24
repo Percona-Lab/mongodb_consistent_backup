@@ -3,7 +3,7 @@ import logging
 from time import sleep
 
 from Common import DB, validate_hostname
-from mongodb-consistent-backup.Replication import Replset
+from mongodb_consistent_backup.Replication import Replset
 
 
 class Sharding:

@@ -2,7 +2,7 @@ import logging
 
 from math import ceil
 
-from mongodb-consistent-backup.Common import DB, validate_hostname
+from mongodb_consistent_backup.Common import DB, validate_hostname
 
 
 class Replset:
