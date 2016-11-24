@@ -25,6 +25,9 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
         'Topic :: Database',
-        'Topic :: System :: Archiving :: Backup'
+        'Topic :: System :: Archiving :: Backup',
+        'Topic :: System :: Recovery Tools',
+        'Topic :: System :: Systems Administration',
+        'Intended Audience :: System Administrators' 
     ]
 )
