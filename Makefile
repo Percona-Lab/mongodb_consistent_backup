@@ -6,27 +6,26 @@ VERSION=$(shell cat VERSION)
 PREFIX?=/usr/local
 BASEDIR?=$(DESTDIR)$(PREFIX)
 BINDIR?=$(BASEDIR)/bin
-SHAREDIR?=$(BASEDIR)/share/$(NAME)
+SHAREDIR?=$(BASEDIR)/share
 
 
 all: bin/mongodb-consistent-backup
 
-bin/mongodb-consistent-backup: setup.py requirements.txt README.rst VERSION scripts/build.sh $(NAME)/*.py $(NAME)/*/*.py $(NAME)/*/*/*.py 
+bin/mongodb-consistent-backup: clean setup.py requirements.txt README.rst VERSION scripts/build.sh $(NAME)/*.py $(NAME)/*/*.py $(NAME)/*/*/*.py 
 	PYTHON_BIN=$(PYTHON_BIN) VIRTUALENV_BIN=$(VIRTUALENV_BIN) bash scripts/build.sh
 
 install: bin/mongodb-consistent-backup
-	mkdir -p $(BINDIR) $(SHAREDIR) || true
+	mkdir -p $(BINDIR) $(SHAREDIR)/$(NAME) || true
 	install -m 0755 bin/mongodb-consistent-backup $(BINDIR)/mongodb-consistent-backup
-	install -m 0644 conf/example.yml $(SHAREDIR)/example.yml
-	install -m 0644 LICENSE $(SHAREDIR)/LICENSE
-	install -m 0644 README.rst $(SHAREDIR)/README.rst
+	install -m 0644 conf/example.yml $(SHAREDIR)/$(NAME)/example.yml
+	install -m 0644 LICENSE $(SHAREDIR)/$(NAME)/LICENSE
+	install -m 0644 README.rst $(SHAREDIR)/$(NAME)/README.rst
 
 uninstall:
 	rm -f $(BINDIR)/mongodb-consistent-backup
-	rm -rf $(SHAREDIR)
+	rm -rf $(SHAREDIR)/$(NAME)
 
-rpm:
-	rm -rf rpmbuild
+rpm: clean
 	mkdir -p rpmbuild/{SPECS,SOURCES/$(NAME)}
 	cp -dpR $(NAME) conf Makefile setup.py scripts requirements.txt LICENSE README.rst VERSION rpmbuild/SOURCES/$(NAME)
 	install scripts/$(NAME).spec rpmbuild/SPECS/$(NAME).spec
@@ -34,4 +33,4 @@ rpm:
 	rpmbuild -D "_topdir $(PWD)/rpmbuild" -D "version $(VERSION)" -bb rpmbuild/SPECS/$(NAME).spec
 
 clean:
-	rm -rf bin build rpmbuild $(NAME).egg-info
+	rm -rf bin build rpmbuild $(NAME).egg-info 2>/dev/null
