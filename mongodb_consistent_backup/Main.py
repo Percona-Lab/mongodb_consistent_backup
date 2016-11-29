@@ -174,7 +174,7 @@ class MongodbConsistentBackup(object):
                 )
                 self.backup.backup()
                 if self.backup.is_gzip():
-                    logging.info("Backup method supports gzip compression, setting config overrides: { archive.compression: 'none', oplog.compression: 'gzip' }")
+                    logging.info("Backup method supports gzip compression, setting config overrides: { archive.compression: 'none' }")
                     self.config.archive.compression = 'none'
                     self.config.oplog.compression = 'gzip'
             except Exception, e:
