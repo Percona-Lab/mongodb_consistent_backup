@@ -12,7 +12,7 @@ from time import sleep
 from mongodb_consistent_backup.Common import DB, LocalCommand
 
 
-class OplogTail(Process):
+class TailerThread(Process):
     def __init__(self, response_queue, backup_name, base_dir, host, port, dump_gzip=False, user=None,
                  password=None, authdb='admin'):
         Process.__init__(self)

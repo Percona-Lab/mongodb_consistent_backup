@@ -6,7 +6,7 @@ from copy_reg import pickle
 from multiprocessing import Pool, cpu_count
 from types import MethodType
 
-from mongodb_consistent_backup.Oplog import OplogResolve
+from ResolverThread import ResolverThread
 
 
 # Allows pooled .apply_async()s to work on Class-methods:
@@ -19,13 +19,16 @@ def _reduce_method(m):
 pickle(MethodType, _reduce_method)
 
 
-class OplogResolver:
-    def __init__(self, config, tailed_oplogs_summary, backup_oplogs_summary, dump_gzip=False):
+class Resolver:
+    def __init__(self, config, tailed_oplogs_summary, backup_oplogs_summary):
         self.config        = config
         self.tailed_oplogs = tailed_oplogs_summary
         self.backup_oplogs = backup_oplogs_summary
-        self.dump_gzip     = dump_gzip
         self.thread_count  = self.config.oplog.resolver.threads
+
+        self.dump_gzip = False
+        if self.config.oplog.compression == 'gzip':
+            self.dump_gzip = True
 
         self.end_ts = None
         self.delete_oplogs = {}
@@ -72,7 +75,7 @@ class OplogResolver:
                         raise Exception, "Backup oplog is newer than the tailed oplog!", None
                     else:
                         try:
-                            self._pool.apply_async(OplogResolve(
+                            self._pool.apply_async(ResolverThread(
                                 host,
                                 port,
                                 tailed_oplog['file'],

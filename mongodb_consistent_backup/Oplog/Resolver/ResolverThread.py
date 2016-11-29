@@ -4,7 +4,7 @@ from gzip import GzipFile
 from bson import BSON, decode_file_iter
 
 
-class OplogResolve:
+class ResolverThread:
     def __init__(self, host, port, tailed_oplog_file, mongodump_oplog_file, mongodump_oplog_last_ts, max_end_ts, dump_gzip=False):
         self.host                    = host
         self.port                    = port

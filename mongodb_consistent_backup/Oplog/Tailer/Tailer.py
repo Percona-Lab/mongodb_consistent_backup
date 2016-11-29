@@ -3,10 +3,10 @@ import logging
 from multiprocessing import Queue
 from time import sleep
 
-from mongodb_consistent_backup.Oplog import OplogTail
+from TailerThread import TailerThread
 
 
-class OplogTailer:
+class Tailer:
     def __init__(self, config, secondaries, base_dir):
         self.config      = config
         self.secondaries = secondaries
@@ -15,7 +15,10 @@ class OplogTailer:
         self.user        = self.config.user
         self.password    = self.config.password
         self.authdb      = self.config.authdb
-        self.dump_gzip   = self.config.oplog.gzip
+
+        self.dump_gzip = False
+        if self.config.oplog.compression == 'gzip':
+            self.dump_gzip = True
 
         self.response_queue = Queue()
         self.threads        = []
@@ -29,7 +32,7 @@ class OplogTailer:
             secondary  = self.secondaries[shard]
             shard_name = secondary['replSet']
             host, port = secondary['host'].split(":")
-            thread = OplogTail(
+            thread = TailerThread(
                 self.response_queue,
                 shard_name,
                 self.base_dir,

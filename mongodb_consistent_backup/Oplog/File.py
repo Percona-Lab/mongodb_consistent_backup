@@ -5,7 +5,7 @@ from gzip import GzipFile
 from bson import decode_file_iter
 
 
-class OplogInfo:
+class OplogFile:
     def __init__(self, oplog_file, dump_gzip=False):
         self.oplog_file = oplog_file
         self.dump_gzip  = dump_gzip

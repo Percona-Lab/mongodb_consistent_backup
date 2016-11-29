@@ -25,7 +25,10 @@ class Mongodump:
         self.response_queue = Queue()
         self.threads        = []
         self._summary       = {}
-        self.do_gzip        = self.is_gzip()
+
+        self.do_gzip = self.is_gzip()
+        if not self.do_gzip and self.config.backup.mongodump.compression == 'gzip':
+            logging.warning("mongodump gzip compression requested on binary that does not support gzip!")
 
         if not isinstance(self.config_server, dict) and self.config_server in self.secondaries:
             self.config_replset = True

@@ -10,7 +10,7 @@ from Archive import Archive
 from Backup import Backup
 from Common import DB, Lock, validate_hostname
 from Notify import Notify
-from Oplog import OplogTailer, OplogResolver
+from Oplog import Tailer, Resolver
 from Replication import Replset, ReplsetSharded
 from Sharding import Sharding
 from Upload import Upload
@@ -174,8 +174,9 @@ class MongodbConsistentBackup(object):
                 )
                 self.backup.backup()
                 if self.backup.is_gzip():
+                    logging.info("Backup method supports gzip compression, setting config overrides: { archive.compression: 'none', oplog.compression: 'gzip' }")
                     self.config.archive.compression = 'none'
-                    self.config.oplog.gzip = True
+                    self.config.oplog.compression = 'gzip'
             except Exception, e:
                 self.exception("Problem performing replset mongodump! Error: %s" % e)
 
@@ -218,14 +219,15 @@ class MongodbConsistentBackup(object):
                     self.sharding.get_config_server()
                 )
                 if self.backup.is_gzip():
+                    logging.info("Backup method supports gzip compression, setting config overrides: { archive.compression: 'none', oplog.compression: 'gzip' }")
                     self.config.archive.compression = 'none'
-                    self.config.oplog.gzip = True
+                    self.config.oplog.compression = 'gzip'
             except Exception, e:
                 self.exception("Problem initializing backup! Error: %s" % e)
 
             # start the oplog tailer(s)
             try:
-                self.oplogtailer = OplogTailer(
+                self.oplogtailer = Tailer(
                     self.config,
                     self.secondaries,
                     self.backup_root_directory
@@ -252,7 +254,7 @@ class MongodbConsistentBackup(object):
 
             # resolve/merge tailed oplog into mongodump oplog.bson to a consistent point for all shards
             if self.config.backup.method == "mongodump" and self.oplogtailer:
-                self.oplog_resolver = OplogResolver(self.config, self.oplog_summary, self.backup_summary, self.config.oplog.gzip)
+                self.oplog_resolver = Resolver(self.config, self.oplog_summary, self.backup_summary)
                 self.oplog_resolver.run()
 
         # archive backup directories
