@@ -10,7 +10,7 @@ production:
     location: /opt/mongodb/backup
     mongodump:
       binary: /usr/bin/mongodump
-      gzip: true
+      compression: gzip
   replication:
     max_lag_secs: 5
     min_priority: 0
@@ -21,7 +21,7 @@ production:
       wait_secs: 300
       ping_secs: 3
   oplog:
-    # gzip: false
+    # compression: gzip
     # resolver_threads: 4
   archive:
     method: tar
