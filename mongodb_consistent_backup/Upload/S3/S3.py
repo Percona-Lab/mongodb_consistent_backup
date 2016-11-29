@@ -6,8 +6,8 @@ from math import ceil
 from multiprocessing import Pool
 from types import MethodType
 
-from S3 import S3
-from UploadS3Part import UploadS3Part
+from S3Session import S3Session
+from S3UploadThread import S3UploadThread
 
 
 # Allows pooled .apply_async()s to work on Class-methods:
@@ -19,7 +19,7 @@ def _reduce_method(m):
 pickle(MethodType, _reduce_method)
 
 
-class UploadS3:
+class S3:
     def __init__(self, config, source_dir, key_prefix):
         self.config          = config
         self.source_dir      = source_dir
@@ -38,7 +38,7 @@ class UploadS3:
         self._upload_done = False
 
         try:
-            self.s3_conn = S3(self.access_key, self.secret_key, self.s3_host)
+            self.s3_conn = S3Session(self.access_key, self.secret_key, self.s3_host)
             self.bucket  = self.s3_conn.get_bucket(self.bucket_name)
         except Exception, e:
             raise e
@@ -72,7 +72,7 @@ class UploadS3:
                         offset = self.chunk_size * i
                         byte_count = min(self.chunk_size, file_size - offset)
                         part_num = i + 1
-                        self._pool.apply_async(UploadS3Part(
+                        self._pool.apply_async(S3UploadThread(
                             self.bucket_name,
                             self.access_key,
                             self.secret_key,

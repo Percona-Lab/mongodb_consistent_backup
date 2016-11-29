@@ -1,16 +1,17 @@
 # To install to a different prefix use "make PREFIX=/your/path install, default = /usr/local"
 # 
 
+NAME=mongodb_consistent_backup
 VERSION=$(shell cat VERSION)
 PREFIX?=/usr/local
 BASEDIR?=$(DESTDIR)$(PREFIX)
 BINDIR?=$(BASEDIR)/bin
-SHAREDIR?=$(BASEDIR)/share/mongodb_consistent_backup
+SHAREDIR?=$(BASEDIR)/share/$(NAME)
 
 
 all: bin/mongodb-consistent-backup
 
-bin/mongodb-consistent-backup: setup.py requirements.txt VERSION scripts/build.sh mongodb_consistent_backup/*.py mongodb_consistent_backup/Archive/*.py mongodb_consistent_backup/Common/*.py mongodb_consistent_backup/Backup/*.py mongodb_consistent_backup/Notify/*.py mongodb_consistent_backup/Oplog/*.py mongodb_consistent_backup/Replication/*.py mongodb_consistent_backup/Upload/*.py
+bin/mongodb-consistent-backup: setup.py requirements.txt README.rst VERSION scripts/build.sh $(NAME)/*.py $(NAME)/*/*.py $(NAME)/*/*/*.py 
 	PYTHON_BIN=$(PYTHON_BIN) VIRTUALENV_BIN=$(VIRTUALENV_BIN) bash scripts/build.sh
 
 install: bin/mongodb-consistent-backup
@@ -26,11 +27,11 @@ uninstall:
 
 rpm:
 	rm -rf rpmbuild
-	mkdir -p rpmbuild/{SPECS,SOURCES/mongodb_consistent_backup}
-	cp -dpR mongodb_consistent_backup conf Makefile setup.py scripts requirements.txt LICENSE README.rst VERSION rpmbuild/SOURCES/mongodb_consistent_backup
-	install scripts/mongodb_consistent_backup.spec rpmbuild/SPECS/mongodb_consistent_backup.spec
-	tar --remove-files -C rpmbuild/SOURCES -czf rpmbuild/SOURCES/mongodb_consistent_backup.tar.gz mongodb_consistent_backup
-	rpmbuild -D "_topdir $(PWD)/rpmbuild" -D "version $(VERSION)" -bb rpmbuild/SPECS/mongodb_consistent_backup.spec
+	mkdir -p rpmbuild/{SPECS,SOURCES/$(NAME)}
+	cp -dpR $(NAME) conf Makefile setup.py scripts requirements.txt LICENSE README.rst VERSION rpmbuild/SOURCES/$(NAME)
+	install scripts/$(NAME).spec rpmbuild/SPECS/$(NAME).spec
+	tar --remove-files -C rpmbuild/SOURCES -czf rpmbuild/SOURCES/$(NAME).tar.gz $(NAME)
+	rpmbuild -D "_topdir $(PWD)/rpmbuild" -D "version $(VERSION)" -bb rpmbuild/SPECS/$(NAME).spec
 
 clean:
-	rm -rf bin build rpmbuild
+	rm -rf bin build rpmbuild $(NAME).egg-info

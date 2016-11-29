@@ -1,6 +1,6 @@
 import logging
 
-from NSCA import NotifyNSCA
+from NSCA import NSCA
 
 
 class Notify:
@@ -14,7 +14,7 @@ class Notify:
         if self.config.notify.method == "nsca":
             logging.info("Using notify method: nsca")
             try:
-                self._notifier = NotifyNSCA(self.config)
+                self._notifier = NSCA(self.config)
             except Exception, e:
                 raise e
         else:

@@ -6,10 +6,10 @@ from multiprocessing import Queue
 from time import sleep
 
 
-from Dump import Dump
+from MongodumpThread import MongodumpThread
 
 
-class Dumper:
+class Mongodump:
     def __init__(self, config, base_dir, secondaries, config_server=None):
         self.config        = config
         self.base_dir      = base_dir
@@ -82,7 +82,7 @@ class Dumper:
         # backup a secondary from each shard:
         for shard in self.secondaries:
             secondary = self.secondaries[shard]
-            thread = Dump(
+            thread = MongodumpThread(
                 self.response_queue,
                 secondary['replSet'],
                 secondary['host'],
@@ -109,7 +109,7 @@ class Dumper:
         # backup a single non-replset config server, if exists:
         if not self.config_replset and isinstance(self.config_server, dict):
             logging.info("Using non-replset backup method for config server mongodump")
-            self.threads = [Dump(
+            self.threads = [MongodumpThread(
                 self.response_queue,
                 'configsvr',
                 self.config_server['host'],

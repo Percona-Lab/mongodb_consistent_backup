@@ -1,6 +1,6 @@
 import logging
 
-from UploadS3 import UploadS3
+from S3 import S3
 
 
 class Upload:
@@ -17,7 +17,7 @@ class Upload:
             # AWS S3 secure multipart uploader
             logging.info("Using upload method: S3")
             try:
-                self._uploader = UploadS3(
+                self._uploader = S3(
                     self.config,
                     self.base_dir,
                     self.backup_dir

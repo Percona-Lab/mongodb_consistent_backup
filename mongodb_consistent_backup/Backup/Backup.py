@@ -1,6 +1,6 @@
 import logging
 
-from Dumper import Dumper
+from Mongodump import Mongodump
 
 
 class Backup:
@@ -17,7 +17,7 @@ class Backup:
         if self.config.backup.method == "mongodump":
             logging.info("Using backup method: mongodump")
             try:
-                self._method = Dumper(
+                self._method = Mongodump(
                     self.config,
                     self.backup_dir,
                     self.secondaries,

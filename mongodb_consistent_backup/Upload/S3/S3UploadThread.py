@@ -2,10 +2,10 @@ import logging
 
 from filechunkio import FileChunkIO
 
-from S3 import S3
+from S3Session import S3Session
 
 
-class UploadS3Part:
+class S3UploadThread:
     def __init__(self, bucket_name, access_key, secret_key, s3_host, multipart_id, part_num, file_name, offset,
                  byte_count, retries=5, secure=True):
         self.bucket_name  = bucket_name

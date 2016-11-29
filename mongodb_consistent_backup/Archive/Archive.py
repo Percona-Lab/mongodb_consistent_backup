@@ -1,6 +1,6 @@
 import logging
 
-from Tar import ArchiverTar
+from Tar import Tar
 
 
 class Archive:
@@ -15,7 +15,7 @@ class Archive:
         if self.config.archive.method == "tar":
             logging.info("Using archiving method: tar (compression: %s)" % self.config.archive.compression)
             try:
-                self._archiver = ArchiverTar(
+                self._archiver = Tar(
                     self.config,
                     self.backup_dir
                 )

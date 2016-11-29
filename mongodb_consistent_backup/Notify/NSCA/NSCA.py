@@ -4,7 +4,7 @@ import sys
 from pynsca import NSCANotifier
 
 
-class NotifyNSCA:
+class NSCA:
     def __init__(self, config):
         self.config     = config
         self.server     = self.config.notify.nsca.server
