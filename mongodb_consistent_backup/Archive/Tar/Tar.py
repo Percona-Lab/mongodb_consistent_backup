@@ -37,7 +37,7 @@ class Tar:
             raise e
 
     def run(self):
-        logging.info("Archiving backup directories with %i threads max" % self.thread_count)
+        logging.info("Archiving backup directories with pool of %i thread(s)" % self.thread_count)
         if os.path.isdir(self.backup_base_dir):
             try:
                 for backup_dir in os.listdir(self.backup_base_dir):
