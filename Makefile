@@ -11,10 +11,11 @@ SHAREDIR?=$(BASEDIR)/share
 
 all: bin/mongodb-consistent-backup
 
-bin/mongodb-consistent-backup: clean setup.py requirements.txt README.rst VERSION scripts/build.sh $(NAME)/*.py $(NAME)/*/*.py $(NAME)/*/*/*.py 
+bin/mongodb-consistent-backup: setup.py requirements.txt README.rst VERSION scripts/build.sh $(NAME)/*.py $(NAME)/*/*.py $(NAME)/*/*/*.py
 	PYTHON_BIN=$(PYTHON_BIN) VIRTUALENV_BIN=$(VIRTUALENV_BIN) bash scripts/build.sh
 
 install: bin/mongodb-consistent-backup
+	rm -rf bin build 2>/dev/null
 	mkdir -p $(BINDIR) $(SHAREDIR)/$(NAME) || true
 	install -m 0755 bin/mongodb-consistent-backup $(BINDIR)/mongodb-consistent-backup
 	install -m 0644 conf/example.yml $(SHAREDIR)/$(NAME)/example.yml
