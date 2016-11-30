@@ -29,6 +29,6 @@ setup(
         'Topic :: System :: Archiving :: Backup',
         'Topic :: System :: Recovery Tools',
         'Topic :: System :: Systems Administration',
-	'Topic :: Utilities'
+        'Topic :: Utilities'
     ]
 )
