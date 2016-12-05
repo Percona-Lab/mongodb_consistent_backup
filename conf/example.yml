@@ -1,44 +1,45 @@
-### MongoDB connection:
-## Point this at a mongod for a single-node/replset backup or a mongos for a full-cluster backup
-host: localhost
-port: 27018
-#user: 
-#password:
-#authdb:
-
-### mongo_backup general settings
-backup_name: dev-cluster
-backup_location: /opt/mongodb/backup
-backup_binary: /usr/bin/mongodump
-max_repl_lag_secs: 5
-balancer_wait_secs: 300
-
-### 'mongo_backup' kill switches
-## Uncomment to disable oplog tailing (lazy mode), archiving or archive compression
-#no_oplog_tailer: true
-#no_archiver: true
-#no_archiver_gzip: true
-
-### 'mongo_backup' max-thread settings
-## ADVANCED: you probably don't need to touch this - auto defaults are based on # of CPUs
-#resolver_threads: 2
-#archiver_threads: 4
-
-### Nagios NSCA notify setttings
-## Sends success/failure push notifications to NSCA
-#nsca_server: nagios.example.com:5667
-#nsca_password: passwordhere
-#nsca_check_name: check_mongodb_backup
-#nsca_check_host: nagios.example.com
-
-### AWS S3 Multipart Upload
-## Uploads backups to AWS S3 Bucket
-#upload_s3_bucket_name: <AWS S3 BUCKET NAME>
-#upload_s3_bucket_prefix: /
-#upload_s3_access_key: <AWS ACCESS KEY>
-#upload_s3_secret_key: <AWS SECRET KEY>
-#upload_s3_url: s3.amazonaws.com
-#upload_s3_secure: true
-#upload_s3_remove_uploaded: false
-#upload_s3_threads: 4
-#upload_s3_chunk_size_mb: 50
+production:
+  host: localhost
+  port: 27017
+  #user: 
+  #password:
+  #authdb: admin
+  backup:
+    method: mongodump
+    name: test
+    location: /opt/mongodb/backup
+    mongodump:
+      binary: /usr/bin/mongodump
+      compression: gzip
+  replication:
+    max_lag_secs: 5
+    min_priority: 0
+    max_priority: 1000
+    use_hidden: false
+  sharding:
+    balancer:
+      wait_secs: 300
+      ping_secs: 3
+  oplog:
+    # compression: gzip
+    # resolver_threads: 4
+  archive:
+    method: tar
+    compression: gzip
+    # threads: 2
+  notify:
+    method: none
+    #nsca:
+    #  server:
+    #  password:
+    #  check_host: 
+    #  check_name: mongodb_consistent_backup
+  upload:
+    method: none
+    #s3:
+    #  access_key:
+    #  secret_key:
+    #  bucket_name: 
+    #  bucket_prefix: /
+    #  remove_uploaded: true
+    #  threads: 4
