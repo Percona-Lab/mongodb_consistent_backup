@@ -1,6 +1,8 @@
 import os
 import logging
 
+# Skip bson in requirements , pymongo provides
+# noinspection PyPackageRequirements
 from bson.timestamp import Timestamp
 from copy_reg import pickle
 from multiprocessing import Pool, cpu_count

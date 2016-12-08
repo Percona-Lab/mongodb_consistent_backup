@@ -51,6 +51,7 @@ class ConfigParser(BaseConfiguration):
 
 
 class Config(object):
+    # noinspection PyUnusedLocal
     def __init__(self, cmdline=None, **args):
         if not self.cmdline:
             self.cmdline = sys.argv[1:]
@@ -94,5 +95,6 @@ class Config(object):
     def __getattr__(self, key):
         try:
             return self._config.get(key)
+        # TODO-timv What can we do to make this better?
         except:
             return None

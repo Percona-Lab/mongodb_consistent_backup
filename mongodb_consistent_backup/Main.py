@@ -33,12 +33,16 @@ class MongodbConsistentBackup(object):
         self.start_time      = time()
         self.end_time        = None
         self.backup_duration = None
+        self.backup_time = None
+        self.backup_root_directory = None
+        self.backup_root_subdirectory = None
         self.connection      = None
         self.db              = None
         self.is_sharded      = False
         self.secondaries     = {}
         self.oplog_summary   = {}
         self.backup_summary  = {}
+        self.log_level = None
 
         self.setup_signal_handlers()
         self.setup_logger()

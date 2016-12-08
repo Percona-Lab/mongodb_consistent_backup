@@ -1,6 +1,8 @@
 import os
 import logging
 
+# Skip bson in requirements , pymongo provides
+# noinspection PyPackageRequirements
 from bson import BSON
 from gzip import GzipFile
 from multiprocessing import Process, Event

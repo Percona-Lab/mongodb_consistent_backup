@@ -1,4 +1,4 @@
-import os
+import os, sys
 import logging
 
 from fabric.api import hide, settings, local
@@ -25,6 +25,7 @@ class Mongodump:
         self.response_queue = Queue()
         self.threads        = []
         self._summary       = {}
+        self.mongodump_version = None
 
         self.do_gzip = self.is_gzip()
         if not self.do_gzip and self.config.backup.mongodump.compression == 'gzip':

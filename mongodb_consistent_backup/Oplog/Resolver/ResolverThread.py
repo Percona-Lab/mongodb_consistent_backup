@@ -1,6 +1,8 @@
 import logging
 
 from gzip import GzipFile
+# Skip bson in requirements , pymongo provides
+# noinspection PyPackageRequirements
 from bson import BSON, decode_file_iter
 
 

@@ -103,7 +103,7 @@ class Replset:
                             priority = int(member_config['priority'])
                             log_data['priority'] = priority
                             if member_config['priority'] > 0:
-                                score = score - priority
+                                score -= priority
                         break
 
                 optime_ts = member['optime']
@@ -111,6 +111,7 @@ class Replset:
                     optime_ts = member['optime']['ts']
 
                 if priority < self.min_priority or priority > self.max_priority:
+                    # TODO-timv With out try blocks the log_msg is confused and may not be used, shouldn't we log immediately?
                     log_msg = "Found SECONDARY %s/%s with out-of-bounds priority! Skipping" % (rs_name, member['name'])
                 rep_lag = (self.primary_optime().time - optime_ts.time)
                 score = ceil((score - rep_lag) * score_scale)

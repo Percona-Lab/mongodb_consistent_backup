@@ -1,9 +1,9 @@
+# TODO-timv Can we remove this?
 import os
 import sys
 
 from Common import Config
 from Main import MongodbConsistentBackup
-
 
 __version__ = '#.#.#'
 git_commit  = 'GIT_COMMIT_HASH'
@@ -13,12 +13,12 @@ git_commit  = 'GIT_COMMIT_HASH'
 def run():
     try:
         config = Config(submodules=[
-                Archive,
-                Backup,
-                Notify,
-                Oplog,
-                Replication,
-                Upload
+            "Archive",
+            "Backup",
+            "Notify",
+            "Oplog",
+            "Replication",
+            "Upload"
         ])
     except Exception, e:
         print "Error setting up configuration: '%s'!" % e

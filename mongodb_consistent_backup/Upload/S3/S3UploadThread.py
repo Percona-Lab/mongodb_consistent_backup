@@ -1,7 +1,7 @@
 import logging
 
 from filechunkio import FileChunkIO
-
+# TODO-timv Why do we have this if its not used?
 from S3Session import S3Session
 
 
@@ -21,6 +21,7 @@ class S3UploadThread:
         self.secure       = secure
 
         try:
+            # TODO-timv S3 looks to be missing did you forget to import it maybe?
             self.s3_conn = S3(self.access_key, self.secret_key, self.s3_host, self.secure, self.retries)
             self.bucket  = self.s3_conn.get_bucket(self.bucket_name)
         except Exception, e:
