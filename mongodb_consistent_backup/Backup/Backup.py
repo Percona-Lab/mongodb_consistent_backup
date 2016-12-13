@@ -14,23 +14,23 @@ class Backup:
         self.init()
 
     def init(self):
-        if self.config.backup.method == "mongodump":
-            logging.info("Using backup method: mongodump")
-            try:
-                self._method = Mongodump(
-                    self.config,
-                    self.backup_dir,
-                    self.secondaries,
-                    self.config_server
-                )
-            except Exception, e:
-                raise Exception, "Problem performing mongodump! Error: %s" % e, None
-        else:
+        backup_method = self.config.backup.method
+        if backup_method is None:
             raise Exception, 'Must specify a backup method!', None
+        logging.info("Using backup method: %s" % backup_method)
+        try:
+            self._method = globals()[backup_method](
+                self.config,
+                self.backup_dir,
+                self.secondaries,
+                self.config_server
+            )
+        except Exception, e:
+            raise Exception, "Problem performing %s! Error: %s" % (backup_method, e), None
 
-    def is_gzip(self):
+    def is_compressed(self):
         if self._method:
-            return self._method.is_gzip()
+            return self._method.is_compressed()
 
     def backup(self):
         if self._method:
