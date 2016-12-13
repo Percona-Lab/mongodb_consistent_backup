@@ -13,19 +13,21 @@ class Upload:
         self.init()
 
     def init(self):
-        if self.config.upload.method == "s3" and self.config.upload.s3.bucket_name and self.config.upload.s3.bucket_prefix and self.config.upload.s3.access_key and self.config.upload.s3.secret_key:
-            # AWS S3 secure multipart uploader
-            logging.info("Using upload method: S3")
-            try:
-                self._uploader = S3(
-                    self.config,
-                    self.base_dir,
-                    self.backup_dir
-                )
-            except Exception, e:
-                raise Exception, "Problem performing AWS S3 multipart upload! Error: %s" % e, None
-        else:
+        upload_method = self.config.upload.method
+        if upload_method == None:
             logging.info("Uploading disabled, skipping")
+        #TODO Remove this line and move to  S3 Lib for checking
+        # if self.config.upload.method == "s3" and self.config.upload.s3.bucket_name and self.config.upload.s3.bucket_prefix and self.config.upload.s3.access_key and self.config.upload.s3.secret_key:
+
+        logging.info("Using upload method: %s" %  upload_method)
+        try:
+            self._uploader = globals()[upload_method](
+                self.config,
+                self.base_dir,
+                self.backup_dir
+            )
+        except Exception, e:
+            raise Exception, "Problem settings up %s Uploader Error: %s" % (self.config.upload.method,e), None
 
     def upload(self):
         if self._uploader:

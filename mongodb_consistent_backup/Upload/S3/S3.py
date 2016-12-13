@@ -24,6 +24,7 @@ class S3:
         self.config          = config
         self.source_dir      = source_dir
         self.key_prefix      = key_prefix
+        self.s3_host         = self.config.upload.s3.host
         self.bucket_name     = self.config.upload.s3.bucket_name
         self.bucket_prefix   = self.config.upload.s3.bucket_prefix
         self.access_key      = self.config.upload.s3.access_key
@@ -36,7 +37,8 @@ class S3:
         self._pool        = None
         self._multipart   = None
         self._upload_done = False
-
+        if None in ( self.access_key, self.secret_key,self.s3_host):
+            raise "Invalid S3 security key or host detected!"
         try:
             self.s3_conn = S3Session(self.access_key, self.secret_key, self.s3_host)
             self.bucket  = self.s3_conn.get_bucket(self.bucket_name)
