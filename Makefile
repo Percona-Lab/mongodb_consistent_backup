@@ -25,5 +25,8 @@ rpm:
 	tar --remove-files -C rpmbuild/SOURCES -czf rpmbuild/SOURCES/mongodb_consistent_backup.tar.gz mongodb_consistent_backup
 	rpmbuild -D "_topdir $(PWD)/rpmbuild" -D "version $(VERSION)" -bb rpmbuild/SPECS/mongodb_consistent_backup.spec
 
+docker: bin/mongodb-consistent-backup
+	docker build -t mongodb_consistent_backup .
+
 clean:
 	rm -rf bin build rpmbuild
