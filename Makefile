@@ -4,6 +4,7 @@ PREFIX?=/usr/local
 BASEDIR=$(DESTDIR)$(PREFIX)
 BINDIR=$(BASEDIR)/bin
 VERSION=$(shell cat VERSION)
+GIT_COMMIT=$(shell git show 2>/dev/null | awk 'NR==1{print $$2}')
 
 all: bin/mongodb-consistent-backup
 
@@ -25,7 +26,7 @@ rpm:
 	tar --remove-files -C rpmbuild/SOURCES -czf rpmbuild/SOURCES/mongodb_consistent_backup.tar.gz mongodb_consistent_backup
 	rpmbuild -D "_topdir $(PWD)/rpmbuild" -D "version $(VERSION)" -bb rpmbuild/SPECS/mongodb_consistent_backup.spec
 
-docker: bin/mongodb-consistent-backup
+docker:
 	docker build -t mongodb_consistent_backup .
 
 clean:
