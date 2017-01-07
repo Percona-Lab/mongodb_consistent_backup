@@ -60,6 +60,22 @@ $ tar xfvz <shardname>.tar.gz
 $ mongorestore --host mongod12.example.com --port 27017 -u admin -p 123456 --oplogReplay /path/to/backup
 ```
 
+### Run as Docker Container
+
+**Note: you need to use persistent volumes to store backups long-term when using Docker**
+
+#### Via Docker Hub
+```
+docker run -i timvaillancourt/mongodb_consistent_backup -H mongos1.example.com -P 27018 -u mongodb-consistent-backup -p s3cr3t -n prodwebsite -l /opt/mongobackups
+```
+
+#### Build Local Docker Image
+```
+cd /path/to/mongodb_consistent_backup
+docker build -t mongodb_consistent_backup .
+docker run -t mongodb_consistent_backup <flags>
+```
+
 ### Roadmap
 
 - "Distributed Mode" for running/storing backup on remote hosts (*via ssh + magic*)
