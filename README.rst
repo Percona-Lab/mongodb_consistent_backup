@@ -52,7 +52,7 @@ command):
 
 ::
 
-    yum install python python-devel python-virtualenv gcc
+    yum install python python-devel python-virtualenv gcc make libffi-devel openssl-devel
 
 To install to default '*/usr/local/bin/mongodb-consistent-backup*\ ':
 
