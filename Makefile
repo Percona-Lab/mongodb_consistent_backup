@@ -4,7 +4,6 @@ PREFIX?=/usr/local
 BASEDIR=$(DESTDIR)$(PREFIX)
 BINDIR=$(BASEDIR)/bin
 VERSION=$(shell cat VERSION)
-GIT_COMMIT=$(shell git show 2>/dev/null | awk 'NR==1{print $$2}')
 
 all: bin/mongodb-consistent-backup
 
