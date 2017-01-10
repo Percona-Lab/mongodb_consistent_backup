@@ -27,7 +27,7 @@ rpm:
 	rpmbuild -D "_topdir $(PWD)/rpmbuild" -D "version $(VERSION)" -bb rpmbuild/SPECS/mongodb_consistent_backup.spec
 
 docker:
-	docker build -t mongodb_consistent_backup .
+	docker build -t --no-cache mongodb_consistent_backup .
 
 clean:
 	rm -rf bin build rpmbuild
