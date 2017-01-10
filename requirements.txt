@@ -1,7 +1,7 @@
 multiprocessing
-Fabric
-pymongo
-pynsca
-PyYAML
-boto
-filechunkio
+Fabric==1.13.1
+pymongo==3.4.0
+pynsca==1.5
+PyYAML==3.12
+boto==2.45.0
+filechunkio==1.8
