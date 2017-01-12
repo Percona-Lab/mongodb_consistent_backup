@@ -69,7 +69,7 @@ $ mongorestore --host mongod12.example.com --port 27017 -u admin -p 123456 --opl
 $ docker run -i timvaillancourt/mongodb_consistent_backup <mongodb_consistent_backup-flags>
 ```
 
-#### Build Local Docker Image
+#### Build and Run Docker Image
 ```
 $ cd /path/to/mongodb_consistent_backup
 $ make docker
