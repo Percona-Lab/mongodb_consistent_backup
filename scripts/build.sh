@@ -85,14 +85,14 @@ if [ -d ${srcdir} ]; then
 	fi
 	source ${venvdir}/bin/activate
 		
-	${venvdir}/bin/pip install pex requests
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pip install pex requests
 	if [ $? -gt 0 ]; then
 		echo "Failed to install pex utility for building!"
 		exit 1
 	fi
 
 	[ ! -d ${bindir} ] && mkdir -p ${bindir}
-	${venvdir}/bin/pex --disable-cache -o ${output_file} -m ${py_entry_point} -r ${require_file} ${builddir}
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pex --disable-cache -o ${output_file} -m ${py_entry_point} -r ${require_file} ${builddir}
 	if [ $? -lt 1 ] && [ -x ${output_file} ]; then
 		echo "pex executable written to '$output_file'"
 		rm -rf ${builddir}
