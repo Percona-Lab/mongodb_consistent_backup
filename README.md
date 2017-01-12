@@ -62,7 +62,7 @@ $ mongorestore --host mongod12.example.com --port 27017 -u admin -p 123456 --opl
 
 ### Run as Docker Container
 
-*Note: you need to use persistent volumes to store backups long-term when using Docker*
+*Note: you need to use persistent volumes to store backups long-term on disk when using Docker. Data in Docker containers is destroyed when the container is deleted.*
 
 #### Via Docker Hub
 ```
@@ -72,7 +72,7 @@ $ docker run -i timvaillancourt/mongodb_consistent_backup <mongodb_consistent_ba
 #### Build Local Docker Image
 ```
 $ cd /path/to/mongodb_consistent_backup
-$ docker build -t mongodb_consistent_backup .
+$ make docker
 $ docker run -t mongodb_consistent_backup <mongodb_consistent_backup-flags>
 ```
 
