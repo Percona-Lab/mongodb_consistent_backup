@@ -66,6 +66,25 @@ Use the PREFIX= variable to change the installation path (*default:
 /usr/local*), ie: ``make PREFIX=/usr install`` to install to:
 '*/usr/bin/mongodb-consistent-backup*\ '.
 
+MongoDB Authorization
+~~~~~~~~~~~~~~~~~~~~~
+
+If your replset/cluster uses `Authentication https://docs.mongodb.com/manual/core/authentication`__, you must add a user with the "backup" and "clusterMonitor" built-in auth roles.
+
+To create a user, execute the following **replace the 'pwd' field with a secure password!**:
+
+::
+    db.createUser({
+            user: "mongodb_consistent_backup",
+            pwd: "PASSWORD-HERE",
+            roles: [
+                    { role: "backup", db: "admin" },
+                    { role: "clusterMonitor", db: "admin" }
+            ]
+    })
+
+User and password are set using the 'user' and 'password' config-file fields or via the '-u' and '-p' command-line flags **not recommended due to security concerns**
+
 Run a Backup
 ~~~~~~~~~~~~
 
