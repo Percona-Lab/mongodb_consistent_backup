@@ -69,7 +69,7 @@ Use the PREFIX= variable to change the installation path (*default:
 MongoDB Authorization
 ~~~~~~~~~~~~~~~~~~~~~
 
-If your replset/cluster uses `Authentication https://docs.mongodb.com/manual/core/authentication`__, you must add a user with the "backup" and "clusterMonitor" built-in auth roles.
+If your replset/cluster uses `Authentication <https://docs.mongodb.com/manual/core/authentication>`__, you must add a user with the "backup" and "clusterMonitor" built-in auth roles.
 
 To create a user, execute the following **replace the 'pwd' field with a secure password!**:
 
