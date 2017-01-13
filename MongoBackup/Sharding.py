@@ -128,7 +128,7 @@ class Sharding:
             configdb_hosts = self.get_configdb_hosts()
             try:
                 config_host = configdb_hosts[0]
-                config_port = 27017
+                config_port = 27019
                 if ":" in configdb_hosts[0]:
                     config_host, config_port = configdb_hosts[0].split(":")
                 validate_hostname(config_host)
