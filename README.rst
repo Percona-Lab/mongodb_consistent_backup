@@ -74,6 +74,7 @@ If your replset/cluster uses `Authentication https://docs.mongodb.com/manual/cor
 To create a user, execute the following **replace the 'pwd' field with a secure password!**:
 
 ::
+
     db.createUser({
             user: "mongodb_consistent_backup",
             pwd: "PASSWORD-HERE",
