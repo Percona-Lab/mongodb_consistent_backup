@@ -71,7 +71,6 @@ class Dump(Process):
             commands.append([self.binary, mongodump_flags])
 
             for (command, command_flags) in commands:
-                print command_flags
                 self._command = LocalCommand(command, command_flags, self.verbose)
                 self._command.run()
         except Exception, e:
