@@ -69,7 +69,7 @@ class Dumper:
     def run(self):
         # decide how many parallel dump workers to use based on cpu count vs # of shards (if 3.2+)
         self.threads_per_dump = 1
-	if tuple(self.version.split(".")) >= tuple("3.2.0".split(".")): 
+        if tuple(self.version.split(".")) >= tuple("3.2.0".split(".")): 
             self.threads_per_dump = 1
             if self.cpu_count > len(self.secondaries):
                 self.threads_per_dump = int(floor(self.cpu_count / len(self.secondaries)))
@@ -100,7 +100,7 @@ class Dumper:
 
         # start all threads and wait
         logging.info(
-		"Starting backups using mongodump %s (inline gzip: %s, threads per dump: %i)" % (self.version, str(self.dump_gzip), self.threads_per_dump))
+                "Starting backups using mongodump %s (inline gzip: %s, threads per dump: %i)" % (self.version, str(self.dump_gzip), self.threads_per_dump))
         for thread in self.threads:
             thread.start()
         self.wait()
