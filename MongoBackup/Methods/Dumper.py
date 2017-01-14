@@ -68,12 +68,12 @@ class Dumper:
 
     def run(self):
         # decide how many parallel dump workers to use based on cpu count vs # of shards (if 3.2+)
-        self.threads_per_dump = 1
+        self.threads_per_dump = 0
         if tuple(self.version.split(".")) >= tuple("3.2.0".split(".")): 
+            self.threads_per_dump = 1
             if self.cpu_count > len(self.secondaries):
                 self.threads_per_dump = int(floor(self.cpu_count / len(self.secondaries)))
         else:
-            self.threads_per_dump = 0
             logging.warn("Threading unsupported by mongodump version %s. Use mongodump 3.2.0 or greater to enable per-dump threading." % self.version)
 
         # backup a secondary from each shard:
