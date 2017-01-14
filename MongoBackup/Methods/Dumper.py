@@ -74,8 +74,8 @@ class Dumper:
             self.threads_per_dump = 1
             if self.cpu_count > len(self.secondaries):
                 self.threads_per_dump = int(floor(self.cpu_count / len(self.secondaries)))
-            if self.threads_per_dump > self.threads_per_dump_max:
-                self.threads_per_dump = self.threads_per_dump_max
+                if self.threads_per_dump > self.threads_per_dump_max:
+                    self.threads_per_dump = self.threads_per_dump_max
         else:
             logging.warn("Threading unsupported by mongodump version %s. Use mongodump 3.2.0 or greater to enable per-dump threading." % self.version)
 
