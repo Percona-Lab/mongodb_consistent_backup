@@ -12,17 +12,21 @@ class Archive:
         self.init()
 
     def init(self):
-        if self.config.archive.method == "tar":
-            logging.info("Using archiving method: tar (compression: %s)" % self.config.archive.compression)
+        archive_method = self.config.archive.method
+        if archive_method is None:
+            logging.info("Archiving disabled, skipping")
+        else:
+            config_vars = ""
+            for key in self.config.archive:
+                config_vars += "%s=%s," % (key, self.config.archive[key])
+            logging.info("Using archiving method: %s (options: %s)" % archive_method, config_vars[:-1])
             try:
-                self._archiver = Tar(
+                self._archiver = globals()[archive_method](
                     self.config,
                     self.backup_dir
                 )
             except Exception, e:
                 raise e
-        else:
-            logging.info("Archiving disabled, skipping")
 
     def archive(self):
         if self._archiver:
