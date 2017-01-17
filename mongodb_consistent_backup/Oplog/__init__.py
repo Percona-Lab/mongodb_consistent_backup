@@ -1,4 +1,4 @@
-from File import OplogFile
+from Oplog import Oplog
 from Resolver import Resolver
 from Tailer import Tailer
 

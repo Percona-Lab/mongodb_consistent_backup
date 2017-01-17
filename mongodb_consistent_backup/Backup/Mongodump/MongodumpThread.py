@@ -6,7 +6,7 @@ from signal import signal, SIGINT, SIGTERM
 from time import time
 
 from mongodb_consistent_backup.Common import LocalCommand
-from mongodb_consistent_backup.Oplog import OplogFile
+from mongodb_consistent_backup.Oplog import Oplog
 
 
 # noinspection PyStringFormat
@@ -77,7 +77,7 @@ class MongodumpThread(Process):
             logging.error("Error performing mongodump: %s" % e)
             return None
 
-        oplog = OplogFile(self.oplog_file, self.dump_gzip)
+        oplog = Oplog(self.oplog_file, self.dump_gzip)
         self.completed = True
         self.response_queue.put({
             'host': self.host,

@@ -1,7 +1,5 @@
 import logging
 
-from Mongodump import Mongodump
-
 
 class Backup:
     def __init__(self, config, backup_dir, secondaries, config_server=None):

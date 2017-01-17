@@ -61,7 +61,7 @@ class MongodbConsistentBackup(object):
             signal(SIGINT, self.cleanup_and_exit)
             signal(SIGTERM, self.cleanup_and_exit)
         except Exception, e:
-            # TODO-timv Where is logger coming from?ß
+            # TODO-timv Where is logger coming from?
             logger.fatal("Cannot setup signal handlers, error: %s" % e)
             sys.exit(1)
 

@@ -1,7 +1,5 @@
 import logging
 
-from Tar import Tar
-
 
 class Archive:
     def __init__(self, config, backup_dir):
