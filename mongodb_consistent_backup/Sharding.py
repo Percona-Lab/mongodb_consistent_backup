@@ -128,7 +128,10 @@ class Sharding:
         if force or not self.config_server:
             configdb_hosts = self.get_configdb_hosts()
             try:
-                config_host, config_port = configdb_hosts[0].split(":")
+                config_host = configdb_hosts[0]
+                config_port = 27019
+                if ":" in configdb_hosts[0]:
+                    config_host, config_port = configdb_hosts[0].split(":")
                 validate_hostname(config_host)
                 logging.info("Found sharding config server: %s:%s" % (config_host, config_port))
 
