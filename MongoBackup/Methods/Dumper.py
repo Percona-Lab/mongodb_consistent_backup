@@ -1,7 +1,8 @@
 import logging
 
 from fabric.api import hide, settings, local
-from multiprocessing import Queue
+from math import floor
+from multiprocessing import Queue, cpu_count
 from time import sleep
 
 
@@ -22,6 +23,7 @@ class Dumper:
         self.verbose       = verbose
 
         self.config_replset = False
+        self.cpu_count      = cpu_count()
         self.response_queue = Queue()
         self.threads        = []
         self._summary       = {}
@@ -65,6 +67,18 @@ class Dumper:
             raise Exception, "Not all mongodump threads completed successfully!", None
 
     def run(self):
+        # decide how many parallel dump workers to use based on cpu count vs # of shards (if 3.2+), 8 max workers max to protect the db
+        self.threads_per_dump     = 0
+        self.threads_per_dump_max = 8
+        if tuple(self.version.split(".")) >= tuple("3.2.0".split(".")): 
+            self.threads_per_dump = 1
+            if self.cpu_count > len(self.secondaries):
+                self.threads_per_dump = int(floor(self.cpu_count / len(self.secondaries)))
+                if self.threads_per_dump > self.threads_per_dump_max:
+                    self.threads_per_dump = self.threads_per_dump_max
+        else:
+            logging.warn("Threading unsupported by mongodump version %s. Use mongodump 3.2.0 or greater to enable per-dump threading." % self.version)
+
         # backup a secondary from each shard:
         for shard in self.secondaries:
             secondary = self.secondaries[shard]
@@ -77,6 +91,7 @@ class Dumper:
                 self.authdb,
                 self.base_dir,
                 self.binary,
+                self.threads_per_dump,
                 self.dump_gzip,
                 self.verbose
             )
@@ -87,7 +102,7 @@ class Dumper:
 
         # start all threads and wait
         logging.info(
-            "Starting backups in threads using mongodump %s (inline gzip: %s)" % (self.version, str(self.dump_gzip)))
+                "Starting backups using mongodump %s (inline gzip: %s, threads per dump: %i)" % (self.version, str(self.dump_gzip), self.threads_per_dump))
         for thread in self.threads:
             thread.start()
         self.wait()
@@ -107,6 +122,7 @@ class Dumper:
                 self.authdb,
                 self.base_dir,
                 self.binary,
+                self.threads_per_dump,
                 self.dump_gzip,
                 self.verbose
             )]
