@@ -178,7 +178,7 @@ class MongodbConsistentBackup(object):
                     self.secondaries
                 )
                 self.backup.backup()
-                if self.backup.is_gzip():
+                if self.backup.is_compressed():
                     logging.info("Backup method supports gzip compression, setting config overrides: { archive.compression: 'none' }")
                     self.config.archive.compression = 'none'
                     self.config.oplog.compression = 'gzip'
@@ -223,7 +223,7 @@ class MongodbConsistentBackup(object):
                     self.secondaries, 
                     self.sharding.get_config_server()
                 )
-                if self.backup.is_gzip():
+                if self.backup.is_compressed():
                     logging.info("Backup method supports gzip compression, setting config overrides: { archive.compression: 'none', oplog.compression: 'gzip' }")
                     self.config.archive.compression = 'none'
                     self.config.oplog.compression = 'gzip'

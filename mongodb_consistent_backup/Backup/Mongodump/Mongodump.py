@@ -29,7 +29,8 @@ class Mongodump:
         self._summary       = {}
         self.mongodump_version = None
 
-        self.do_gzip = self.is_gzip()
+        self.do_gzip = self.can_gzip()
+
         if not self.do_gzip and self.config.backup.mongodump.compression == 'gzip':
             logging.warning("mongodump gzip compression requested on binary that does not support gzip!")
 
@@ -42,7 +43,7 @@ class Mongodump:
         with hide('running', 'warnings'), settings(warn_only=True):
             self.version = local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary, capture=True)
 
-    def is_gzip(self):
+    def can_gzip(self):
         if os.path.isfile(self.binary) and os.access(self.binary, os.X_OK):
             with hide('running', 'warnings'), settings(warn_only=True):
                 self.mongodump_version = tuple(
@@ -54,6 +55,9 @@ class Mongodump:
         else:
             logging.fatal("Cannot find or execute the mongodump binary file %s!" % self.binary)
             sys.exit(1)
+
+    def is_compressed(self):
+        return self.can_gzip()
 
     def summary(self):
         return self._summary
