@@ -72,16 +72,18 @@ class Config(object):
             return data[keys]
 
     def parse_submodules(self):
-	print "walk path: %s" % self.walk_path
 	for _, modname, ispkg in walk_packages(path="."):
 	    if ispkg:
 	        try:
-		    print "imporing submodule: %s" % modname
-		    mod = __import__(modname, globals(), locals())
-		    print mod.__package__
+		    components = modname.split('.')
+		    mod = __import__(components[0])
+		    for comp in components[1:]:
+		        mod = getattr(mod, comp)
 		    mod.config(self._config.parser)
+		except AttributeError, e:
+		    continue
 	        except Exception, e:
-		    print e
+		    raise e
 
     def check_required(self):
         required = [
