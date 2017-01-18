@@ -53,9 +53,8 @@ class ConfigParser(BaseConfiguration):
 
 class Config(object):
     # noinspection PyUnusedLocal
-    def __init__(self, walk_path):
-	self.walk_path = walk_path
-        self._config   = ConfigParser()
+    def __init__(self):
+        self._config = ConfigParser()
         self.parse_submodules()
         self.parse()
 
