@@ -1,6 +1,6 @@
 import logging
 
-from S3 import S3
+#from S3 import S3
 
 
 class Upload:
