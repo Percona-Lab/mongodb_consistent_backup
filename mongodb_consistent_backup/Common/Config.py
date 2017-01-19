@@ -71,20 +71,25 @@ class Config(object):
             return data[keys]
 
     def parse_submodules(self):
-	for _, name, ispkg in iter_packages(path="."):
+	for _, modname, ispkg in walk_packages(path="."):
 	    if ispkg:
 	        try:
-		    components = name.split(".")
+		    components = modname.split('.')
 		    mod = __import__(components[0])
 		    for comp in components[1:]:
 		        mod = getattr(mod, comp)
-                    if hasattr(mod, 'config'):
-		        mod.config(self._config.parser)
+		    mod.config(self._config.parser)
+		except AttributeError, e:
+		    continue
 	        except Exception, e:
 		    raise e
 
     def check_required(self):
-        for key in ['backup.name', 'backup.location']:
+        required = [
+            'backup.name',
+            'backup.location'
+        ]
+        for key in required:
             try:
                 self._get(key)
             except:
