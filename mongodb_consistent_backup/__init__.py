@@ -12,14 +12,7 @@ git_commit  = 'GIT_COMMIT_HASH'
 # noinspection PyUnusedLocal
 def run():
     try:
-        config = Config(submodules=[
-            "Archive",
-            "Backup",
-            "Notify",
-            "Oplog",
-            "Replication",
-            "Upload"
-        ])
+        config = Config()
     except Exception, e:
         print "Error setting up configuration: '%s'!" % e
         sys.exit(1)

@@ -1,7 +1,7 @@
 import logging
 
-from boto import config
-from boto.s3.connection import S3Connection
+import boto
+import boto.s3
 
 
 class S3Session:
@@ -13,12 +13,12 @@ class S3Session:
         self.num_retries    = num_retries
         self.socket_timeout = socket_timeout
 
-        for section in config.sections():
-            config.remove_section(section)
-        config.add_section('Boto')
-        config.setbool('Boto', 'is_secure', self.secure)
-        config.set('Boto', 'http_socket_timeout', str(self.socket_timeout))
-        config.set('Boto', 'num_retries', str(self.num_retries))
+        for section in boto.config.sections():
+            boto.config.remove_section(section)
+        boto.config.add_section('Boto')
+        boto.config.setbool('Boto', 'is_secure', self.secure)
+        boto.config.set('Boto', 'http_socket_timeout', str(self.socket_timeout))
+        boto.config.set('Boto', 'num_retries', str(self.num_retries))
 
         self._conn = None
         self.connect()
@@ -32,7 +32,7 @@ class S3Session:
         if not self._conn:
             try:
                 logging.debug("Connecting to AWS S3 with Access Key: %s" % self.access_key)
-                self._conn = S3Connection(
+                self._conn = boto.s3.S3Connection(
                     self.access_key,
                     self.secret_key,
                     host=self.s3_host,

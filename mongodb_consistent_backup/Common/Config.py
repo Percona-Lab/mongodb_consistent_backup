@@ -1,6 +1,7 @@
 import sys
 
 from argparse import Action
+from pkgutil import walk_packages
 from yconf import BaseConfiguration
 
 
@@ -52,11 +53,9 @@ class ConfigParser(BaseConfiguration):
 
 class Config(object):
     # noinspection PyUnusedLocal
-    def __init__(self, cmdline=None, **args):
-        if not self.cmdline:
-            self.cmdline = sys.argv[1:]
+    def __init__(self):
         self._config = ConfigParser()
-        self.parse_submodules(args)
+        self.parse_submodules()
         self.parse()
 
         self.version    = __version__
@@ -71,11 +70,19 @@ class Config(object):
         else:
             return data[keys]
 
-    def parse_submodules(self, args):
-        if 'submodules' in args:
-            parser = self._config.parser
-            for submodule in args['submodules']:
-                submodule.config(parser)
+    def parse_submodules(self):
+	for _, modname, ispkg in walk_packages(path="."):
+	    if ispkg:
+	        try:
+		    components = modname.split('.')
+		    mod = __import__(components[0])
+		    for comp in components[1:]:
+		        mod = getattr(mod, comp)
+		    mod.config(self._config.parser)
+		except AttributeError, e:
+		    continue
+	        except Exception, e:
+		    raise e
 
     def check_required(self):
         required = [
