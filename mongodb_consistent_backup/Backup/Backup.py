@@ -1,5 +1,7 @@
 import logging
 
+from Mongodump import Mongodump
+
 
 class Backup:
     def __init__(self, config, backup_dir, secondaries, config_server=None):
@@ -13,11 +15,11 @@ class Backup:
 
     def init(self):
         backup_method = self.config.backup.method
-        if backup_method is None:
+        if not backup_method or backup_method is "none":
             raise Exception, 'Must specify a backup method!', None
         logging.info("Using backup method: %s" % backup_method)
         try:
-            self._method = globals()[backup_method](
+            self._method = globals()[backup_method.capitalize()](
                 self.config,
                 self.backup_dir,
                 self.secondaries,

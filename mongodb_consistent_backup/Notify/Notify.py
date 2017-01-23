@@ -8,15 +8,14 @@ class Notify:
 
     def init(self):
         notify_method = self.config.notify.method
-        if notify_method is None:
+        if not notify_method or notify_method is "none":
             logging.info("Notifying disabled, skipping")
-
-        logging.info("Using notify method: %s" % notify_method)
-        try:
-            self._notifier = globals()[notify_method](self.config)
-        except Exception, e:
-            raise e
-
+        else:
+            logging.info("Using notify method: %s" % notify_method)
+            try:
+                self._notifier = globals()[notify_method.capitalize()](self.config)
+            except Exception, e:
+                raise e
 
     def notify(self, message, success=False):
         if self._notifier:
