@@ -22,8 +22,8 @@ class Tar:
     def __init__(self, config, backup_base_dir):
         self.config          = config
         self.backup_base_dir = backup_base_dir
-        self.compression     = self.config.archive.compression
-        self.thread_count    = self.config.archive.threads
+        self.compression     = self.config.archive.tar.compression
+        self.thread_count    = self.config.archive.tar.threads
         self.verbose         = self.config.verbose
         self.binary          = "tar"
 
