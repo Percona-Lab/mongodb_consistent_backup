@@ -29,6 +29,7 @@ class Tar:
     def compression(self, method=None):
         if method:
             self.config.archive.tar.compression = method.lower()
+            logging.info("Setting tar compression method to: %s" % self.config.archive.tar.compression)
         return self.config.archive.tar.compression
 
     def do_gzip(self):
