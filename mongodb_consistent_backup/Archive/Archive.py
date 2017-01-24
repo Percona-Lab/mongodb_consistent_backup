@@ -28,12 +28,12 @@ class Archive:
                 raise e
 
     def compression(self, method=None):
-	if self._archiver:
-	    return self._archiver.compression(method)
+        if self._archiver:
+            return self._archiver.compression(method)
 
     def threads(self, threads=None):
-	if self._archiver:
-	    return self._archiver.threads(threads)
+        if self._archiver:
+            return self._archiver.threads(threads)
 
     def archive(self):
         if self._archiver:

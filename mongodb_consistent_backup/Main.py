@@ -158,7 +158,7 @@ class MongodbConsistentBackup(object):
                 self.config,
                 self.backup_root_directory, 
             )
-	except Exception, e:
+        except Exception, e:
             raise e
 
         if not self.is_sharded:
@@ -230,7 +230,7 @@ class MongodbConsistentBackup(object):
                     self.secondaries,
                     self.backup_root_directory
                 )
-	    except Exception, e:
+            except Exception, e:
                 self.exception("Problem initializing oplog tailer! Error: %s" % e)
 
             # init the backup

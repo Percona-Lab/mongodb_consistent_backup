@@ -25,20 +25,20 @@ class Tar:
         self.verbose         = self.config.verbose
         self.binary          = "tar"
         self.do_gzip         = False
-	self._pool           = None
+        self._pool           = None
 
     def compression(self, method=None):
-	if method:
-	    self.config.archive.tar.compression = method.lower()
+        if method:
+            self.config.archive.tar.compression = method.lower()
         return self.config.archive.tar.compression
 
     def threads(self, thread_count=None):
-	if thread_count:
-	    self.config.archive.tar.threads = int(thread_count)
-	    logging.info("Setting tar thread count to: %i" % self.config.archive.tar.threads)
+        if thread_count:
+            self.config.archive.tar.threads = int(thread_count)
+            logging.info("Setting tar thread count to: %i" % self.config.archive.tar.threads)
         if self.config.archive.tar.threads is None or self.config.archive.tar.threads < 1:
             self.config.archive.tar.threads = cpu_count()
-	return int(self.config.archive.tar.threads)
+        return int(self.config.archive.tar.threads)
 
     def run(self):
         try:
@@ -69,7 +69,7 @@ class Tar:
         logging.info("Archiver threads completed")
 
     def close(self):
-	logging.debug("Stopping Archiver threads")
+        logging.debug("Stopping Archiver threads")
         if self._pool is not None:
             self._pool.terminate()
             self._pool.join()

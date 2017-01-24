@@ -22,12 +22,12 @@ class Tailer:
 
     def compression(self, method=None):
         if method:
-	    self.config.oplog.compression = method.lower()
-	return self.config.oplog.compression
+            self.config.oplog.compression = method.lower()
+        return self.config.oplog.compression
 
     def do_gzip(self):
-	if self.compression() == 'gzip':
-	    return True
+        if self.compression() == 'gzip':
+            return True
         return False
 
     def summary(self):
