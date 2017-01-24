@@ -1,6 +1,7 @@
 import logging
 
 from Tar import Tar
+from Zbackup import Zbackup
 
 
 class Archive:
