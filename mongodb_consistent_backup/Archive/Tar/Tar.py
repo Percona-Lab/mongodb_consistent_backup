@@ -24,13 +24,17 @@ class Tar:
         self.backup_base_dir = backup_base_dir
         self.verbose         = self.config.verbose
         self.binary          = "tar"
-        self.do_gzip         = False
         self._pool           = None
 
     def compression(self, method=None):
         if method:
             self.config.archive.tar.compression = method.lower()
         return self.config.archive.tar.compression
+
+    def do_gzip(self):
+	if self.compression() == 'gzip':
+	    return True
+        return False
 
     def threads(self, thread_count=None):
         if thread_count:
@@ -55,11 +59,10 @@ class Tar:
                     subdir_name = "%s/%s" % (self.backup_base_dir, backup_dir)
                     output_file = "%s.tar" % subdir_name
 
-                    if self.compression() == 'gzip':
+                    if self.do_gzip():
                         output_file  = "%s.tgz" % subdir_name
-                        self.do_gzip = True
 
-                    self._pool.apply_async(TarThread(subdir_name, output_file, self.do_gzip, self.verbose, self.binary).run)
+                    self._pool.apply_async(TarThread(subdir_name, output_file, self.do_gzip(), self.verbose, self.binary).run)
             except Exception, e:
                 self._pool.terminate()
                 logging.fatal("Could not create archiving thread! Error: %s" % e)
