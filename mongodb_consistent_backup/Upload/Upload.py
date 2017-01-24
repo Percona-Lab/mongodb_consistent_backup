@@ -14,20 +14,22 @@ class Upload:
 
     def init(self):
         upload_method = self.config.upload.method
-        if upload_method == None:
+        if not upload_method or upload_method.lower() == "none":
             logging.info("Uploading disabled, skipping")
-        #TODO Remove this line and move to  S3 Lib for checking
-        # if self.config.upload.method == "s3" and self.config.upload.s3.bucket_name and self.config.upload.s3.bucket_prefix and self.config.upload.s3.access_key and self.config.upload.s3.secret_key:
+        else:
+            #TODO Remove this line and move to  S3 Lib for checking
+            # if self.config.upload.method == "s3" and self.config.upload.s3.bucket_name and self.config.upload.s3.bucket_prefix and self.config.upload.s3.access_key and self.config.upload.s3.secret_key:
 
-        logging.info("Using upload method: %s" %  upload_method)
-        try:
-            self._uploader = globals()[upload_method](
-                self.config,
-                self.base_dir,
-                self.backup_dir
-            )
-        except Exception, e:
-            raise Exception, "Problem settings up %s Uploader Error: %s" % (self.config.upload.method,e), None
+            method = upload_method.lower()
+            logging.info("Using upload method: %s" % method)
+            try:
+                self._uploader = globals()[method.capitalize()](
+                    self.config,
+                    self.base_dir,
+                    self.backup_dir
+                )
+            except Exception, e:
+                raise Exception, "Problem settings up %s Uploader Error: %s" % (method, e), None
 
     def upload(self):
         if self._uploader:

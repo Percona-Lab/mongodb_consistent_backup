@@ -124,7 +124,7 @@ class Mongodump:
 
         # start all threads and wait
         logging.info(
-            "Starting backups using mongodump %s (inline gzip: %s, threads per dump: %i)" % (self.version, str(self.dump_gzip), self.threads_per_dump))
+            "Starting backups using mongodump %s (inline gzip: %s, threads per dump: %i)" % (self.version, str(self.do_gzip), self.threads_per_dump))
         for thread in self.threads:
             thread.start()
         self.wait()
@@ -132,8 +132,8 @@ class Mongodump:
         # backup a single non-replset config server, if exists:
         if not self.config_replset and isinstance(self.config_server, dict):
             logging.info("Using non-replset backup method for config server mongodump")
-	    config_server = self.config_server['host']
-	    if not ":" in config_server:
+            config_server = self.config_server['host']
+            if not ":" in config_server:
                 config_server = config_server+":27019"
             self.threads = [MongodumpThread(
                 self.response_queue,
