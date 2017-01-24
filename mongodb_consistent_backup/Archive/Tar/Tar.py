@@ -32,8 +32,8 @@ class Tar:
         return self.config.archive.tar.compression
 
     def do_gzip(self):
-	if self.compression() == 'gzip':
-	    return True
+        if self.compression() == 'gzip':
+            return True
         return False
 
     def threads(self, thread_count=None):
