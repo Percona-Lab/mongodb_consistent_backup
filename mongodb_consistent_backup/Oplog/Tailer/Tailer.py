@@ -16,13 +16,19 @@ class Tailer:
         self.password    = self.config.password
         self.authdb      = self.config.authdb
 
-        self.dump_gzip = False
-        if self.config.oplog.compression == 'gzip':
-            self.dump_gzip = True
-
         self.response_queue = Queue()
         self.threads        = []
         self._summary       = {}
+
+    def compression(self, method=None):
+        if method:
+	    self.config.oplog.compression = method.lower()
+	return self.config.oplog.compression
+
+    def do_gzip(self):
+	if self.compression() == 'gzip':
+	    return True
+        return False
 
     def summary(self):
         return self._summary
@@ -38,7 +44,7 @@ class Tailer:
                 self.base_dir,
                 host,
                 port,
-                self.dump_gzip,
+                self.do_gzip(),
                 self.user,
                 self.password,
                 self.authdb

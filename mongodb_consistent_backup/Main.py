@@ -152,10 +152,17 @@ class MongodbConsistentBackup(object):
         except Exception, e:
             raise e
 
+        # Setup the archiver
+        try:
+            self.archive = Archive(
+                self.config,
+                self.backup_root_directory, 
+            )
+	except Exception, e:
+            raise e
+
         if not self.is_sharded:
             logging.info("Running backup of %s:%s in replset mode" % (self.config.host, self.config.port))
-
-            self.config.archive.threads = 1
 
             # get shard secondary
             try:
@@ -179,12 +186,13 @@ class MongodbConsistentBackup(object):
                 )
                 self.backup.backup()
                 if self.backup.is_compressed():
-                    logging.info("Backup method supports gzip compression, setting config overrides: { archive.compression: 'none' }")
-                    self.config.archive.compression = 'none'
-                    self.config.oplog.compression = 'gzip'
+                    logging.info("Backup method supports gzip compression, disabling compression in archive step")
+                    self.archive.compression('none')
             except Exception, e:
                 self.exception("Problem performing replset mongodump! Error: %s" % e)
 
+            # use 1 archive thread for single replset
+            self.archive.threads(1)
         else:
             logging.info("Running backup of %s:%s in sharded mode" % (self.config.host, self.config.port))
 
@@ -215,6 +223,16 @@ class MongodbConsistentBackup(object):
             except Exception, e:
                 self.exception("Problem stopping the balancer! Error: %s" % e)
 
+            # init the oplogtailers
+            try:
+                self.oplogtailer = Tailer(
+                    self.config,
+                    self.secondaries,
+                    self.backup_root_directory
+                )
+	    except Exception, e:
+                self.exception("Problem initializing oplog tailer! Error: %s" % e)
+
             # init the backup
             try:
                 self.backup = Backup(
@@ -224,19 +242,14 @@ class MongodbConsistentBackup(object):
                     self.sharding.get_config_server()
                 )
                 if self.backup.is_compressed():
-                    logging.info("Backup method supports gzip compression, setting config overrides: { archive.compression: 'none', oplog.compression: 'gzip' }")
-                    self.config.archive.compression = 'none'
-                    self.config.oplog.compression = 'gzip'
+                    logging.info("Backup method supports gzip compression, disabling compression in archive step and enabling oplog compression")
+                    self.archive.compression('none')
+                    self.oplogtailer.compression('gzip')
             except Exception, e:
                 self.exception("Problem initializing backup! Error: %s" % e)
 
-            # start the oplog tailer(s)
+            # start the oplog tailers, before the backups start
             try:
-                self.oplogtailer = Tailer(
-                    self.config,
-                    self.secondaries,
-                    self.backup_root_directory
-                )
                 self.oplogtailer.run()
             except Exception, e:
                 self.exception("Failed to start oplog tailing threads! Error: %s" % e)
@@ -264,10 +277,6 @@ class MongodbConsistentBackup(object):
 
         # archive backup directories
         try:
-            self.archive = Archive(
-                self.config,
-                self.backup_root_directory, 
-            )
             self.archive.archive()
         except Exception, e:
             self.exception("Problem performing archiving! Error: %s" % e)

@@ -14,7 +14,7 @@ class Upload:
 
     def init(self):
         upload_method = self.config.upload.method
-        if not upload_method or upload_method.lower() is "none":
+        if not upload_method or upload_method.lower() == "none":
             logging.info("Uploading disabled, skipping")
         else:
             #TODO Remove this line and move to  S3 Lib for checking

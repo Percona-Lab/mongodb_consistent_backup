@@ -9,7 +9,7 @@ class Notify:
 
     def init(self):
         notify_method = self.config.notify.method
-        if not notify_method or notify_method.lower() is "none":
+        if not notify_method or notify_method.lower() == "none":
             logging.info("Notifying disabled, skipping")
         else:
             method = notify_method.lower()

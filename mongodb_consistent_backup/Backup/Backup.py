@@ -15,7 +15,7 @@ class Backup:
 
     def init(self):
         backup_method = self.config.backup.method
-        if not backup_method or backup_method.lower() is "none":
+        if not backup_method or backup_method.lower() == "none":
             raise Exception, 'Must specify a backup method!', None
         method = backup_method.lower()
         logging.info("Using backup method: %s" % method)

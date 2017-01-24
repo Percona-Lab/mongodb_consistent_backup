@@ -96,8 +96,12 @@ if [ -d ${srcdir} ]; then
 		exit 1
 	fi
 
+	if [ ! -d ${pexdir} ]; then
+		mkdir -p ${pexdir}
+	else
+		rm -f ${pexdir}/build/mongodb_consistent_backup-* 
+	fi
 	[ ! -d ${bindir} ] && mkdir -p ${bindir}
-	[ ! -d ${pexdir} ] && mkdir -p ${pexdir}
 	${venvdir}/bin/python2.7 ${venvdir}/bin/pex -o ${output_file} -m ${mod_name} -r ${require_file} --pex-root=${pexdir}  ${builddir}
 	if [ $? -lt 1 ] && [ -x ${output_file} ]; then
 		echo "pex executable written to '$output_file'"
