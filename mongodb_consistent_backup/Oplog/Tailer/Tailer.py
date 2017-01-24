@@ -23,6 +23,7 @@ class Tailer:
     def compression(self, method=None):
         if method:
             self.config.oplog.compression = method.lower()
+            logging.info("Setting oplog compression method to: %s" % self.config.oplog.compression)
         return self.config.oplog.compression
 
     def do_gzip(self):

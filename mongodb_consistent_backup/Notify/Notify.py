@@ -4,6 +4,7 @@ class Notify:
     def __init__(self, config):
         self.config    = config
 
+        self.method    = None
         self._notifier = None
         self.init()
 
@@ -12,10 +13,10 @@ class Notify:
         if not notify_method or notify_method.lower() == "none":
             logging.info("Notifying disabled, skipping")
         else:
-            method = notify_method.lower()
-            logging.info("Using notify method: %s" % method)
+            self.method = notify_method.lower()
+            logging.info("Using notify method: %s" % self.method)
             try:
-                self._notifier = globals()[method.capitalize()](self.config)
+                self._notifier = globals()[self.method.capitalize()](self.config)
             except Exception, e:
                 raise e
 
