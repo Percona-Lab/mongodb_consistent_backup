@@ -34,4 +34,4 @@ rpm: clean
 	rpmbuild -D "_topdir $(PWD)/rpmbuild" -D "version $(VERSION)" -bb rpmbuild/SPECS/$(NAME).spec
 
 clean:
-	rm -rf bin build rpmbuild $(NAME).egg-info pex 2>/dev/null
+	rm -rf bin build rpmbuild $(NAME).egg-info tmp 2>/dev/null
