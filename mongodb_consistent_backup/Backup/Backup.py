@@ -10,6 +10,7 @@ class Backup:
         self.secondaries   = secondaries
         self.config_server = config_server
 
+        self.method  = None
         self._method = None
         self.init()
 
@@ -17,17 +18,17 @@ class Backup:
         backup_method = self.config.backup.method
         if not backup_method or backup_method.lower() == "none":
             raise Exception, 'Must specify a backup method!', None
-        method = backup_method.lower()
-        logging.info("Using backup method: %s" % method)
+        self.method = backup_method.lower()
+        logging.info("Using backup method: %s" % self.method)
         try:
-            self._method = globals()[method.capitalize()](
+            self._method = globals()[self.method.capitalize()](
                 self.config,
                 self.backup_dir,
                 self.secondaries,
                 self.config_server
             )
         except Exception, e:
-            raise Exception, "Problem performing %s! Error: %s" % (method, e), None
+            raise Exception, "Problem performing %s! Error: %s" % (self.method, e), None
 
     def is_compressed(self):
         if self._method:
