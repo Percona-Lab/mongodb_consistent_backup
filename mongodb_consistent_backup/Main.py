@@ -35,7 +35,6 @@ class MongodbConsistentBackup(object):
         self.backup_time              = None
         self.backup_root_directory    = None
         self.backup_root_subdirectory = None
-        self.connection               = None
         self.db                       = None
         self.is_sharded               = False
         self.secondaries              = {}
@@ -44,8 +43,8 @@ class MongodbConsistentBackup(object):
         self.log_level                = None
 
         self.setup_config()
-        self.setup_signal_handlers()
         self.setup_logger()
+        self.setup_signal_handlers()
         self.set_backup_dirs()
         self.get_db_conn()
 
@@ -68,8 +67,7 @@ class MongodbConsistentBackup(object):
             signal(SIGINT, self.cleanup_and_exit)
             signal(SIGTERM, self.cleanup_and_exit)
         except Exception, e:
-            # TODO-timv Where is logger coming from?
-            logger.fatal("Cannot setup signal handlers, error: %s" % e)
+            logging.fatal("Cannot setup signal handlers, error: %s" % e)
             sys.exit(1)
 
     def set_backup_dirs(self):
@@ -81,8 +79,7 @@ class MongodbConsistentBackup(object):
         try:
             validate_hostname(self.config.host)
             self.db         = DB(self.config.host, self.config.port, self.config.user, self.config.password, self.config.authdb)
-            self.connection = self.db.connection()
-            self.is_sharded = self.connection.is_mongos
+            self.is_sharded = self.db.connection().is_mongos
         except Exception, e:
             raise e
 
