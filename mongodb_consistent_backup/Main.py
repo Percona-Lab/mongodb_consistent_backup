@@ -8,7 +8,7 @@ from time import time
 
 from Archive import Archive
 from Backup import Backup
-from Common import DB, Lock, validate_hostname
+from Common import Config, DB, Lock, validate_hostname
 from Notify import Notify
 from Oplog import Tailer, Resolver
 from Replication import Replset, ReplsetSharded
@@ -17,37 +17,44 @@ from Upload import Upload
 
 
 class MongodbConsistentBackup(object):
-    def __init__(self, config, prog_name="mongodb-consistent-backup"):
-        self.config          = config
-        self.program_name    = prog_name
-        self.backup          = None
-        self.archive         = None
-        self.sharding        = None
-        self.replset         = None
-        self.replset_sharded = None
-        self.notify          = None
-        self.oplogtailer     = None
-        self.oplog_resolver  = None
-        self.upload          = None
-        self.lock            = None
-        self.start_time      = time()
-        self.end_time        = None
-        self.backup_duration = None
-        self.backup_time = None
-        self.backup_root_directory = None
+    def __init__(self, prog_name="mongodb-consistent-backup"):
+        self.program_name             = prog_name
+        self.backup                   = None
+        self.archive                  = None
+        self.sharding                 = None
+        self.replset                  = None
+        self.replset_sharded          = None
+        self.notify                   = None
+        self.oplogtailer              = None
+        self.oplog_resolver           = None
+        self.upload                   = None
+        self.lock                     = None
+        self.start_time               = time()
+        self.end_time                 = None
+        self.backup_duration          = None
+        self.backup_time              = None
+        self.backup_root_directory    = None
         self.backup_root_subdirectory = None
-        self.connection      = None
-        self.db              = None
-        self.is_sharded      = False
-        self.secondaries     = {}
-        self.oplog_summary   = {}
-        self.backup_summary  = {}
-        self.log_level = None
+        self.connection               = None
+        self.db                       = None
+        self.is_sharded               = False
+        self.secondaries              = {}
+        self.oplog_summary            = {}
+        self.backup_summary           = {}
+        self.log_level                = None
 
+        self.setup_config()
         self.setup_signal_handlers()
         self.setup_logger()
         self.set_backup_dirs()
         self.get_db_conn()
+
+    def setup_config(self):
+        try:
+            self.config = Config()
+        except Exception, e:
+            print "Error setting up configuration: '%s'!" % e
+            sys.exit(1)
 
     def setup_logger(self):
         self.log_level = logging.INFO
@@ -150,7 +157,7 @@ class MongodbConsistentBackup(object):
         try:
             self.notify = Notify(self.config)
         except Exception, e:
-            raise e
+            self.exception("Problem starting notifier! Error: %s" % e)
 
         # Setup the archiver
         try:
@@ -159,7 +166,17 @@ class MongodbConsistentBackup(object):
                 self.backup_root_directory, 
             )
         except Exception, e:
-            raise e
+            self.exception("Problem starting archiver! Error: %s" % e)
+
+        # Setup the uploader
+        try:
+            self.upload = Upload(
+                self.config,
+                self.backup_root_directory,
+                self.backup_root_subdirectory
+            )
+        except Exception, e:
+            self.exception("Problem starting uploader! Error: %s" % e)
 
         if not self.is_sharded:
             logging.info("Running backup of %s:%s in replset mode" % (self.config.host, self.config.port))
@@ -286,11 +303,6 @@ class MongodbConsistentBackup(object):
 
         # upload backup
         try:
-            self.upload = Upload(
-                self.config,
-                self.backup_root_directory,
-                self.backup_root_subdirectory
-            )
             self.upload.upload()
         except Exception, e:
             self.exception("Problem performing upload of backup! Error: %s" % e)
