@@ -44,8 +44,8 @@ class MongodbConsistentBackup(object):
         self.log_level                = None
 
         self.setup_config()
-        self.setup_signal_handlers()
         self.setup_logger()
+        self.setup_signal_handlers()
         self.set_backup_dirs()
         self.get_db_conn()
 
@@ -68,8 +68,7 @@ class MongodbConsistentBackup(object):
             signal(SIGINT, self.cleanup_and_exit)
             signal(SIGTERM, self.cleanup_and_exit)
         except Exception, e:
-            # TODO-timv Where is logger coming from?
-            logger.fatal("Cannot setup signal handlers, error: %s" % e)
+            logging.fatal("Cannot setup signal handlers, error: %s" % e)
             sys.exit(1)
 
     def set_backup_dirs(self):
