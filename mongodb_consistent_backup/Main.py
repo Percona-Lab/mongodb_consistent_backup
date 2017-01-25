@@ -35,7 +35,6 @@ class MongodbConsistentBackup(object):
         self.backup_time              = None
         self.backup_root_directory    = None
         self.backup_root_subdirectory = None
-        self.connection               = None
         self.db                       = None
         self.is_sharded               = False
         self.secondaries              = {}
@@ -80,8 +79,7 @@ class MongodbConsistentBackup(object):
         try:
             validate_hostname(self.config.host)
             self.db         = DB(self.config.host, self.config.port, self.config.user, self.config.password, self.config.authdb)
-            self.connection = self.db.connection()
-            self.is_sharded = self.connection.is_mongos
+            self.is_sharded = self.db.connection().is_mongos
         except Exception, e:
             raise e
 
