@@ -12,9 +12,25 @@ class Zbackup:
         self.backup_dir = backup_dir
 
         self._command  = None
+	self.compression_method = None
+	self.compression_supported = ['lzma']
+
+	self.zbackup_binary      = config.archive.zbackup.binary
+	self.zbackup_dir         = config.archive.zbackup.dir
+	self.zbackup_passwd_file = config.archive.zbackup.password_file
+	self.zbackup_threads     = config.archive.zbackup.threads
 
         signal(SIGINT, self.close)
         signal(SIGTERM, self.close)
+
+    def compression(self, method=None):
+	# only lzma supported
+        return 'lzma'
+
+    def threads(self, count=None):
+        if count:
+	    config.archive.zbackup.threads = int(count)
+	return config.archive.zbackup.threads
 
     def close(self, exit_code=None, frame=None):
         if self._command:
