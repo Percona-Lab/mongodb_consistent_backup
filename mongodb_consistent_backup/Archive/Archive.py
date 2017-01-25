@@ -38,8 +38,8 @@ class Archive:
     def archive(self):
         if self._archiver:
             config_vars = ""
-            for key in self.config.archive:
-                config_vars += "%s=%s," % (key, self.config.archive[key])
+            for key in self.config.archive[self.method]:
+                config_vars += "%s=%s," % (key, self.config.archive[self.method][key])
             logging.info("Archiving with method: %s (options: %s)" % (self.method, str(config_vars[:-1])))
             return self._archiver.run()
 
