@@ -1,5 +1,8 @@
 import logging
 
+from mongodb_consistent_backup.Common import config_to_string, parse_submodule
+
+
 class Notify:
     def __init__(self, config):
         self.config    = config
@@ -10,13 +13,16 @@ class Notify:
 
     def init(self):
         notify_method = self.config.notify.method
-        if not notify_method or notify_method.lower() == "none":
+        if not notify_method or parse_submodule(notify_method) == "none":
             logging.info("Notifying disabled, skipping")
         else:
-            self.method = notify_method.lower()
-            logging.info("Using notify method: %s" % self.method)
+            self.method   = parse_submodule(notify_method)
+            config_string = config_to_string(self.config.notify[self.method])
+            logging.info("Using notify method: %s (options: %s)" % (self.method, config_string))
             try:
                 self._notifier = globals()[self.method.capitalize()](self.config)
+            except LookupError, e:
+                raise Exception, 'No notify method: %s' % self.method, None
             except Exception, e:
                 raise e
 

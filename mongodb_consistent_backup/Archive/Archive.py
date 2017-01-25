@@ -1,6 +1,7 @@
 import logging
 
 from Tar import Tar
+from mongodb_consistent_backup.Common import config_to_string, parse_submodule
 
 
 class Archive:
@@ -14,16 +15,18 @@ class Archive:
 
     def init(self):
         archive_method = self.config.archive.method
-        if not archive_method or archive_method.lower() == "none":
+        if not archive_method or parse_submodule(archive_method) == "none":
             logging.info("Archiving disabled, skipping")
         else:
-            self.method = archive_method.lower()
+            self.method = parse_submodule(archive_method)
             logging.info("Using archiving method: %s" % self.method)
             try:
                 self._archiver = globals()[self.method.capitalize()](
                     self.config,
                     self.backup_dir
                 )
+            except LookupError, e:
+                raise Exception, 'No archiving method: %s' % self.method, None
             except Exception, e:
                 raise e
 
@@ -37,10 +40,8 @@ class Archive:
 
     def archive(self):
         if self._archiver:
-            config_vars = ""
-            for key in self.config.archive[self.method]:
-                config_vars += "%s=%s," % (key, self.config.archive[self.method][key])
-            logging.info("Archiving with method: %s (options: %s)" % (self.method, str(config_vars[:-1])))
+            config_string = config_to_string(self.config.archive[self.method])
+            logging.info("Archiving with method: %s (options: %s)" % (self.method, config_string))
             return self._archiver.run()
 
     def close(self):
