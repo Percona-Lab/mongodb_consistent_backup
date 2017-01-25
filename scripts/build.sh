@@ -66,7 +66,6 @@ if [ -d ${srcdir} ]; then
 			exit 1
 		else
 			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/setup.py
-			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/${mod_name}/__init__.py
 			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/${mod_name}/Common/Config.py
 		fi
 	else
@@ -78,7 +77,6 @@ if [ -d ${srcdir} ]; then
 	if [ -z "$git_commit" ]; then
 		echo "Warning: cannot find git commit hash!"
 	else
-		sed -i -e s@GIT_COMMIT_HASH@${git_commit}@g ${builddir}/${mod_name}/__init__.py
 		sed -i -e s@GIT_COMMIT_HASH@${git_commit}@g ${builddir}/${mod_name}/Common/Config.py
 	fi
 
