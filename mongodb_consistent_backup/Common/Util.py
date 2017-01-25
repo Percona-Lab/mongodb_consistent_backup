@@ -1,5 +1,13 @@
 import socket
 
+def config_to_string(config):
+    config_vars = ""
+    for key in config:
+        config_vars += "%s=%s," % (key, config[key])
+    return config_vars[:-1]
+
+def parse_submodule(name):
+    return name.rstrip().lower()
 
 def validate_hostname(hostname):
     try:
