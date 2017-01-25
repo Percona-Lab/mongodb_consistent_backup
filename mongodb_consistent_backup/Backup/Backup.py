@@ -1,7 +1,7 @@
 import logging
 
 from Mongodump import Mongodump
-from mongodb_consistent_backup.Common import config_to_string, parse_submodule
+from mongodb_consistent_backup.Common import config_to_string, parse_method
 
 
 class Backup:
@@ -17,9 +17,9 @@ class Backup:
 
     def init(self):
         backup_method = self.config.backup.method
-        if not backup_method or parse_submodule(backup_method) == "none":
+        if not backup_method or parse_method(backup_method) == "none":
             raise Exception, 'Must specify a backup method!', None
-        self.method   = parse_submodule(backup_method)
+        self.method   = parse_method(backup_method)
         config_string = config_to_string(self.config.backup[self.method])
         logging.info("Using backup method: %s (options: %s)" % (self.method, config_string))
         try:

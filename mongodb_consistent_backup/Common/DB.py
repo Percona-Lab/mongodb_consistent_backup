@@ -72,4 +72,5 @@ class DB:
         return self._conn
 
     def close(self):
-        return self._conn.close()
+	if self._conn:
+            return self._conn.close()

@@ -1,6 +1,6 @@
 import logging
 
-from mongodb_consistent_backup.Common import config_to_string, parse_submodule
+from mongodb_consistent_backup.Common import config_to_string, parse_method
 
 
 class Notify:
@@ -13,10 +13,10 @@ class Notify:
 
     def init(self):
         notify_method = self.config.notify.method
-        if not notify_method or parse_submodule(notify_method) == "none":
+        if not notify_method or parse_method(notify_method) == "none":
             logging.info("Notifying disabled, skipping")
         else:
-            self.method   = parse_submodule(notify_method)
+            self.method   = parse_method(notify_method)
             config_string = config_to_string(self.config.notify[self.method])
             logging.info("Using notify method: %s (options: %s)" % (self.method, config_string))
             try:

@@ -4,6 +4,7 @@ from multiprocessing import Queue
 from time import sleep
 
 from TailerThread import TailerThread
+from mongodb_consistent_backup.Common import parse_method
 
 
 class Tailer:
@@ -22,9 +23,9 @@ class Tailer:
 
     def compression(self, method=None):
         if method:
-            self.config.oplog.compression = method.lower()
+            self.config.oplog.compression = parse_method(method)
             logging.info("Setting oplog compression method to: %s" % self.config.oplog.compression)
-        return self.config.oplog.compression
+        return parse_method(self.config.oplog.compression)
 
     def do_gzip(self):
         if self.compression() == 'gzip':
