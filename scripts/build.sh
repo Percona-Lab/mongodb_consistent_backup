@@ -97,7 +97,7 @@ if [ -d ${srcdir} ]; then
 	if [ ! -d ${pexdir} ]; then
 		mkdir -p ${pexdir}
 	else
-		rm -f ${pexdir}/build/mongodb_consistent_backup-* 
+		rm -f ${pexdir}/build/mongodb_consistent_backup-*.whl 
 	fi
 	[ ! -d ${bindir} ] && mkdir -p ${bindir}
 	${venvdir}/bin/python2.7 ${venvdir}/bin/pex -o ${output_file} -m ${mod_name} -r ${require_file} --pex-root=${pexdir}  ${builddir}

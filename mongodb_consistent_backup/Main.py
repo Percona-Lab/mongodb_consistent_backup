@@ -157,7 +157,7 @@ class MongodbConsistentBackup(object):
         try:
             self.notify = Notify(self.config)
         except Exception, e:
-            raise e
+            self.exception("Problem starting notifier! Error: %s" % e)
 
         # Setup the archiver
         try:
@@ -166,7 +166,17 @@ class MongodbConsistentBackup(object):
                 self.backup_root_directory, 
             )
         except Exception, e:
-            raise e
+            self.exception("Problem starting archiver! Error: %s" % e)
+
+        # Setup the uploader
+        try:
+            self.upload = Upload(
+                self.config,
+                self.backup_root_directory,
+                self.backup_root_subdirectory
+            )
+        except Exception, e:
+            self.exception("Problem starting uploader! Error: %s" % e)
 
         if not self.is_sharded:
             logging.info("Running backup of %s:%s in replset mode" % (self.config.host, self.config.port))
@@ -293,11 +303,6 @@ class MongodbConsistentBackup(object):
 
         # upload backup
         try:
-            self.upload = Upload(
-                self.config,
-                self.backup_root_directory,
-                self.backup_root_subdirectory
-            )
             self.upload.upload()
         except Exception, e:
             self.exception("Problem performing upload of backup! Error: %s" % e)
