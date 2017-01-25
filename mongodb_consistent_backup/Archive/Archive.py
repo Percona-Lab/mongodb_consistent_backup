@@ -2,7 +2,7 @@ import logging
 
 from Tar import Tar
 from Zbackup import Zbackup
-from mongodb_consistent_backup.Common import config_to_string, parse_submodule
+from mongodb_consistent_backup.Common import config_to_string, parse_method
 
 
 class Archive:
@@ -16,10 +16,10 @@ class Archive:
 
     def init(self):
         archive_method = self.config.archive.method
-        if not archive_method or parse_submodule(archive_method) == "none":
+        if not archive_method or parse_method(archive_method) == "none":
             logging.info("Archiving disabled, skipping")
         else:
-            self.method = parse_submodule(archive_method)
+            self.method = parse_method(archive_method)
             logging.info("Using archiving method: %s" % self.method)
             try:
                 self._archiver = globals()[self.method.capitalize()](

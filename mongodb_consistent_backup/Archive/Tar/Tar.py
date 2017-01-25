@@ -6,6 +6,7 @@ from multiprocessing import Pool, cpu_count
 from types import MethodType
 
 from TarThread import TarThread
+from mongodb_consistent_backup.Common import parse_method
 
 
 # Allows pooled .apply_async()s to work on Class-methods:
@@ -28,9 +29,9 @@ class Tar:
 
     def compression(self, method=None):
         if method:
-            self.config.archive.tar.compression = method.lower()
+            self.config.archive.tar.compression = parse_method(method)
             logging.info("Setting tar compression method to: %s" % self.config.archive.tar.compression)
-        return self.config.archive.tar.compression
+        return parse_method(self.config.archive.tar.compression)
 
     def do_gzip(self):
         if self.compression() == 'gzip':

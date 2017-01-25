@@ -66,7 +66,6 @@ if [ -d ${srcdir} ]; then
 			exit 1
 		else
 			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/setup.py
-			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/${mod_name}/__init__.py
 			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/${mod_name}/Common/Config.py
 		fi
 	else
@@ -78,7 +77,6 @@ if [ -d ${srcdir} ]; then
 	if [ -z "$git_commit" ]; then
 		echo "Warning: cannot find git commit hash!"
 	else
-		sed -i -e s@GIT_COMMIT_HASH@${git_commit}@g ${builddir}/${mod_name}/__init__.py
 		sed -i -e s@GIT_COMMIT_HASH@${git_commit}@g ${builddir}/${mod_name}/Common/Config.py
 	fi
 
@@ -99,7 +97,7 @@ if [ -d ${srcdir} ]; then
 	if [ ! -d ${pexdir} ]; then
 		mkdir -p ${pexdir}
 	else
-		rm -f ${pexdir}/build/mongodb_consistent_backup-* 
+		rm -f ${pexdir}/build/mongodb_consistent_backup-*.whl 
 	fi
 	[ ! -d ${bindir} ] && mkdir -p ${bindir}
 	${venvdir}/bin/python2.7 ${venvdir}/bin/pex -o ${output_file} -m ${mod_name} -r ${require_file} --pex-root=${pexdir}  ${builddir}
