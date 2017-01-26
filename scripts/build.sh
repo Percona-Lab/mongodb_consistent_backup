@@ -66,7 +66,7 @@ if [ -d ${srcdir} ]; then
 			exit 1
 		else
 			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/setup.py
-			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/${mod_name}/Common/Config.py
+			sed -i -e s@\#.\#.\#@${version}@g ${builddir}/${mod_name}/__init__.py
 		fi
 	else
 		echo "Cannot find version file $version_file!"

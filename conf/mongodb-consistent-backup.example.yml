@@ -10,7 +10,7 @@ production:
     location: /opt/mongodb/backup
     mongodump:
       binary: /usr/bin/mongodump
-    #  compression: gzip
+    #  compression: gzip (default: true - if supported)
   replication:
     max_lag_secs: 5
     min_priority: 0
@@ -31,16 +31,16 @@ production:
   notify:
     method: none
     #nsca:
-    #  server:
-    #  password:
-    #  check_host: 
+    #  server: localhost:5666
+    #  password: secret
+    #  check_host: localhost
     #  check_name: mongodb_consistent_backup
   upload:
     method: none
+    remove_uploaded: false
     #s3:
-    #  access_key:
-    #  secret_key:
-    #  bucket_name: 
+    #  access_key: <AWS S3 Access Key>
+    #  secret_key: <AWS S3 Secret Key>
+    #  bucket_name: <AWS S3 Bucket Name>
     #  bucket_prefix: /
-    #  remove_uploaded: true
     #  threads: 4

@@ -3,14 +3,15 @@
 from setuptools import setup, find_packages
 
 
+__version__ = "#.#.#"
+
 def readme():
     with open("README.rst") as f:
         return f.read()
 
-
 setup(
     name='mongodb-consistent-backup',
-    version='1.0.0',
+    version=__version__,
     license="ASL-2",
     description='Tool for getting consistent backups from MongoDB Clusters and ReplicaSet',
     long_description=readme(),

@@ -27,8 +27,9 @@ class Mongodump:
         self.response_queue = Queue()
         self.threads        = []
         self._summary       = {}
-        self.mongodump_version = None
 
+        with hide('running', 'warnings'), settings(warn_only=True):
+            self.version = local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary, capture=True)
         self.do_gzip = self.can_gzip()
 
         if not self.do_gzip and self.config.backup.mongodump.compression == 'gzip':
@@ -40,18 +41,11 @@ class Mongodump:
         if not isinstance(self.secondaries, dict):
             raise Exception, "Field 'secondaries' must be a dictionary of secondary info (by shard)!", None
 
-        with hide('running', 'warnings'), settings(warn_only=True):
-            self.version = local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary, capture=True)
-
     def can_gzip(self):
         if os.path.isfile(self.binary) and os.access(self.binary, os.X_OK):
-            with hide('running', 'warnings'), settings(warn_only=True):
-                self.mongodump_version = tuple(
-                    local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary,
-                          capture=True).split("."))
-                if tuple("3.2.0".split(".")) < self.mongodump_version:
-                    return True
-                return False
+            if tuple("3.2.0".split(".")) <= tuple(self.version.split(".")):
+                return True
+            return False
         else:
             logging.fatal("Cannot find or execute the mongodump binary file %s!" % self.binary)
             sys.exit(1)
@@ -87,6 +81,17 @@ class Mongodump:
             logging.info("All mongodump backups completed")
         else:
             raise Exception, "Not all mongodump threads completed successfully!", None
+
+    def threads_per_dump(self, threads=None):
+        if threads:
+            self.threads_per_dump = int(threads)
+        elif not self.threads_per_dump:
+            if tuple(self.version.split(".")) >= tuple("3.2.0".split(".")):
+                self.threads_per_dump = 1
+                if self.cpu_count > len(self.secondaries):
+                    self.threads_per_dump = int(floor(self.cpu_count / len(self.secondaries)))
+                    if self.threads_per_dump > self.threads_per_dump_max:
+                        self.threads_per_dump = self.threads_per_dump_max
 
     def run(self):
         # decide how many parallel dump workers to use based on cpu count vs # of shards (if 3.2+), 8 max workers max to protect the db
@@ -124,7 +129,7 @@ class Mongodump:
 
         # start all threads and wait
         logging.info(
-            "Starting backups using mongodump %s (inline gzip: %s, threads per dump: %i)" % (self.version, str(self.do_gzip), self.threads_per_dump))
+              "Starting backups using mongodump %s (options: gzip=%s,threads_per_dump=%i)" % (self.version, str(self.do_gzip), self.threads_per_dump))
         for thread in self.threads:
             thread.start()
         self.wait()

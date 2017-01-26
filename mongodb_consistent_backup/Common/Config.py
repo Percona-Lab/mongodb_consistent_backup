@@ -6,17 +6,12 @@ from pkgutil import walk_packages
 from yconf import BaseConfiguration
 
 
-__version__ = '#.#.#'
-git_commit  = 'GIT_COMMIT_HASH'
-prog_name   = 'mongodb-consistent-backup'
-
-
 class PrintVersions(Action):
     def __init__(self, option_strings, dest, nargs=0, **kwargs):
         super(PrintVersions, self).__init__(option_strings=option_strings, dest=dest, nargs=nargs, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        print "%s version: %s, git commit hash: %s" % (prog_name, __version__, git_commit)
+        print "%s version: %s, git commit hash: %s" % (mongodb_consistent_backup.prog_name, mongodb_consistent_backup.__version__, mongodb_consistent_backup.git_commit)
 
         import platform
         print "Python version: %s" % platform.python_version()
@@ -59,8 +54,8 @@ class Config(object):
         self.parse_submodules()
         self.parse()
 
-        self.version    = __version__
-        self.git_commit = git_commit
+        self.version    = mongodb_consistent_backup.__version__
+        self.git_commit = mongodb_consistent_backup.git_commit
 
     def _get(self, keys, data=None):
         if not data:

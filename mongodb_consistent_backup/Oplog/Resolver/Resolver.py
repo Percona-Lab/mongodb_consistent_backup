@@ -67,7 +67,7 @@ class Resolver:
         return ts
 
     def run(self):
-	logging.info("Resolving oplogs (options: threads=%s,compression=%s)" % (self.threads(), self.compression()))
+        logging.info("Resolving oplogs (options: threads=%s,compression=%s)" % (self.threads(), self.compression()))
         self.timer.start()
 
         self.end_ts = self.get_consistent_end_ts()

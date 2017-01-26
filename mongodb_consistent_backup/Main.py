@@ -107,10 +107,11 @@ class MongodbConsistentBackup(object):
                 if submodule:
                     submodule.close()
 
-            self.notify.notify("%s: backup '%s' failed!" % (
-                self.config,
-                self.program_name
-            ), False)
+            if self.notify:
+                self.notify.notify("%s: backup '%s' failed!" % (
+                    self.config,
+                    self.program_name
+                ), False)
 
             if self.db:
                 self.db.close()

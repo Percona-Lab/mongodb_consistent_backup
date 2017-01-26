@@ -89,8 +89,8 @@ class Sharding:
     def stop_balancer(self):
         logging.info("Stopping the balancer and waiting a max of %i sec" % self.balancer_wait_secs)
         wait_cnt = 0
-	stop_timer = Timer()
-	stop_timer.start()
+        stop_timer = Timer()
+        stop_timer.start()
         self.set_balancer(False)
         while wait_cnt < self.balancer_wait_secs:
             if self.check_balancer_running():
@@ -98,7 +98,7 @@ class Sharding:
                 logging.info("Balancer is still running, sleeping for %i sec(s)" % self.balancer_sleep)
                 sleep(self.balancer_sleep)
             else:
-		stop_timer.stop()
+                stop_timer.stop()
                 logging.info("Balancer stopped after %s seconds" % stop_timer.duration())
                 return
         logging.fatal("Could not stop balancer: %s:%i!" % (self.db.host, self.db.port))

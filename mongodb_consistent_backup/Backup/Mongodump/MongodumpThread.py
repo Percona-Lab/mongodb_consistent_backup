@@ -79,6 +79,7 @@ class MongodumpThread(Process):
             return None
 
         oplog = Oplog(self.oplog_file, self.dump_gzip)
+        oplog.read()
         self.completed = True
         self.response_queue.put({
             'host': self.host,
