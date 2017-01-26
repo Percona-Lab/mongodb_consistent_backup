@@ -1,7 +1,7 @@
 import logging
 
 from S3 import S3
-from mongodb_consistent_backup.Common import config_to_string, parse_method
+from mongodb_consistent_backup.Common import Timer, config_to_string, parse_method
 
 
 class Upload:
@@ -12,6 +12,7 @@ class Upload:
 
         self.method    = None
         self._uploader = None
+        self.timer     = Timer()
         self.init()
 
     def init(self):
@@ -19,9 +20,7 @@ class Upload:
         if not upload_method or parse_method(upload_method) == "none":
             logging.info("Uploading disabled, skipping")
         else:
-            self.method   = parse_method(upload_method)
-            config_string = config_to_string(self.config.upload[self.method])
-            logging.info("Using upload method: %s (options: %s)" % (self.method, config_string))
+            self.method = parse_method(upload_method)
             try:
                 self._uploader = globals()[self.method.capitalize()](
                     self.config,
@@ -35,7 +34,14 @@ class Upload:
 
     def upload(self):
         if self._uploader:
+            config_string = config_to_string(self.config.upload[self.method])
+            logging.info("Using upload method: %s (options: %s)" % (self.method, config_string))
+            self.timer.start()
+
             self._uploader.run()
+
+            self.timer.stop()
+            logging.info("Uploading completed in %s seconds" % self.timer.duration())
 
     def close(self):
         if self._uploader:
