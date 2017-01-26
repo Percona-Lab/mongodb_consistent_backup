@@ -44,7 +44,7 @@ class Resolver:
             self.config.oplog.compression = parse_method(method)
         return parse_method(self.config.oplog.compression)
 
-    def is_gzip(self):
+    def do_gzip(self):
         if self.compression() == 'gzip':
            return True
         return False
@@ -97,7 +97,7 @@ class Resolver:
                                 backup_oplog['file'],
                                 backup_oplog['last_ts'],
                                 self.end_ts,
-                                self.is_gzip()
+                                self.do_gzip()
                             ).run)
                         except Exception, e:
                             logging.fatal("Resolve failed for %s:%s! Error: %s" % (host, port, e))
