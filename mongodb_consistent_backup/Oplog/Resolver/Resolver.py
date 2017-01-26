@@ -67,10 +67,10 @@ class Resolver:
         return ts
 
     def run(self):
-        logging.info("Resolving oplogs using %i threads max" % self.threads())
+	logging.info("Resolving oplogs (options: threads=%s,compression=%s)" % (self.threads(), self.compression()))
         self.timer.start()
 
-        self.end_ts   = self.get_consistent_end_ts()
+        self.end_ts = self.get_consistent_end_ts()
         for host in self.backup_oplogs:
             for port in self.backup_oplogs[host]:
                 backup_oplog = self.backup_oplogs[host][port]

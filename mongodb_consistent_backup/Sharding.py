@@ -2,7 +2,7 @@ import logging
 
 from time import sleep
 
-from Common import DB, validate_hostname
+from mongodb_consistent_backup.Common import DB, Timer, validate_hostname
 from mongodb_consistent_backup.Replication import Replset
 
 
@@ -89,6 +89,8 @@ class Sharding:
     def stop_balancer(self):
         logging.info("Stopping the balancer and waiting a max of %i sec" % self.balancer_wait_secs)
         wait_cnt = 0
+	stop_timer = Timer()
+	stop_timer.start()
         self.set_balancer(False)
         while wait_cnt < self.balancer_wait_secs:
             if self.check_balancer_running():
@@ -96,8 +98,8 @@ class Sharding:
                 logging.info("Balancer is still running, sleeping for %i sec(s)" % self.balancer_sleep)
                 sleep(self.balancer_sleep)
             else:
-                sleep(self.balancer_sleep)
-                logging.info("Balancer is now stopped")
+		stop_timer.stop()
+                logging.info("Balancer stopped after %s seconds" % stop_timer.duration())
                 return
         logging.fatal("Could not stop balancer: %s:%i!" % (self.db.host, self.db.port))
         raise Exception, "Could not stop balancer: %s:%i" % (self.db.host, self.db.port), None
