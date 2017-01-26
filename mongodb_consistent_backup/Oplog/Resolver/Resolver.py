@@ -68,7 +68,7 @@ class Resolver:
 
     def run(self):
         logging.info("Resolving oplogs using %i threads max" % self.threads())
-	self.timer.start()
+        self.timer.start()
 
         self.end_ts   = self.get_consistent_end_ts()
         for host in self.backup_oplogs:
