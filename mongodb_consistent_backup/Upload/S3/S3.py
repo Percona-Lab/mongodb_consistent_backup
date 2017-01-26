@@ -24,6 +24,7 @@ class S3:
         self.config          = config
         self.source_dir      = source_dir
         self.key_prefix      = key_prefix
+        self.remove_uploaded = self.config.upload.remove_uploaded
         self.s3_host         = self.config.upload.s3.host
         self.bucket_name     = self.config.upload.s3.bucket_name
         self.bucket_prefix   = self.config.upload.s3.bucket_prefix
@@ -31,7 +32,6 @@ class S3:
         self.secret_key      = self.config.upload.s3.secret_key
         self.thread_count    = self.config.upload.s3.threads
         self.chunk_size_mb   = self.config.upload.s3.chunk_size_mb
-        self.remove_uploaded = self.config.upload.remove_uploaded
         self.chunk_size      = self.chunk_size_mb * 1024 * 1024
 
         self._pool        = None

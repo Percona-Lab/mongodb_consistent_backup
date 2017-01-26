@@ -9,6 +9,7 @@ from multiprocessing import Pool, cpu_count
 from types import MethodType
 
 from ResolverThread import ResolverThread
+from mongodb_consistent_backup.Common import Timer, parse_method
 
 
 # Allows pooled .apply_async()s to work on Class-methods:
@@ -26,23 +27,34 @@ class Resolver:
         self.config        = config
         self.tailed_oplogs = tailed_oplogs_summary
         self.backup_oplogs = backup_oplogs_summary
-        self.thread_count  = self.config.oplog.resolver.threads
 
-        self.dump_gzip = False
-        if self.config.oplog.compression == 'gzip':
-            self.dump_gzip = True
-
+        self.timer  = Timer()
         self.end_ts = None
         self.delete_oplogs = {}
 
-        if self.thread_count is None or self.thread_count < 1:
-            self.thread_count = cpu_count() * 2
-
         try:
-            self._pool = Pool(processes=self.thread_count)
+            self._pool = Pool(processes=self.threads())
         except Exception, e:
-            logging.fatal("Could not start pool! Error: %s" % e)
+            logging.fatal("Could not start oplog resolver pool! Error: %s" % e)
             raise e
+
+    def compression(self, method=None):
+        if method:
+            logging.debug("Setting oplog resolver compression to: %s" % method)
+            self.config.oplog.compression = parse_method(method)
+        return parse_method(self.config.oplog.compression)
+
+    def is_gzip(self):
+        if self.compression() == 'gzip':
+           return True
+        return False
+
+    def threads(self, threads=None):
+        if threads:
+            self.config.oplog.resolver.threads = int(threads)
+        if self.config.oplog.resolver.threads is None or self.config.oplog.resolver.threads < 1:
+            self.config.oplog.resolver.threads = int(cpu_count() * 2)
+        return int(self.config.oplog.resolver.threads)
 
     def get_consistent_end_ts(self):
         ts = None
@@ -55,7 +67,8 @@ class Resolver:
         return ts
 
     def run(self):
-        logging.info("Resolving oplogs using %i threads max" % self.thread_count)
+        logging.info("Resolving oplogs using %i threads max" % self.threads())
+	self.timer.start()
 
         self.end_ts   = self.get_consistent_end_ts()
         for host in self.backup_oplogs:
@@ -84,7 +97,7 @@ class Resolver:
                                 backup_oplog['file'],
                                 backup_oplog['last_ts'],
                                 self.end_ts,
-                                self.dump_gzip
+                                self.is_gzip()
                             ).run)
                         except Exception, e:
                             logging.fatal("Resolve failed for %s:%s! Error: %s" % (host, port, e))
@@ -105,4 +118,5 @@ class Resolver:
                 logging.fatal("Deleting of tailed oplog file %s failed! Error: %s" % (oplog_file, e))
                 raise e
 
-        logging.info("Done resolving oplogs")
+        self.timer.stop()
+        logging.info("Oplog resolving completed in %s seconds" % self.timer.duration())

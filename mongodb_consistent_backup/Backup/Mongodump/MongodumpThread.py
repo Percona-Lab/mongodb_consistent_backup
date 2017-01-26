@@ -3,9 +3,8 @@ import logging
 
 from multiprocessing import Process
 from signal import signal, SIGINT, SIGTERM
-from time import time
 
-from mongodb_consistent_backup.Common import LocalCommand
+from mongodb_consistent_backup.Common import LocalCommand, Timer
 from mongodb_consistent_backup.Oplog import Oplog
 
 
@@ -28,12 +27,12 @@ class MongodumpThread(Process):
         self.dump_gzip      = dump_gzip
         self.verbose        = verbose
 
+        self.timer      = Timer()
         self._command   = None
         self.completed  = False 
         self.backup_dir = "%s/%s" % (self.base_dir, self.backup_name)
         self.dump_dir   = "%s/dump" % self.backup_dir
         self.oplog_file = "%s/oplog.bson" % self.dump_dir
-        self.start_time = time()
 
         signal(SIGINT, self.close)
         signal(SIGTERM, self.close)
@@ -51,6 +50,8 @@ class MongodumpThread(Process):
             self.host,
             self.port
         ))
+
+        self.timer.start()
 
         mongodump_flags = ["-h", self.host_port, "--oplog", "-o", "%s/dump" % self.backup_dir]
         if self.threads > 0:
@@ -89,7 +90,8 @@ class MongodumpThread(Process):
             'completed': self.completed
         })
 
-        time_diff = time() - self.start_time
+        self.timer.stop()
+
         logging.info("Backup for %s/%s:%s completed in %s sec with %i oplog changes captured to: %s" % (
-            self.backup_name, self.host, self.port, time_diff, oplog.count(), str(oplog.last_ts())
+            self.backup_name, self.host, self.port, self.timer.duration(), oplog.count(), str(oplog.last_ts())
         ))
