@@ -4,11 +4,10 @@ import logging
 from datetime import datetime
 from multiprocessing import current_process
 from signal import signal, SIGINT, SIGTERM
-from time import time
 
 from Archive import Archive
 from Backup import Backup
-from Common import Config, DB, Lock, validate_hostname
+from Common import Config, DB, Lock, Timer, validate_hostname
 from Notify import Notify
 from Oplog import Tailer, Resolver
 from Replication import Replset, ReplsetSharded
@@ -29,18 +28,16 @@ class MongodbConsistentBackup(object):
         self.oplog_resolver           = None
         self.upload                   = None
         self.lock                     = None
-        self.start_time               = time()
-        self.end_time                 = None
-        self.backup_duration          = None
         self.backup_time              = None
         self.backup_root_directory    = None
         self.backup_root_subdirectory = None
         self.db                       = None
         self.is_sharded               = False
+        self.log_level                = None
+        self.timer                    = Timer()
         self.secondaries              = {}
         self.oplog_summary            = {}
         self.backup_summary           = {}
-        self.log_level                = None
 
         self.setup_config()
         self.setup_logger()
@@ -149,6 +146,7 @@ class MongodbConsistentBackup(object):
         logging.info("Starting %s version %s (git commit hash: %s)" % (self.program_name, self.config.version, self.config.git_commit))
 
         self.get_lock()
+        self.timer.start()
 
         # Setup the notifier
         try:
@@ -285,8 +283,9 @@ class MongodbConsistentBackup(object):
                 self.exception("Problem restoring balancer lock! Error: %s" % e)
 
             # resolve/merge tailed oplog into mongodump oplog.bson to a consistent point for all shards
-            if self.config.backup.method == "mongodump" and self.oplogtailer:
+            if self.backup.method == "mongodump" and self.oplogtailer:
                 self.oplog_resolver = Resolver(self.config, self.oplog_summary, self.backup_summary)
+                self.oplog_resolver.compression(self.oplogtailer.compression())
                 self.oplog_resolver.run()
 
         # archive backup directories
@@ -295,21 +294,20 @@ class MongodbConsistentBackup(object):
         except Exception, e:
             self.exception("Problem performing archiving! Error: %s" % e)
 
-        self.end_time = time()
-        self.backup_duration = self.end_time - self.start_time
-
         # upload backup
         try:
             self.upload.upload()
         except Exception, e:
             self.exception("Problem performing upload of backup! Error: %s" % e)
 
+        self.timer.stop()
+
         # send notifications of backup state
         try:
             self.notify.notify("%s: backup '%s' succeeded in %s secs" % (
                 self.program_name,
                 self.config.backup.name,
-                self.backup_duration
+                self.timer.duration()
             ), True)
         except Exception, e:
             self.exception("Problem running Notifier! Error: %s" % e)
@@ -319,4 +317,4 @@ class MongodbConsistentBackup(object):
 
         self.release_lock()
 
-        logging.info("Backup completed in %s sec" % self.backup_duration)
+        logging.info("Completed %s in %s sec" % (self.program_name, self.timer.duration()))

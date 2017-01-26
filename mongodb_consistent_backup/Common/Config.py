@@ -1,3 +1,4 @@
+import mongodb_consistent_backup
 import sys
 
 from argparse import Action
@@ -71,7 +72,7 @@ class Config(object):
             return data[keys]
 
     def parse_submodules(self):
-        for _, modname, ispkg in walk_packages(path="."):
+        for _, modname, ispkg in walk_packages(path=mongodb_consistent_backup.__path__, prefix=mongodb_consistent_backup.__name__+'.'):
             if ispkg:
                 try:
                     components = modname.split('.')

@@ -67,15 +67,14 @@ class Tar:
                     self._pool.apply_async(TarThread(subdir_name, output_file, self.do_gzip(), self.verbose, self.binary).run)
             except Exception, e:
                 self._pool.terminate()
-                logging.fatal("Could not create archiving thread! Error: %s" % e)
+                logging.fatal("Could not create tar archiving thread! Error: %s" % e)
                 raise e
             self._pool.close()
             self._pool.join()
-        logging.info("Archiver threads completed")
 
     def close(self):
-        logging.debug("Stopping Archiver threads")
+        logging.debug("Stopping tar archiving threads")
         if self._pool is not None:
             self._pool.terminate()
             self._pool.join()
-        logging.info("Stopped all Archiver threads")
+        logging.info("Stopped all tar archiving threads")

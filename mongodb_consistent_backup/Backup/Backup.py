@@ -1,7 +1,7 @@
 import logging
 
 from Mongodump import Mongodump
-from mongodb_consistent_backup.Common import config_to_string, parse_method
+from mongodb_consistent_backup.Common import Timer, config_to_string, parse_method
 
 
 class Backup:
@@ -13,15 +13,14 @@ class Backup:
 
         self.method  = None
         self._method = None
+        self.timer   = Timer()
         self.init()
 
     def init(self):
         backup_method = self.config.backup.method
         if not backup_method or parse_method(backup_method) == "none":
             raise Exception, 'Must specify a backup method!', None
-        self.method   = parse_method(backup_method)
-        config_string = config_to_string(self.config.backup[self.method])
-        logging.info("Using backup method: %s (options: %s)" % (self.method, config_string))
+        self.method = parse_method(backup_method)
         try:
             self._method = globals()[self.method.capitalize()](
                 self.config,
@@ -40,7 +39,16 @@ class Backup:
 
     def backup(self):
         if self._method:
-            return self._method.run()
+            config_string = config_to_string(self.config.backup[self.method])
+            logging.info("Using backup method: %s (options: %s)" % (self.method, config_string))
+            self.timer.start()
+
+            info = self._method.run()
+
+            self.timer.stop()
+            logging.info("Backup completed in %s seconds" % self.timer.duration())
+
+            return info
 
     def close(self):
         if self._method:

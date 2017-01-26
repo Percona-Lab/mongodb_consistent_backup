@@ -1,7 +1,7 @@
 import logging
 
 from Tar import Tar
-from mongodb_consistent_backup.Common import config_to_string, parse_method
+from mongodb_consistent_backup.Common import Timer, config_to_string, parse_method
 
 
 class Archive:
@@ -11,6 +11,7 @@ class Archive:
 
         self.method    = None
         self._archiver = None
+        self.timer     = Timer()
         self.init()
 
     def init(self):
@@ -42,7 +43,12 @@ class Archive:
         if self._archiver:
             config_string = config_to_string(self.config.archive[self.method])
             logging.info("Archiving with method: %s (options: %s)" % (self.method, config_string))
-            return self._archiver.run()
+            self.timer.start()
+
+            self._archiver.run()
+
+            self.timer.stop()
+            logging.info("Archiving completed in %s seconds" % self.timer.duration())
 
     def close(self):
         if self._archiver:
