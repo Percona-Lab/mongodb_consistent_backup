@@ -48,7 +48,7 @@ class Oplog:
     def write(self, doc):
         if self._oplog:
             try:
-                  self._oplog.write(BSON.encode(doc))
+                self._oplog.write(BSON.encode(doc))
                 self._count += 1
                 if not self._first_ts:
                     self._first_ts = doc['ts']
@@ -73,3 +73,11 @@ class Oplog:
 
     def last_ts(self):
         return self._last_ts
+
+    def stat(self):
+	return {
+	    'file':     self.oplog_file,
+	    'count':    self.count(),
+	    'first_ts': self.first_ts(),
+	    'last_ts':  self.last_ts()
+	}

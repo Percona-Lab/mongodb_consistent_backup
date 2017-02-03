@@ -1,7 +1,7 @@
 import logging
 
 from bson.timestamp import Timestamp
-from multiprocessing import Manager
+from multiprocessing import Event, Manager
 from time import time, sleep
 
 from TailThread import TailThread
@@ -18,8 +18,8 @@ class Tailer:
         self.password    = self.config.password
         self.authdb      = self.config.authdb
 
-        self.threads        = []
-        self._summary       = {}
+        self.shards   = {}
+        self._summary = {}
 
         self._manager      = Manager()
         self.thread_states = {}
@@ -45,11 +45,14 @@ class Tailer:
 
     def run(self):
         for shard in self.secondaries:
-            secondary  = self.secondaries[shard]
-            shard_name = secondary['replSet']
-            host, port = secondary['host'].split(":")
+            secondary    = self.secondaries[shard]
+            shard_name   = secondary['replSet']
+            host, port   = secondary['host'].split(":")
+	    thread_state = self.thread_state(shard)
+	    thread_stop  = Event()
             thread = TailThread(
-                self.thread_state(shard),
+                thread_state,
+		thread_stop,
                 shard_name,
                 self.base_dir,
                 host,
@@ -59,30 +62,38 @@ class Tailer:
                 self.password,
                 self.authdb
             )
-            self.threads.append(thread)
-        for thread in self.threads:
-            thread.start()
+	    self.shards[shard] = {
+	        'host':   host,
+		'port':   port,
+                'thread': thread,
+		'state':  thread_state,
+		'stop':   thread_stop
+	    }
+            self.shards[shard]['thread'].start()
 
     def stop(self, timestamp=None):
         if not timestamp:
             timestamp = Timestamp(int(time()), 0)
         logging.info("Stopping oplog tailing threads at >= %s" % timestamp)
-        for shard in self.secondaries:
-            thread_state = self.thread_state(shard)
-            thread_state['stop_ts'] = timestamp
-        for thread in self.threads:
+ 	for shard in self.shards:
+	    state  = self.shards[shard]['state']
+	    stop   = self.shards[shard]['stop']
+	    thread = self.shards[shard]['thread']
+            if state['last_ts'] >= timestamp:
+	        #stop.set()
+		thread.stop()
             while thread.is_alive():
+		print 'waiting...'
                 sleep(1)
         logging.info("Stopped all oplog threads")
 
-        for shard in self.secondaries:
-            state = self.thread_state(shard)
+        for shard in self.shards:
+	    state = self.shards[shard]['state']
             host  = state['host']
             port  = state['port']
             if host not in self._summary:
                 self._summary[host] = {}
             self._summary[host][port] = state
-
         return self._summary
 
     def close(self):
