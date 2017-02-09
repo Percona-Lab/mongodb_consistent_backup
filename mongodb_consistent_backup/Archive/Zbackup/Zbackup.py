@@ -1,6 +1,7 @@
 import os
 import logging
 
+from multiprocessing import cpu_count
 from signal import signal, SIGINT, SIGTERM
 from subprocess import Popen, PIPE
 
@@ -36,6 +37,8 @@ class Zbackup:
     def threads(self, count=None):
         if count:
             self.config.archive.zbackup.threads = int(count)
+	if self.config.archive.zbackup.threads < 1:
+	    self.config.archive.zbackup.threads = cpu_count()
         return int(self.config.archive.zbackup.threads)
 
     def backup_dir(self, backup_dir=None):
@@ -113,8 +116,17 @@ class Zbackup:
 
     def run(self):
         if self.has_zbackup():
-            logging.info("Starting Zbackup version: %s" % self.version())
-            logging.warning("Nothing to do, I'm a fraud!")
+	    backup_name = os.path.basename(self.source_dir)
+            tar_cmd_line = ["tar", "c", self.source_dir]
+	    zbackup_cmd_line = [self.zbackup_binary]
+	    if self.encrypted:
+                zbackup_cmd_line.extend(["--password-file", self.zbackup_passwd_file, "backup", "%s/backups/%s.tar" % (self.backup_dir(), backup_name)])
+	    else:
+		zbackup_cmd_line.extend(["--non-encrypted", "backup", "%s/backups/%s.tar" % (self.backup_dir(), backup_name)])
+            logging.info("Starting ZBackup version: %s" % self.version())
+            z_cmd = Popen(zbackup_cmd_line, stdin=PIPE, stdout=PIPE)
+	    t_cmd = Popen(tar_cmd_line, stdout=z_cmd.stdin, stderr=PIPE)
+	    t_stdout, t_stderr = t_cmd.communicate()
         else:
             logging.error("Cannot find Zbackup at %s!" % self.zbackup_binary)
             raise Exception, "Cannot find Zbackup at %s!" % self.zbackup_binary, None
