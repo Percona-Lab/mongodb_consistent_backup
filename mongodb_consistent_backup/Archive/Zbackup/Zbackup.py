@@ -12,9 +12,10 @@ class Zbackup:
         self.config     = config
         self.backup_dir = backup_dir
 
-        self._command  = None
         self.compression_method = None
         self.compression_supported = ['lzma']
+        self._command = None
+        self._version = None
 
         self.zbackup_binary      = config.archive.zbackup.binary
         self.zbackup_dir         = config.archive.zbackup.dir
@@ -34,23 +35,27 @@ class Zbackup:
         return config.archive.zbackup.threads
 
     def version(self):
-        try:
-            cmd = Popen([self.zbackup_binary, "--help"], stderr=PIPE)
-            stdout, stderr = cmd.communicate()
-            if stderr:
-                line = stderr.split("\n")[0]
-                if " " in line:
-                    fields  = line.split(" ")
-                    version = fields[len(fields) - 1]
-                    if len(version.split(".")) == 3:
-                        return version
-            return None
-        except OSError, e:
-            return None
-        except Exception, e:
-            raise e
+        if self._version:
+            return self._version
+        else:
+            try:
+                cmd = Popen([self.zbackup_binary, "--help"], stderr=PIPE)
+                stdout, stderr = cmd.communicate()
+                if stderr:
+                    line = stderr.split("\n")[0]
+                    if " " in line:
+                        fields  = line.split(" ")
+                        version = fields[len(fields) - 1]
+                        if len(version.split(".")) == 3:
+                            self._version = version
+                            return self._version
+                return None
+            except OSError, e:
+                return None
+            except Exception, e:
+                raise e
     
-    def hasZbackup(self):
+    def has_zbackup(self):
         if self.version():
            return True
         return False
