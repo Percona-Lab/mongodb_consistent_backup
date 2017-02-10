@@ -64,13 +64,6 @@ class ReplsetSharded:
 
         return self.replsets
 
-    def find_secondaries(self):
-        shard_secondaries = {}
-        for rs_name in self.get_replsets():
-            replset = self.replsets[rs_name]
-            shard_secondaries[rs_name] = replset.find_secondary()
-        return shard_secondaries
-
     def primary_optimes(self):
         primary_optimes = {}
         for rs_name in self.get_replsets():

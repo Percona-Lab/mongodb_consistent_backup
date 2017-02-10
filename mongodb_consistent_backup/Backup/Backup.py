@@ -5,10 +5,10 @@ from mongodb_consistent_backup.Common import Timer, config_to_string, parse_meth
 
 
 class Backup:
-    def __init__(self, config, backup_dir, secondaries, config_server=None):
+    def __init__(self, config, backup_dir, replsets, config_server=None):
         self.config        = config
         self.backup_dir    = backup_dir
-        self.secondaries   = secondaries
+        self.replsets      = replsets
         self.config_server = config_server
 
         self.method  = None
@@ -25,7 +25,7 @@ class Backup:
             self._method = globals()[self.method.capitalize()](
                 self.config,
                 self.backup_dir,
-                self.secondaries,
+                self.replsets,
                 self.config_server
             )
         except LookupError, e:

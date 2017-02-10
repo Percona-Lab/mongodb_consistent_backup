@@ -35,7 +35,7 @@ class MongodbConsistentBackup(object):
         self.is_sharded               = False
         self.log_level                = None
         self.timer                    = Timer()
-        self.secondaries              = {}
+	self.replsets                 = {}
         self.oplog_summary            = {}
         self.backup_summary           = {}
 
@@ -183,10 +183,8 @@ class MongodbConsistentBackup(object):
                     self.config,
                     self.db
                 )
-                secondary    = self.replset.find_secondary()
-                replset_name = secondary['replSet']
-
-                self.secondaries[replset_name] = secondary
+                replset_name = self.replset.get_rs_name()
+                self.replsets[replset_name] = self.replset
             except Exception, e:
                 self.exception("Problem getting shard secondaries! Error: %s" % e)
 
@@ -195,7 +193,7 @@ class MongodbConsistentBackup(object):
                 self.backup = Backup(
                     self.config,
                     self.backup_root_directory,
-                    self.secondaries
+                    self.replsets
                 )
                 self.backup.backup()
                 if self.backup.is_compressed():
@@ -219,16 +217,16 @@ class MongodbConsistentBackup(object):
             except Exception, e:
                 self.exception("Problem connecting to the balancer! Error: %s" % e)
 
-            # get shard secondaries
+            # get shard replsets
             try:
                 self.replset_sharded = ReplsetSharded(
                     self.config,
                     self.sharding,
                     self.db
                 )
-                self.secondaries = self.replset_sharded.find_secondaries()
+		self.replsets = self.replset_sharded.get_replsets()
             except Exception, e:
-                self.exception("Problem getting shard secondaries! Error: %s" % e)
+                self.exception("Problem getting shard/replica set info! Error: %s" % e)
 
             # stop the balancer
             try:
@@ -240,7 +238,7 @@ class MongodbConsistentBackup(object):
             try:
                 self.oplogtailer = Tailer(
                     self.config,
-                    self.secondaries,
+                    self.replsets,
                     self.backup_root_directory
                 )
             except Exception, e:
@@ -251,7 +249,7 @@ class MongodbConsistentBackup(object):
                 self.backup = Backup(
                     self.config,
                     self.backup_root_directory,
-                    self.secondaries, 
+                    self.replsets, 
                     self.sharding.get_config_server()
                 )
                 if self.backup.is_compressed():

@@ -9,9 +9,9 @@ from mongodb_consistent_backup.Common import parse_method
 
 
 class Tailer:
-    def __init__(self, config, secondaries, base_dir):
+    def __init__(self, config, replsets, base_dir):
         self.config      = config
-        self.secondaries = secondaries
+        self.replsets    = replsets
         self.base_dir    = base_dir
         self.backup_name = self.config.name
         self.user        = self.config.user
@@ -44,8 +44,8 @@ class Tailer:
         return self.thread_states[shard]
 
     def run(self):
-        for shard in self.secondaries:
-            secondary    = self.secondaries[shard]
+        for shard in self.replsets:
+            secondary    = self.replsets[shard].find_secondary()
             shard_name   = secondary['replSet']
             host, port   = secondary['host'].split(":")
 	    thread_state = self.thread_state(shard)

@@ -86,6 +86,9 @@ class Replset:
         rs_name      = rs_status['set']
         quorum_count = ceil(len(rs_status['members']) / 2.0)
 
+	if self.secondary and not force:
+	    return self.secondary
+
         for member in rs_status['members']:
             if member['stateStr'] == 'SECONDARY' and member['health'] > 0:
                 score       = self.max_lag_secs * 10

@@ -11,10 +11,10 @@ from MongodumpThread import MongodumpThread
 
 
 class Mongodump:
-    def __init__(self, config, base_dir, secondaries, config_server=None):
+    def __init__(self, config, base_dir, replsets, config_server=None):
         self.config        = config
         self.base_dir      = base_dir
-        self.secondaries   = secondaries
+        self.replsets      = replsets
         self.config_server = config_server
         self.binary        = self.config.backup.mongodump.binary
         self.user          = self.config.user
@@ -35,11 +35,11 @@ class Mongodump:
         if not self.do_gzip and self.config.backup.mongodump.compression == 'gzip':
             logging.warning("mongodump gzip compression requested on binary that does not support gzip!")
 
-        if not isinstance(self.config_server, dict) and self.config_server in self.secondaries:
+        if not isinstance(self.config_server, dict) and self.config_server in self.replsets:
             self.config_replset = True
 
-        if not isinstance(self.secondaries, dict):
-            raise Exception, "Field 'secondaries' must be a dictionary of secondary info (by shard)!", None
+        if not isinstance(self.replsets, dict):
+            raise Exception, "Field 'replsets' must be a dictionary of mongodb_consistent_backup.Replication.Replset classes!", None
 
     def can_gzip(self):
         if os.path.isfile(self.binary) and os.access(self.binary, os.X_OK):
@@ -88,8 +88,8 @@ class Mongodump:
         elif not self.threads_per_dump:
             if tuple(self.version.split(".")) >= tuple("3.2.0".split(".")):
                 self.threads_per_dump = 1
-                if self.cpu_count > len(self.secondaries):
-                    self.threads_per_dump = int(floor(self.cpu_count / len(self.secondaries)))
+                if self.cpu_count > len(self.replsets):
+                    self.threads_per_dump = int(floor(self.cpu_count / len(self.replsets)))
                     if self.threads_per_dump > self.threads_per_dump_max:
                         self.threads_per_dump = self.threads_per_dump_max
 
@@ -99,16 +99,16 @@ class Mongodump:
         self.threads_per_dump_max = 8
         if tuple(self.version.split(".")) >= tuple("3.2.0".split(".")): 
             self.threads_per_dump = 1
-            if self.cpu_count > len(self.secondaries):
-                self.threads_per_dump = int(floor(self.cpu_count / len(self.secondaries)))
+            if self.cpu_count > len(self.replsets):
+                self.threads_per_dump = int(floor(self.cpu_count / len(self.replsets)))
                 if self.threads_per_dump > self.threads_per_dump_max:
                     self.threads_per_dump = self.threads_per_dump_max
         else:
             logging.warn("Threading unsupported by mongodump version %s. Use mongodump 3.2.0 or greater to enable per-dump threading." % self.version)
 
         # backup a secondary from each shard:
-        for shard in self.secondaries:
-            secondary = self.secondaries[shard]
+        for shard in self.replsets:
+            secondary = self.replsets[shard].find_secondary()
             thread = MongodumpThread(
                 self.response_queue,
                 secondary['replSet'],
