@@ -31,7 +31,7 @@ production:
   notify:
     method: none
     #nsca:
-    #  server: localhost:5666
+    #  server: localhost:5667
     #  password: secret
     #  check_host: localhost
     #  check_name: mongodb_consistent_backup
