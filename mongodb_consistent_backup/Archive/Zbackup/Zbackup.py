@@ -73,12 +73,13 @@ class Zbackup:
 
     def init(self):
         if not self.backup_dir() and self.config.backup.location:
-            if not os.path.isdir(self.config.backup.location):
+            base_dir = os.path.join(self.config.backup.location, self.config.backup.name)
+            if not os.path.isdir(base_dir):
                 try:
-                    os.mkdir(self.config.backup.location)
+                    os.makedirs(base_dir)
                 except Exception, e:
                     raise Exception, "Error making backup base dir: %s" % e, None
-            self.backup_dir(os.path.join(self.config.backup.location, 'zbackup'))
+            self.backup_dir(os.path.join(base_dir, 'zbackup'))
 	self.init_storage_dir()
 
     def version(self):
