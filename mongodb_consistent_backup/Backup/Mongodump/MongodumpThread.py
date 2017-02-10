@@ -65,15 +65,11 @@ class MongodumpThread(Process):
             mongodump_flags.extend(["-u", self.user, "-p", self.password])
 
         try:
-            commands = []
             if os.path.isdir(self.dump_dir):
-                commands.append(["rm", ["-rf", self.dump_dir]])
-            commands.append(["mkdir", ["-p", self.dump_dir]])
-            commands.append([self.binary, mongodump_flags])
-
-            for (command, command_flags) in commands:
-                self._command = LocalCommand(command, command_flags, self.verbose)
-                self._command.run()
+                os.removedirs(self.dump_dir)
+            os.makedirs(self.dump_dir)
+            self._command = LocalCommand(self.binary, mongodump_flags, self.verbose)
+            self._command.run()
         except Exception, e:
             logging.error("Error performing mongodump: %s" % e)
             return None

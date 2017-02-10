@@ -9,7 +9,7 @@ from pymongo.errors import AutoReconnect
 from signal import signal, SIGINT, SIGTERM
 from time import sleep, time
 
-from mongodb_consistent_backup.Common import DB, LocalCommand
+from mongodb_consistent_backup.Common import DB
 from mongodb_consistent_backup.Oplog import Oplog
 
 
@@ -18,7 +18,7 @@ class TailThread(Process):
                  password=None, authdb='admin', update_secs=10):
         Process.__init__(self)
         self.state          = state 
-	self.stop           = stop
+        self.stop           = stop
         self.backup_name    = backup_name
         self.base_dir       = base_dir
         self.host           = host
@@ -37,7 +37,7 @@ class TailThread(Process):
         self.oplog_file = "%s/oplog-tailed.bson" % self.out_dir
         if not os.path.isdir(self.out_dir):
             try:
-                LocalCommand("mkdir", ["-p", self.out_dir]).run()
+                os.makedirs(self.out_dir)
             except Exception, e:
                 logging.error("Cannot make directory %s! Error: %s" % (self.out_dir, e))
                 raise e
