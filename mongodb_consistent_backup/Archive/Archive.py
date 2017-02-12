@@ -1,6 +1,7 @@
 import logging
 
 from Tar import Tar
+from Zbackup import Zbackup
 from mongodb_consistent_backup.Common import Timer, config_to_string, parse_method
 
 
