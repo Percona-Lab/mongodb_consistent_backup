@@ -5,11 +5,11 @@ from mongodb_consistent_backup.Common import Timer, config_to_string, parse_meth
 
 
 class Backup:
-    def __init__(self, config, backup_dir, replsets, config_server=None):
-        self.config        = config
-        self.backup_dir    = backup_dir
-        self.replsets      = replsets
-        self.config_server = config_server
+    def __init__(self, config, backup_dir, replsets, sharding=None):
+        self.config     = config
+        self.backup_dir = backup_dir
+        self.replsets   = replsets
+        self.sharding   = sharding
 
         self.method  = None
         self._method = None
@@ -26,7 +26,7 @@ class Backup:
                 self.config,
                 self.backup_dir,
                 self.replsets,
-                self.config_server
+                self.sharding
             )
         except LookupError, e:
             raise Exception, 'No backup method: %s' % self.method, None

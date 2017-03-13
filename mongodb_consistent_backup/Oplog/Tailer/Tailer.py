@@ -79,9 +79,10 @@ class Tailer:
 	    state  = self.shards[shard]['state']
 	    stop   = self.shards[shard]['stop']
 	    thread = self.shards[shard]['thread']
-            if state['last_ts'] >= timestamp:
+            if self.state('last_ts') >= timestamp:
+                
 	        #stop.set()
-		thread.stop()
+		#thread.stop()
             while thread.is_alive():
 		print 'waiting...'
                 sleep(1)

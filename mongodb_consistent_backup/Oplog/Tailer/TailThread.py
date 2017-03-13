@@ -17,21 +17,21 @@ class TailThread(Process):
     def __init__(self, state, stop, backup_name, base_dir, host, port, dump_gzip=False, user=None,
                  password=None, authdb='admin', update_secs=10):
         Process.__init__(self)
-        self.state          = state 
-        self.stop           = stop
-        self.backup_name    = backup_name
-        self.base_dir       = base_dir
-        self.host           = host
-        self.port           = int(port)
-        self.dump_gzip      = dump_gzip
-        self.user           = user
-        self.password       = password
-        self.authdb         = authdb
-        self.update_secs    = update_secs
+        self.state       = state 
+        self.stop        = stop
+        self.backup_name = backup_name
+        self.base_dir    = base_dir
+        self.host        = host
+        self.port        = int(port)
+        self.dump_gzip   = dump_gzip
+        self.user        = user
+        self.password    = password
+        self.authdb      = authdb
+        self.update_secs = update_secs
 
-        self.stopped         = False
-        self._connection     = None
-        self._oplog          = None
+        self.stopped     = False
+        self._connection = None
+        self._oplog      = None
 
         self.out_dir    = "%s/%s" % (self.base_dir, self.backup_name)
         self.oplog_file = "%s/oplog-tailed.bson" % self.out_dir
@@ -80,15 +80,20 @@ class TailThread(Process):
             self._oplog.close()
 
     def do_stop(self):
-        if self.stop.is_set():
-            logging.info("Oplog tail thread stopping at timestamp: %s" % self.state['last_ts'])
+	if self.state('stop_ts') 
+            logging.info("Oplog tail thread stopping at timestamp: %s" % self.state('last_ts'))
+	    while self.statee('last_ts') < self.state('stop_ts'):
+	        logging.info("Waiting to reach stop timestamp: %s" % self.state('stop_ts'))
+		sleep(1)
             return True
         return False
 
-    def update_state(self):
-	stat = self.oplog().stat()
-	for key in stat:
-	    self.state[key] = stat[key]
+    def state(self, key, value=None):
+	if key and value:
+	    self._state[key] = value
+	if key in self._state:
+	    return self._state[key]
+        return None
 
     def run(self):
         conn  = self.connection()
@@ -108,7 +113,8 @@ class TailThread(Process):
                         # get the next oplog doc and write it
                         doc = cursor.next()
                         oplog.write(doc)
-			self.update_state()
+			self.state('last_ts') = doc['ts']
+			self.state('count')   = self.state('count') + 1
                     except (AutoReconnect, StopIteration):
                         if self.do_stop():
                             break

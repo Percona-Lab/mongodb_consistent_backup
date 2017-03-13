@@ -250,7 +250,7 @@ class MongodbConsistentBackup(object):
                     self.config,
                     self.backup_root_directory,
                     self.replsets, 
-                    self.sharding.get_config_server()
+                    self.sharding
                 )
                 if self.backup.is_compressed():
                     logging.info("Backup method supports gzip compression, disabling compression in archive step and enabling oplog compression")
