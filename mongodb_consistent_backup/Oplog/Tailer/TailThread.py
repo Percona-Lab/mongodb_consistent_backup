@@ -63,13 +63,13 @@ class TailThread(Process):
         while not self.stopped:
             sleep(1)
 
-    def status_report(self):
+    def status(self):
         if self.do_stop.is_set():
             return
         now = time()
         if (now - self.status_last) >= self.status_secs:
             state = self.state.get()
-            logging.info("Oplog tailer %s:%i status report: last_timestamp=%s, item_count=%i" % (self.host, self.port, state['last_ts'], state['count']))
+	    logging.info("Oplog tailer %s:%i status: %i changes captured to: %s" % (self.host, self.port, state['count'], state['last_ts']))
             self.status_last = now
 
     def run(self):
@@ -101,7 +101,7 @@ class TailThread(Process):
                             self.state.set('first_ts', doc['ts'])
 
                         # print status report every N seconds
-                        self.status_report()
+                        self.status()
                     except (AutoReconnect, StopIteration):
                         if self.do_stop.is_set():
                             break

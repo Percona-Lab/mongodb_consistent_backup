@@ -18,6 +18,7 @@ class Replset:
         self.min_priority = self.config.replication.min_priority
         self.max_priority = self.config.replication.max_priority
 
+        self.replset   = True
         self.rs_config = None
         self.rs_status = None
         self.primary   = None

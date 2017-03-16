@@ -144,7 +144,7 @@ class Sharding:
                     if rs.get_rs_status(False, True):
                         self.config_server = rs
                 except Exception:
-                    self.config_server = {'host': configdb_hosts[0]}
+                    self.config_server = { 'host': configdb_hosts[0], 'replset': False }
                 finally:
                     return self.config_server
             except Exception, e:

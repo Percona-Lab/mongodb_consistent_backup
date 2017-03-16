@@ -90,7 +90,7 @@ class Tailer:
                 logging.info("Stopping tailer %s:%i at >= %s" % (host, port, timestamp))
     
                 # wait for replication to get in sync
-                while state.get('last_ts') and state.get('last_ts') <= timestamp:
+                while state.get('last_ts') and state.get('last_ts') < timestamp:
                     logging.info('Waiting for tailer %s:%i to reach position: %s, currrently: %s' % (host, port, timestamp, state.get('last_ts')))
                     sleep(sleep_secs)
 

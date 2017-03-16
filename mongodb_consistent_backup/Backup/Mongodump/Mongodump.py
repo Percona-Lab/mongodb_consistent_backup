@@ -123,12 +123,12 @@ class Mongodump:
             thread.start()
         self.wait()
 
-        # backup a single non-replset config server, if exists:
-        if not self.config_replset:
-            logging.info("Using non-replset backup method for config server mongodump")
-            config_server = self.sharding.get_config_server()
+        # backup a single sccc/non-replset config server, if exists:
+        config_server = self.sharding.get_config_server()
+        if config_server and isinstance(config_server, dict):
             if not ":" in config_server['host']:
                 config_server['host'] = config_server['host']+":27019"
+            logging.info("Using non-replset backup method for config server mongodump")
             self.threads = [MongodumpThread(
                 self.response_queue,
                 'configsvr',
