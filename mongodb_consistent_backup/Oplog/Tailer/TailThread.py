@@ -59,8 +59,7 @@ class TailThread(Process):
     def close(self, exit_code=None, frame=None):
         del exit_code
         del frame
-	print "killing tailing thread"
-	self.do_stop = True
+	self.do_stop.set()
 	while not self.stopped:
 	    sleep(1)
 
@@ -72,11 +71,12 @@ class TailThread(Process):
             self.report_last = now
 
     def run(self):
-        conn  = self.connection()
-        db    = conn['local']
+        conn = self.connection()
+        db   = conn['local']
 
         logging.info("Tailing oplog on %s:%i for changes (options: gzip=%s)" % (self.host, self.port, self.dump_gzip))
 
+	self.state.set('running', True)
         oplog = self.oplog()
         tail_start_ts = db.oplog.rs.find().sort('$natural', -1)[0]['ts']
         while not self.do_stop.is_set():
@@ -108,3 +108,4 @@ class TailThread(Process):
         self.stopped = True
 
         logging.info("Done tailing oplog on %s:%i, %i changes captured to: %s" % (self.host, self.port, self.state.get('count'), self.state.get('last_ts')))
+	self.state.set('running', False)

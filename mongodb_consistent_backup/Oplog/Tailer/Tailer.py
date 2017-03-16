@@ -51,9 +51,9 @@ class Tailer:
             host, port  = secondary['host'].split(":")
             oplog_file  = self.prepare_tail_oplog(shard_name)
             oplog_state = OplogState(self.manager, host, port, oplog_file)
-	    stop        = Event()
+            stop        = Event()
             thread = TailThread(
-	        stop,
+                stop,
                 shard_name,
                 oplog_file,
                 oplog_state,
@@ -64,33 +64,36 @@ class Tailer:
                 self.password,
                 self.authdb
             )
-	    self.shards[shard] = {
-	        'stop':   stop,
+            self.shards[shard] = {
+                'stop':   stop,
                 'thread': thread,
-		'state':  oplog_state,
-	    }
+                'state':  oplog_state,
+            }
             self.shards[shard]['thread'].start()
 
-    def stop(self, timestamp=None):
+    def stop(self, timestamp=None, sleep_secs=3):
         if not timestamp:
             timestamp = Timestamp(int(time()), 0)
         logging.info("Stopping oplog tailing threads at >= %s" % timestamp)
- 	for shard in self.shards:
-	    state  = self.shards[shard]['state']
-	    stop   = self.shards[shard]['stop']
-	    thread = self.shards[shard]['thread']
+        for shard in self.shards:
+            state  = self.shards[shard]['state']
+            stop   = self.shards[shard]['stop']
+            thread = self.shards[shard]['thread']
+            host   = state.get('host')
+            port   = int(state.get('port'))
             while state.get('last_ts') <= timestamp or not state.get('last_ts'):
-                print 'waiting for thread for host %s to reach %s, currrently: %s...' % (state.get('host'), timestamp, state.get('last_ts'))
-                sleep(1)
-	    print 'stopping thread for host %s' % state.get('host')
-	    self.shards[shard]['stop'].set()
+                logging.info('Waiting for tailer %s:%i to reach position: %s, currrently: %s' % (host, port, timestamp, state.get('last_ts')))
+                sleep(sleep_secs)
+            self.shards[shard]['stop'].set()
+	    sleep(sleep_secs)
             while thread.is_alive():
-                print 'waiting for thread for host %s to die...' % (state.get('host'))
-                sleep(1)
+                logging.info('Waiting for tailer %s:%i to stop' % (host, port))
+                sleep(sleeps_secs)
+            logging.info("Stopped tailer thread %s:%i" % (host, port))
         logging.info("Stopped all oplog threads")
 
         for shard in self.shards:
-	    state = self.shards[shard]['state'].get().copy()
+            state = self.shards[shard]['state'].get().copy()
             host  = state['host']
             port  = state['port']
             if host not in self._summary:
