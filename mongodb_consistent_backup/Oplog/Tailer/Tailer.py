@@ -71,35 +71,45 @@ class Tailer:
             }
             self.shards[shard]['thread'].start()
 
-    def stop(self, timestamp=None, sleep_secs=3):
-        if not timestamp:
-            timestamp = Timestamp(int(time()), 0)
-        logging.info("Stopping oplog tailing threads at >= %s" % timestamp)
+    def stop(self, kill=False, sleep_secs=2):
         for shard in self.shards:
-            state  = self.shards[shard]['state']
-            stop   = self.shards[shard]['stop']
-            thread = self.shards[shard]['thread']
-            host   = state.get('host')
-            port   = int(state.get('port'))
-            while state.get('last_ts') <= timestamp or not state.get('last_ts'):
-                logging.info('Waiting for tailer %s:%i to reach position: %s, currrently: %s' % (host, port, timestamp, state.get('last_ts')))
-                sleep(sleep_secs)
+            replset = self.replsets[shard]
+            state   = self.shards[shard]['state']
+            stop    = self.shards[shard]['stop']
+            thread  = self.shards[shard]['thread']
+            host    = state.get('host')
+            port    = int(state.get('port'))
+
+            if not kill:
+                # get current optime of replset primary to use a stop position
+                timestamp = replset.primary_optime()
+                if not timestamp:
+    		    logging.warning("Could not get current optime from PRIMARY! Using now as a stop time")
+                    timestamp = Timestamp(int(time()), 0)
+                logging.info("Stopping tailer %s:%i at >= %s" % (host, port, timestamp))
+    
+                # wait for replication to get in sync
+                while state.get('last_ts') and state.get('last_ts') <= timestamp:
+                    logging.info('Waiting for tailer %s:%i to reach position: %s, currrently: %s' % (host, port, timestamp, state.get('last_ts')))
+                    sleep(sleep_secs)
+
+            # set thread stop event
             self.shards[shard]['stop'].set()
-	    sleep(sleep_secs)
+            sleep(sleep_secs)
+
+            # wait for thread to stop
             while thread.is_alive():
                 logging.info('Waiting for tailer %s:%i to stop' % (host, port))
                 sleep(sleeps_secs)
             logging.info("Stopped tailer thread %s:%i" % (host, port))
-        logging.info("Stopped all oplog threads")
 
-        for shard in self.shards:
-            state = self.shards[shard]['state'].get().copy()
-            host  = state['host']
-            port  = state['port']
+            # gather state info
             if host not in self._summary:
                 self._summary[host] = {}
-            self._summary[host][port] = state
+            self._summary[host][port] = state.get().copy()
+
+        logging.info("Stopped all oplog threads")
         return self._summary
 
     def close(self):
-        self.stop()
+        self.stop(True)

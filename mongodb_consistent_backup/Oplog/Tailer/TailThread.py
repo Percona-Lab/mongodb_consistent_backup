@@ -14,7 +14,7 @@ from mongodb_consistent_backup.Oplog import Oplog
 
 class TailThread(Process):
     def __init__(self, do_stop, backup_name, oplog_file, state, host, port, dump_gzip=False, user=None,
-                 password=None, authdb='admin', report_secs=30):
+                 password=None, authdb='admin', report_secs=15):
         Process.__init__(self)
 	self.do_stop     = do_stop
         self.backup_name = backup_name
@@ -63,11 +63,13 @@ class TailThread(Process):
 	while not self.stopped:
 	    sleep(1)
 
-    def report(self):
+    def status_report(self):
+        if self.do_stop.is_set():
+            return
         now = time()
         if (now - self.report_last) >= self.report_secs:
             state = self.state.get()
-            logging.info("%s:%i oplog tailer: position=%s, count=%i" % (state['host'], state['port'], state['last_ts'], state['count']))
+            logging.info("Oplog tailer %s:%i status report: last_timestamp=%s, item_count=%i, report_interval=%i" % (self.host, self.port, state['last_ts'], state['count'], self.report_secs))
             self.report_last = now
 
     def run(self):
@@ -95,7 +97,9 @@ class TailThread(Process):
                         self.state.set('last_ts', self.last_ts)
                         if self.state.get('first_ts'):
                             self.state.set('first_ts', doc['ts'])
-                        self.report()
+
+			# print status report every N seconds
+                        self.status_report()
                     except (AutoReconnect, StopIteration):
                         if self.do_stop.is_set():
                             break
