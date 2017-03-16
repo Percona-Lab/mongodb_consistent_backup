@@ -67,11 +67,11 @@ class Replset:
                 optime_ts = member['optime']
                 if isinstance(member['optime'], dict) and 'ts' in member['optime']:
                     optime_ts = member['optime']['ts']
+                validate_hostname(member['name'])
                 self.primary = {
                     'host': member['name'],
                     'optime': optime_ts
                 }
-                validate_hostname(self.primary['host'])
                 logging.info("Found PRIMARY: %s/%s with optime %s" % (
                     rs_name,
                     member['name'],
@@ -88,8 +88,8 @@ class Replset:
         rs_name      = rs_status['set']
         quorum_count = ceil(len(rs_status['members']) / 2.0)
 
-	if self.secondary and not force:
-	    return self.secondary
+        if self.secondary and not force:
+            return self.secondary
 
         for member in rs_status['members']:
             if member['stateStr'] == 'SECONDARY' and member['health'] > 0:
@@ -167,6 +167,6 @@ class Replset:
         return self.secondary
 
     def primary_optime(self):
-        rs_primary = self.find_primary(True)
+        rs_primary = self.find_primary(True, True)
         if 'optime' in rs_primary:
             return rs_primary['optime']

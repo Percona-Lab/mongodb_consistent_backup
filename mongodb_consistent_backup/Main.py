@@ -98,7 +98,7 @@ class MongodbConsistentBackup(object):
     # noinspection PyUnusedLocal
     def cleanup_and_exit(self, code, frame):
         if current_process().name == "MainProcess":
-            logging.info("Starting cleanup and exit procedure! Killing running threads")
+            logging.info("Starting cleanup procedure! Stopping running threads")
 
             # TODO Move submodules into self that populates as used?
             submodules = ['replset', 'sharding', 'backup', 'oplogtailer', 'archive', 'upload']

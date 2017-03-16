@@ -118,7 +118,7 @@ class Mongodump:
 
         # start all threads and wait
         logging.info(
-              "Starting backups using mongodump %s (options: gzip=%s,threads_per_dump=%i)" % (self.version, str(self.do_gzip), self.threads_per_dump()))
+              "Starting backups using mongodump %s (options: gzip=%s, threads_per_dump=%i)" % (self.version, str(self.do_gzip), self.threads_per_dump()))
         for thread in self.threads:
             thread.start()
         self.wait()
@@ -148,8 +148,8 @@ class Mongodump:
         return self._summary
 
     def close(self):
-        logging.info("Killing all mongodump threads...")
+        logging.info("Stopping all mongodump threads")
         if len(self.threads) > 0:
             for thread in self.threads:
                 thread.terminate()
-        logging.info("Killed all mongodump threads")
+        logging.info("Stopped all mongodump threads")
