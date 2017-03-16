@@ -3,7 +3,7 @@ import logging
 from math import ceil
 
 from mongodb_consistent_backup.Common import DB, validate_hostname
-from pymongo.timestamp import Timestamp
+from bson.timestamp import Timestamp
 from time import time
 
 

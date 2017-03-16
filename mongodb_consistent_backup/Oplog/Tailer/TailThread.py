@@ -1,4 +1,3 @@
-import os
 import logging
 
 # Skip bson in requirements , pymongo provides
@@ -14,41 +13,27 @@ from mongodb_consistent_backup.Oplog import Oplog
 
 
 class TailThread(Process):
-    def __init__(self, state, stop, backup_name, base_dir, host, port, dump_gzip=False, user=None,
-                 password=None, authdb='admin', update_secs=10):
+    def __init__(self, do_stop, backup_name, oplog_file, state, host, port, dump_gzip=False, user=None,
+                 password=None, authdb='admin', report_secs=30):
         Process.__init__(self)
-        self.state       = state 
-        self.stop        = stop
+	self.do_stop     = do_stop
         self.backup_name = backup_name
-        self.base_dir    = base_dir
+        self.oplog_file  = oplog_file
+	self.state       = state
         self.host        = host
         self.port        = int(port)
         self.dump_gzip   = dump_gzip
         self.user        = user
         self.password    = password
         self.authdb      = authdb
-        self.update_secs = update_secs
+        self.report_secs = report_secs
+        self.report_last = time()
 
+        self.count       = 0
+	self.last_ts     = None
         self.stopped     = False
         self._connection = None
         self._oplog      = None
-
-        self.out_dir    = "%s/%s" % (self.base_dir, self.backup_name)
-        self.oplog_file = "%s/oplog-tailed.bson" % self.out_dir
-        if not os.path.isdir(self.out_dir):
-            try:
-                os.makedirs(self.out_dir)
-            except Exception, e:
-                logging.error("Cannot make directory %s! Error: %s" % (self.out_dir, e))
-                raise e
-
-        # init thread state
-        self.state['host']     = self.host
-        self.state['port']     = self.port
-        self.state['file']     = self.oplog_file
-        self.state['count']    = None
-        self.state['first_ts'] = None
-        self.state['last_ts']  = None
 
         signal(SIGINT, self.close)
         signal(SIGTERM, self.close)
@@ -74,26 +59,17 @@ class TailThread(Process):
     def close(self, exit_code=None, frame=None):
         del exit_code
         del frame
-        self.stop.set()
-        if self._oplog:
-            self._oplog.flush()
-            self._oplog.close()
+	print "killing tailing thread"
+	self.do_stop = True
+	while not self.stopped:
+	    sleep(1)
 
-    def do_stop(self):
-	if self.state('stop_ts') 
-            logging.info("Oplog tail thread stopping at timestamp: %s" % self.state('last_ts'))
-	    while self.statee('last_ts') < self.state('stop_ts'):
-	        logging.info("Waiting to reach stop timestamp: %s" % self.state('stop_ts'))
-		sleep(1)
-            return True
-        return False
-
-    def state(self, key, value=None):
-	if key and value:
-	    self._state[key] = value
-	if key in self._state:
-	    return self._state[key]
-        return None
+    def report(self):
+        now = time()
+        if (now - self.report_last) >= self.report_secs:
+            state = self.state.get()
+            logging.info("%s:%i oplog tailer: position=%s, count=%i" % (state['host'], state['port'], state['last_ts'], state['count']))
+            self.report_last = now
 
     def run(self):
         conn  = self.connection()
@@ -103,20 +79,25 @@ class TailThread(Process):
 
         oplog = self.oplog()
         tail_start_ts = db.oplog.rs.find().sort('$natural', -1)[0]['ts']
-        while not self.do_stop():
+        while not self.do_stop.is_set():
             oplog  = self.oplog()
             query  = {'ts': {'$gt': tail_start_ts}}
             cursor = db.oplog.rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT)
             try:
-                while not self.do_stop():
+                while not self.do_stop.is_set():
                     try:
                         # get the next oplog doc and write it
                         doc = cursor.next()
                         oplog.write(doc)
-			self.state('last_ts') = doc['ts']
-			self.state('count')   = self.state('count') + 1
+                        self.count += 1
+			self.last_ts = doc['ts']
+                        self.state.set('count', self.count)
+                        self.state.set('last_ts', self.last_ts)
+                        if self.state.get('first_ts'):
+                            self.state.set('first_ts', doc['ts'])
+                        self.report()
                     except (AutoReconnect, StopIteration):
-                        if self.do_stop():
+                        if self.do_stop.is_set():
                             break
                         sleep(1)
             finally:
@@ -124,6 +105,6 @@ class TailThread(Process):
                 cursor.close()
                 oplog.flush()
         oplog.close()
-	self.stopped = True
+        self.stopped = True
 
-        logging.info("Done tailing oplog on %s:%i, %i changes captured to: %s" % (self.host, self.port, self.state['count'], self.state['last_ts']))
+        logging.info("Done tailing oplog on %s:%i, %i changes captured to: %s" % (self.host, self.port, self.state.get('count'), self.state.get('last_ts')))

@@ -1,4 +1,5 @@
 from Oplog import Oplog
+from OplogState import OplogState
 from Resolver import Resolver
 from Tailer import Tailer
 
