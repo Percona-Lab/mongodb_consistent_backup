@@ -67,7 +67,7 @@ class OplogResolver:
                         logging.info("No oplog changes to resolve for %s:%s" % (host, port))
                     elif backup_oplog['last_ts'] > tailed_oplog['last_ts']:
                         logging.fatal(
-                            "Backup oplog is newer than the tailed oplog! This situation is unsupported. Please retry backup")
+                            "Backup oplog is newer than the tailed oplog, this situation is unsupported! Please retry backup.\nBackup oplog: %s\nTailed oplog: %s" % (backup_oplog, tailed_oplog))
                         raise Exception, "Backup oplog is newer than the tailed oplog!", None
                     else:
                         try:

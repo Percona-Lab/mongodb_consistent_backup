@@ -12,7 +12,7 @@ from MongoBackup.Oplog import OplogInfo
 # noinspection PyStringFormat
 class Dump(Process):
     def __init__(self, response_queue, backup_name, host_port, user, password, authdb, base_dir, binary,
-                 dump_gzip=False, verbose=False):
+                 threads=0, dump_gzip=False, verbose=False):
         Process.__init__(self)
         self.host, port     = host_port.split(":")
         self.host_port      = host_port
@@ -24,6 +24,7 @@ class Dump(Process):
         self.authdb         = authdb
         self.base_dir       = base_dir
         self.binary         = binary
+        self.threads        = threads
         self.dump_gzip      = dump_gzip
         self.verbose        = verbose
 
@@ -52,6 +53,8 @@ class Dump(Process):
         ))
 
         mongodump_flags = ["-h", self.host_port, "--oplog", "-o", "%s/dump" % self.backup_dir]
+        if self.threads > 0:
+            mongodump_flags.extend(["--numParallelCollections="+str(self.threads)])
         if self.dump_gzip:
             mongodump_flags.extend(["--gzip"])
         if self.authdb and self.authdb != "admin":
