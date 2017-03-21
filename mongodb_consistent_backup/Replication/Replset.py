@@ -18,11 +18,12 @@ class Replset:
         self.min_priority = self.config.replication.min_priority
         self.max_priority = self.config.replication.max_priority
 
-        self.replset   = True
-        self.rs_config = None
-        self.rs_status = None
-        self.primary   = None
-        self.secondary = None
+        self.replset      = True
+        self.rs_config    = None
+        self.rs_status    = None
+        self.primary      = None
+        self.secondary    = None
+        self.mongo_config = None
 
         # Get a DB connection
         try:
@@ -59,6 +60,16 @@ class Replset:
 
     def get_rs_name(self):
         return self.get_rs_status()['set']
+
+    def get_mongo_config(self, force=False, quiet=False):
+        try:
+            if force or not self.mongo_config:
+                cmdline_opts = self.db.admin_command('getCmdLineOpts', quiet)
+                if 'parsed' in cmdline_opts:
+                    self.mongo_config = cmdline_opts['parsed']
+            return self.mongo_config
+        except Exception, e:
+            raise Exception, "Error getting mongo config! Error: %s" % e, None
 
     def find_primary(self, force=False, quiet=False):
         rs_status = self.get_rs_status(force, quiet)

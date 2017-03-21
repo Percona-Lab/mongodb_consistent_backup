@@ -18,13 +18,16 @@ class Oplog:
         self.open()
 
     def open(self):
-        if not self._oplog and os.path.isfile(self.oplog_file):
+        if not self._oplog:
             try:
                 logging.debug("Opening oplog file %s" % self.oplog_file)
+                mode = "w+"
+                if os.path.isfile(self.oplog_file):
+                    mode = "r"
                 if self.do_gzip:
-                    self._oplog = GzipFile(self.oplog_file)
+                    self._oplog = GzipFile(self.oplog_file, mode)
                 else:
-                    self._oplog = open(self.oplog_file)
+                    self._oplog = open(self.oplog_file, mode)
             except Exception, e:
                 logging.fatal("Error opening oplog file %s! Error: %s" % (self.oplog_file, e))
                 raise e
@@ -46,16 +49,15 @@ class Oplog:
             raise e
 
     def write(self, doc):
-        if self._oplog:
-            try:
-                self._oplog.write(BSON.encode(doc))
-                self._count += 1
-                if not self._first_ts:
-                    self._first_ts = doc['ts']
-                self._last_ts = doc['ts']
-            except Exception, e:
-                logging.fatal("Cannot write to oplog file %s! Error: %s" % (self.oplog_file, e))
-                raise e
+        try:
+            self._oplog.write(BSON.encode(doc))
+            self._count += 1
+            if not self._first_ts:
+                self._first_ts = doc['ts']
+            self._last_ts = doc['ts']
+        except Exception, e:
+            logging.fatal("Cannot write to oplog file %s! Error: %s" % (self.oplog_file, e))
+            raise e
 
     def flush(self):
         if self._oplog:
@@ -75,9 +77,9 @@ class Oplog:
         return self._last_ts
 
     def stat(self):
-	return {
-	    'file':     self.oplog_file,
-	    'count':    self.count(),
-	    'first_ts': self.first_ts(),
-	    'last_ts':  self.last_ts()
-	}
+       return {
+           'file':     self.oplog_file,
+           'count':    self.count(),
+           'first_ts': self.first_ts(),
+           'last_ts':  self.last_ts()
+       }

@@ -3,9 +3,10 @@ import logging
 
 from fabric.api import hide, settings, local
 from math import floor
-from multiprocessing import Queue, cpu_count
+from multiprocessing import Manager, cpu_count
 from time import sleep
 
+from mongodb_consistent_backup.Oplog import OplogState
 
 from MongodumpThread import MongodumpThread
 
@@ -22,12 +23,14 @@ class Mongodump:
         self.authdb   = self.config.authdb
         self.verbose  = self.config.verbose
 
+        self.manager = Manager()
+        self.threads_per_dump_max = 8
         self.config_replset    = False
         self.cpu_count         = cpu_count()
-        self.response_queue    = Queue()
         self.threads           = []
+        self.states            = {}
         self._summary          = {}
-	self._threads_per_dump = None
+        self._threads_per_dump = None
 
         with hide('running', 'warnings'), settings(warn_only=True):
             self.version = local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary, capture=True)
@@ -55,27 +58,31 @@ class Mongodump:
         return self._summary
 
     def wait(self):
+        completed = 0
+        start_threads = len(self.threads)
         # wait for all threads to finish
-        for thread in self.threads:
-            thread.join()
+        while len(self.threads) > 0:
+            for thread in self.threads:
+                if not thread.is_alive():
+                    if thread.exitcode == 0:
+                        completed += 1
+                    self.threads.remove(thread)
+            sleep(1)
 
         # sleep for 3 sec to fix logging order
         sleep(3)
 
         # get oplog summaries from the queue
-        completed = 0
-        while not self.response_queue.empty():
-            backup = self.response_queue.get()
-            host = backup['host']
-            port = backup['port']
+        for shard in self.states:
+	    state = self.states[shard]
+            host  = state.get('host')
+            port  = state.get('port')
             if host not in self._summary:
                 self._summary[host] = {}
-            self._summary[host][port] = backup
-            if backup['completed']:
-                completed += 1
+            self._summary[host][port] = state.get()
 
         # check if all threads completed
-        if completed == len(self.threads):
+        if completed == start_threads:
             logging.info("All mongodump backups completed")
         else:
             raise Exception, "Not all mongodump threads completed successfully!", None
@@ -98,10 +105,19 @@ class Mongodump:
         # backup a secondary from each shard:
         for shard in self.replsets:
             secondary = self.replsets[shard].find_secondary()
+
+            # TODO: make this a func
+            host = secondary['host']
+            port = 27017
+            if ":" in secondary['host']:
+                  host, port = secondary['host'].split(":")
+
+            self.states[shard] = OplogState(self.manager, host, port)
             thread = MongodumpThread(
-                self.response_queue,
-                secondary['replSet'],
-                secondary['host'],
+                self.states[shard],
+                shard,
+                host,
+                port,
                 self.user,
                 self.password,
                 self.authdb,
@@ -126,13 +142,17 @@ class Mongodump:
         # backup a single sccc/non-replset config server, if exists:
         config_server = self.sharding.get_config_server()
         if config_server and isinstance(config_server, dict):
-            if not ":" in config_server['host']:
-                config_server['host'] = config_server['host']+":27019"
+            host = config_server['host']
+            port = 27019
+            if ":" in config_server['host']:
+                host, port = config_server['host'].split(".")
             logging.info("Using non-replset backup method for config server mongodump")
+            self.states['configsvr'] = OplogState(self.manager, host, port)
             self.threads = [MongodumpThread(
-                self.response_queue,
+                self.states['configsvr'],
                 'configsvr',
-                config_server['host'],
+                host,
+                port,
                 self.user,
                 self.password,
                 self.authdb,

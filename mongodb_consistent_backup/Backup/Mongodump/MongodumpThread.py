@@ -1,5 +1,6 @@
 import os
 import logging
+import sys
 
 from multiprocessing import Process
 from signal import signal, SIGINT, SIGTERM
@@ -10,23 +11,23 @@ from mongodb_consistent_backup.Oplog import Oplog
 
 # noinspection PyStringFormat
 class MongodumpThread(Process):
-    def __init__(self, response_queue, backup_name, host_port, user, password, authdb, base_dir, binary,
+    def __init__(self, state, backup_name, host, port, user, password, authdb, base_dir, binary,
                  threads=0, dump_gzip=False, verbose=False):
         Process.__init__(self)
-        self.host, port     = host_port.split(":")
-        self.host_port      = host_port
-        self.port           = int(port)
-        self.response_queue = response_queue
-        self.backup_name    = backup_name
-        self.user           = user
-        self.password       = password
-        self.authdb         = authdb
-        self.base_dir       = base_dir
-        self.binary         = binary
-        self.threads        = threads
-        self.dump_gzip      = dump_gzip
-        self.verbose        = verbose
+        self.state       = state
+        self.backup_name = backup_name
+        self.host        = host
+        self.port        = int(port)
+        self.user        = user
+        self.password    = password
+        self.authdb      = authdb
+        self.base_dir    = base_dir
+        self.binary      = binary
+        self.threads     = threads
+        self.dump_gzip   = dump_gzip
+        self.verbose     = verbose
 
+        self.exit_code  = 1
         self.timer      = Timer()
         self._command   = None
         self.completed  = False 
@@ -39,7 +40,7 @@ class MongodumpThread(Process):
 
     def close(self, exit_code=None, frame=None):
         if self._command:
-            logging.debug("Killing running subprocess/command: %s" % self._command.command)
+            logging.debug("Stopping running subprocess/command: %s" % self._command.command)
             del exit_code
             del frame
             self._command.close()
@@ -52,8 +53,10 @@ class MongodumpThread(Process):
         ))
 
         self.timer.start()
+	self.state.set('running', True)
+	self.state.set('file', self.oplog_file)
 
-        mongodump_flags = ["-h", self.host_port, "--oplog", "-o", "%s/dump" % self.backup_dir]
+        mongodump_flags = ["--host", self.host, "--port", str(self.port), "--oplog", "--out", "%s/dump" % self.backup_dir]
         if self.threads > 0:
             mongodump_flags.extend(["--numParallelCollections="+str(self.threads)])
         if self.dump_gzip:
@@ -69,26 +72,22 @@ class MongodumpThread(Process):
                 os.removedirs(self.dump_dir)
             os.makedirs(self.dump_dir)
             self._command = LocalCommand(self.binary, mongodump_flags, self.verbose)
-            self._command.run()
+            self.exit_code = self._command.run()
         except Exception, e:
             logging.error("Error performing mongodump: %s" % e)
             return None
 
         oplog = Oplog(self.oplog_file, self.dump_gzip)
         oplog.read()
-        self.completed = True
-        self.response_queue.put({
-            'host': self.host,
-            'port': self.port,
-            'file': self.oplog_file,
-            'count': oplog.count(),
-            'last_ts': oplog.last_ts(),
-            'first_ts': oplog.first_ts(),
-            'completed': self.completed
-        })
 
+	self.state.set('running', False)
+	self.state.set('count', oplog.count())
+	self.state.set('first_ts', oplog.first_ts())
+	self.state.set('last_ts', oplog.last_ts())
         self.timer.stop()
 
         logging.info("Backup for %s/%s:%s completed in %s sec with %i oplog changes captured to: %s" % (
             self.backup_name, self.host, self.port, self.timer.duration(), oplog.count(), str(oplog.last_ts())
         ))
+
+	sys.exit(self.exit_code)

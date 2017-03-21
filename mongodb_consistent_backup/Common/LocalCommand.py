@@ -53,6 +53,9 @@ class LocalCommand:
             else:
                 logging.debug("%s command completed" % self.command)
 
+        # return exit code from mongodump
+        return self._process.returncode
+
     def close(self):
         if self._process:
             self._process.terminate()

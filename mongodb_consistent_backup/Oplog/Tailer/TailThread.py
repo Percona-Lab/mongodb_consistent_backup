@@ -69,20 +69,19 @@ class TailThread(Process):
         now = time()
         if (now - self.status_last) >= self.status_secs:
             state = self.state.get()
-	    logging.info("Oplog tailer %s:%i status: %i changes captured to: %s" % (self.host, self.port, state['count'], state['last_ts']))
+            logging.info("Oplog tailer %s/%s:%i status: %i changes captured to: %s" % (self.backup_name, self.host, self.port, state['count'], state['last_ts']))
             self.status_last = now
 
     def run(self):
         conn = self.connection()
         db   = conn['local']
 
-        logging.info("Tailing oplog on %s:%i for changes (options: gzip=%s, status_secs=%i)" % (self.host, self.port, self.dump_gzip, self.status_secs))
+        logging.info("Tailing oplog on %s/%s:%i for changes (options: gzip=%s, status_secs=%i)" % (self.backup_name, self.host, self.port, self.dump_gzip, self.status_secs))
 
         self.state.set('running', True)
         oplog = self.oplog()
         tail_start_ts = db.oplog.rs.find().sort('$natural', -1)[0]['ts']
         while not self.do_stop.is_set():
-            oplog  = self.oplog()
             query  = {'ts': {'$gt': tail_start_ts}}
             cursor = db.oplog.rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT)
             try:
@@ -92,7 +91,7 @@ class TailThread(Process):
                         doc = cursor.next()
                         oplog.write(doc)
 
-			# update states
+                        # update states
                         self.count += 1
                         self.last_ts = doc['ts']
                         self.state.set('count', self.count)
@@ -107,11 +106,11 @@ class TailThread(Process):
                             break
                         sleep(1)
             finally:
-                logging.debug("Stopping oplog cursor on %s:%i" % (self.host, self.port))
+                logging.debug("Stopping oplog cursor on %s/%s:%i" % (self.backup_name, self.host, self.port))
                 cursor.close()
                 oplog.flush()
         oplog.close()
         self.stopped = True
 
-        logging.info("Done tailing oplog on %s:%i, %i changes captured to: %s" % (self.host, self.port, self.state.get('count'), self.state.get('last_ts')))
+        logging.info("Done tailing oplog on %s/%s:%i, %i changes captured to: %s" % (self.backup_name, self.host, self.port, self.state.get('count'), self.state.get('last_ts')))
         self.state.set('running', False)
