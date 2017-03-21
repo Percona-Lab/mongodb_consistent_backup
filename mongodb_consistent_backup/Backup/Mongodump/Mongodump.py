@@ -74,7 +74,7 @@ class Mongodump:
 
         # get oplog summaries from the queue
         for shard in self.states:
-	    state = self.states[shard]
+            state = self.states[shard]
             host  = state.get('host')
             port  = state.get('port')
             if host not in self._summary:
@@ -83,7 +83,7 @@ class Mongodump:
 
         # check if all threads completed
         if completed == start_threads:
-            logging.info("All mongodump backups completed")
+            logging.info("All mongodump backups completed successfully")
         else:
             raise Exception, "Not all mongodump threads completed successfully!", None
 

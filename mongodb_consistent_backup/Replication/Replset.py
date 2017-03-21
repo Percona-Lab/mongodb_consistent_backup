@@ -95,7 +95,7 @@ class Replset:
                      if isinstance(member['optime'], dict) and 'ts' in member['optime']:
                          optime_ts = member['optime']['ts']
                      validate_hostname(member['name'])
-                          if quiet == True or not self.primary:
+                     if quiet == True or not self.primary:
                          logging.info("Found PRIMARY: %s/%s with optime %s" % (
                              rs_name,
                              member['name'],
