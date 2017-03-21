@@ -44,6 +44,7 @@ class MongodumpThread(Process):
             del exit_code
             del frame
             self._command.close()
+	sys.exit(self.exit_code)
 
     def run(self):
         logging.info("Starting mongodump (with oplog) backup of %s/%s:%i" % (

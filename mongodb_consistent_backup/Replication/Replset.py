@@ -1,11 +1,10 @@
 import logging
 
+from bson.timestamp import Timestamp
 from math import ceil
+from time import mktime, time
 
 from mongodb_consistent_backup.Common import DB, validate_hostname
-from bson.timestamp import Timestamp
-from time import time
-
 
 class Replset:
     def __init__(self, config, db):
@@ -71,27 +70,44 @@ class Replset:
         except Exception, e:
             raise Exception, "Error getting mongo config! Error: %s" % e, None
 
+    def get_repl_lag(self, rs_member):
+        rs_status  = self.get_rs_status(False, True)
+        rs_primary = self.find_primary(False, True)
+        operational_lag = 0
+        if 'date' in rs_status and 'lastHeartbeat' in rs_member:
+            operational_lag = mktime(rs_status['date'].timetuple()) - mktime(rs_member['lastHeartbeat'].timetuple())
+        member_optime_ts  = rs_member['optime']
+        primary_optime_ts = self.primary_optime(False, True)
+        if isinstance(rs_member['optime'], dict) and 'ts' in rs_member['optime']:
+            member_optime_ts = rs_member['optime']['ts']
+        rep_lag = (primary_optime_ts.time - member_optime_ts.time) - operational_lag
+        if rep_lag < 0:
+            rep_lag = 0
+        return rep_lag, member_optime_ts
+
     def find_primary(self, force=False, quiet=False):
-        rs_status = self.get_rs_status(force, quiet)
-        rs_name   = rs_status['set']
-        for member in rs_status['members']:
-            if member['stateStr'] == 'PRIMARY' and member['health'] > 0:
-                optime_ts = member['optime']
-                if isinstance(member['optime'], dict) and 'ts' in member['optime']:
-                    optime_ts = member['optime']['ts']
-                validate_hostname(member['name'])
-                self.primary = {
-                    'host': member['name'],
-                    'optime': optime_ts
-                }
-                logging.info("Found PRIMARY: %s/%s with optime %s" % (
-                    rs_name,
-                    member['name'],
-                    str(optime_ts)
-                ))
-        if self.primary is None:
-            logging.error("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
-            raise Exception, "Unable to locate a PRIMARY member for replset %s, giving up" % rs_name, None
+        if force or not self.primary:
+             rs_status = self.get_rs_status(force, quiet)
+             rs_name   = rs_status['set']
+             for member in rs_status['members']:
+                 if member['stateStr'] == 'PRIMARY' and member['health'] > 0:
+                     optime_ts = member['optime']
+                     if isinstance(member['optime'], dict) and 'ts' in member['optime']:
+                         optime_ts = member['optime']['ts']
+                     validate_hostname(member['name'])
+                          if quiet == True or not self.primary:
+                         logging.info("Found PRIMARY: %s/%s with optime %s" % (
+                             rs_name,
+                             member['name'],
+                             str(optime_ts)
+                         )) 
+                     self.primary = {
+                         'host': member['name'],
+                         'optime': optime_ts
+                     }
+             if self.primary is None:
+                 logging.error("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
+                 raise Exception, "Unable to locate a PRIMARY member for replset %s, giving up" % rs_name, None
         return self.primary
 
     def find_secondary(self, force=False, quiet=False):
@@ -123,14 +139,11 @@ class Replset:
                                 score -= priority
                         break
 
-                optime_ts = member['optime']
-                if isinstance(member['optime'], dict) and 'ts' in member['optime']:
-                    optime_ts = member['optime']['ts']
-
                 if priority < self.min_priority or priority > self.max_priority:
                     # TODO-timv With out try blocks the log_msg is confused and may not be used, shouldn't we log immediately?
                     log_msg = "Found SECONDARY %s/%s with out-of-bounds priority! Skipping" % (rs_name, member['name'])
-                rep_lag = (self.primary_optime().time - optime_ts.time)
+
+                rep_lag, optime_ts = self.get_repl_lag(member)
                 score = ceil((score - rep_lag) * score_scale)
                 if rep_lag < self.max_lag_secs:
                     if self.secondary is None or score > self.secondary['score']:
@@ -178,7 +191,7 @@ class Replset:
         logging.info("Choosing SECONDARY %s for replica set %s (score: %i)" % (self.secondary['host'], rs_name, self.secondary['score']))
         return self.secondary
 
-    def primary_optime(self):
-        rs_primary = self.find_primary(True, True)
+    def primary_optime(self, force=False, quiet=False):
+        rs_primary = self.find_primary(force, quiet)
         if 'optime' in rs_primary:
             return rs_primary['optime']
