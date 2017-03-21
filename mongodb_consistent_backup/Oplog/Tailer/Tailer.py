@@ -96,7 +96,7 @@ class Tailer:
             if not kill:
                 # get current optime of replset primary to use a stop position
                 try:
-                    timestamp = replset.primary_optime()
+                    timestamp = replset.primary_optime(True, True)
                 except:
                     logging.warning("Could not get current optime from PRIMARY! Using now as a stop time")
                     timestamp = Timestamp(int(time()), 0)
