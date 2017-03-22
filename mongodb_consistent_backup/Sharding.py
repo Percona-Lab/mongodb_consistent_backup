@@ -44,13 +44,15 @@ class Sharding:
         return self._balancer_state_start
 
     def shards(self):
-	try:
-            return self.connection['config'].shards.find()
+        try:
+            listShards = self.db.admin_command("listShards")
+            if 'shards' in listShards:
+                return listShards['shards']
         except Exception, e:
             raise DBOperationError(e)
 
     def check_balancer_running(self):
-	try:
+        try:
             config = self.connection['config']
             lock   = config['locks'].find_one({'_id': 'balancer'})
             if 'state' in lock and int(lock['state']) == 0:
@@ -60,7 +62,7 @@ class Sharding:
             raise DBOperationError(e)
 
     def get_balancer_state(self):
-	try:
+        try:
             config = self.connection['config']
             state  = config['settings'].find_one({'_id': 'balancer'})
 
@@ -123,7 +125,7 @@ class Sharding:
             elif cmdlineopts.get('parsed').get('sharding').get('configDB'):
                 config_string = cmdlineopts.get('parsed').get('sharding').get('configDB')
             if config_string:
-		return MongoUri(config_string, 27019)
+                return MongoUri(config_string, 27019)
             else:
                 logging.fatal("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))
                 raise OperationError("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))
@@ -133,7 +135,7 @@ class Sharding:
     def get_config_server(self, force=False):
         if force or not self.config_server:
             configdb_hosts = self.get_configdb_hosts()
-	    configdb_uri   = configdb_hosts.get()
+            configdb_uri   = configdb_hosts.get()
             try:
                 logging.info("Found sharding config server: %s" % configdb_uri)
 

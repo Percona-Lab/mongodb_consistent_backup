@@ -1,4 +1,3 @@
-import os
 import logging
 
 # Skip bson in requirements , pymongo provides
@@ -28,9 +27,7 @@ class Resolver:
         self.tailed_oplogs = tailed_oplogs_summary
         self.backup_oplogs = backup_oplogs_summary
 
-        self.timer  = Timer()
-        self.end_ts = None
-        self.delete_oplogs = {}
+        self.timer = Timer()
 
         try:
             self._pool = Pool(processes=self.threads())
@@ -69,18 +66,12 @@ class Resolver:
         logging.info("Resolving oplogs (options: threads=%s,compression=%s)" % (self.threads(), self.compression()))
         self.timer.start()
 
-        self.end_ts = self.get_consistent_end_ts()
         for shard in self.backup_oplogs:
             backup_oplog = self.backup_oplogs[shard]
             uri = MongoUri(backup_oplog['uri']).get()
             if shard in self.tailed_oplogs:
                 tailed_oplog = self.tailed_oplogs[shard]
                 tailed_oplog_file = tailed_oplog['file']
-                self.delete_oplogs[tailed_oplog_file] = {
-                    'host': uri.host,
-                    'port': uri.port
-                }
-
                 if backup_oplog['last_ts'] is None and tailed_oplog['last_ts'] is None:
                     logging.info("No oplog changes to resolve for %s" % uri)
                 elif backup_oplog['last_ts'] > tailed_oplog['last_ts']:
@@ -91,10 +82,9 @@ class Resolver:
                     try:
                         self._pool.apply_async(ResolverThread(
                             uri,
-                            tailed_oplog['file'],
-                            backup_oplog['file'],
-                            backup_oplog['last_ts'],
-                            self.end_ts,
+                            tailed_oplog.copy(),
+                            backup_oplog.copy(),
+                            self.get_consistent_end_ts(),
                             self.do_gzip()
                         ).run)
                     except Exception, e:
@@ -104,17 +94,6 @@ class Resolver:
                 logging.info("No tailed oplog for host %s" % uri)
         self._pool.close()
         self._pool.join()
-
-        for oplog_file in self.delete_oplogs:
-            try:
-                logging.debug("Deleting tailed oplog file for %s:%i" % (
-                    self.delete_oplogs[oplog_file]['host'],
-                    int(self.delete_oplogs[oplog_file]['port'])
-                ))
-                os.remove(oplog_file)
-            except Exception, e:
-                logging.fatal("Deleting of tailed oplog file %s failed! Error: %s" % (oplog_file, e))
-                raise e
 
         self.timer.stop()
         logging.info("Oplog resolving completed in %.2f seconds" % self.timer.duration())

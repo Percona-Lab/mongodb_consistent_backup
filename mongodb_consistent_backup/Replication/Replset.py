@@ -158,20 +158,7 @@ class Replset:
                         }
                     log_msg = "Found SECONDARY %s" % member_uri
                 else:
-                    rep_lag = (self.primary_optime().time - optime_ts.time)
-                    score = ceil((score - rep_lag) * score_scale)
-                    if rep_lag < self.max_lag_secs:
-                        if self.secondary is None or score > self.secondary['score']:
-                            self.secondary = {
-                                'replSet': rs_name,
-                                'count': 1 if self.secondary is None else self.secondary['count'] + 1,
-                                'uri': member_uri,
-                                'optime': optime_ts,
-                                'score': score
-                            }
-                        log_msg = "Found SECONDARY %s" % member_uri
-                    else:
-                        log_msg = "Found SECONDARY %s with too-high replication lag! Skipping" % member_uri
+                    log_msg = "Found SECONDARY %s with too-high replication lag! Skipping" % member_uri
 
                 if 'configsvr' in rs_status and rs_status['configsvr']:
                     log_data['configsvr'] = True

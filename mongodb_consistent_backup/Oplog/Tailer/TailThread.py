@@ -112,5 +112,9 @@ class TailThread(Process):
         oplog.close()
         self.stopped = True
 
-        logging.info("Done tailing oplog on %s, %i changes captured to: %s" % (self.uri, self.state.get('count'), self.state.get('last_ts')))
+        log_msg_extra = "%i changes captured" % self.state.get('count')
+        last_ts = self.state.get('last_ts')
+        if last_ts:
+            log_msg_extra = "%s to: %s" % (log_msg_extra, last_ts)
+        logging.info("Done tailing oplog on %s, %s" % (self.uri, log_msg_extra))
         self.state.set('running', False)

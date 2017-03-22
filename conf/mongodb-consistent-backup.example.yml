@@ -1,7 +1,7 @@
 production:
   host: localhost
   port: 27017
-  #user: 
+  #username: 
   #password:
   #authdb: admin
   backup:
