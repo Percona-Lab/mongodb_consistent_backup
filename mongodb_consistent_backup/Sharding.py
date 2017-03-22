@@ -2,7 +2,8 @@ import logging
 
 from time import sleep
 
-from mongodb_consistent_backup.Common import DB, Timer, validate_hostname
+from mongodb_consistent_backup.Common import DB, MongoUri, Timer, validate_hostname
+from mongodb_consistent_backup.Errors import DBOperationError, OperationError
 from mongodb_consistent_backup.Replication import Replset
 
 
@@ -25,12 +26,12 @@ class Sharding:
             if isinstance(self.db, DB):
                 self.connection = self.db.connection()
                 if not self.connection.is_mongos:
-                    raise Exception, 'MongoDB connection is not to a mongos!', None
+                    raise DBOperationError('MongoDB connection is not to a mongos!')
             else:
                 raise Exception, "'db' field is not an instance of class: 'DB'!", None
         except Exception, e:
             logging.fatal("Could not get DB connection! Error: %s" % e)
-            raise e
+            raise DBOperationError(e)
 
     def close(self):
         if self.config_db:
@@ -43,25 +44,34 @@ class Sharding:
         return self._balancer_state_start
 
     def shards(self):
-        return self.connection['config'].shards.find()
+	try:
+            return self.connection['config'].shards.find()
+        except Exception, e:
+            raise DBOperationError(e)
 
     def check_balancer_running(self):
-        config = self.connection['config']
-        lock   = config['locks'].find_one({'_id': 'balancer'})
-        if 'state' in lock and int(lock['state']) == 0:
-            return False
-        return True
+	try:
+            config = self.connection['config']
+            lock   = config['locks'].find_one({'_id': 'balancer'})
+            if 'state' in lock and int(lock['state']) == 0:
+                return False
+            return True
+        except Exception, e:
+            raise DBOperationError(e)
 
     def get_balancer_state(self):
-        config = self.connection['config']
-        state  = config['settings'].find_one({'_id': 'balancer'})
+	try:
+            config = self.connection['config']
+            state  = config['settings'].find_one({'_id': 'balancer'})
 
-        if not state:
-            return True
-        elif 'stopped' in state and state.get('stopped') is True:
-            return False
-        else:
-            return True
+            if not state:
+               return True
+            elif 'stopped' in state and state.get('stopped') is True:
+               return False
+            else:
+               return True
+        except Exception, e:
+            raise DBOperationError(e)
 
     def set_balancer(self, value):
         try:
@@ -75,7 +85,7 @@ class Sharding:
             config['settings'].update_one({'_id': 'balancer'}, {'$set': {'stopped': set_value}})
         except Exception, e:
             logging.fatal("Failed to set balancer state! Error: %s" % e)
-            raise e
+            raise DBOperationError(e)
 
     def restore_balancer_state(self):
         if self._balancer_state_start is not None:
@@ -84,7 +94,7 @@ class Sharding:
                 self.set_balancer(self._balancer_state_start)
             except Exception, e:
                 logging.fatal("Failed to set balancer state! Error: %s" % e)
-                raise e
+                raise DBOperationError(e)
 
     def stop_balancer(self):
         logging.info("Stopping the balancer and waiting a max of %i sec" % self.balancer_wait_secs)
@@ -99,10 +109,10 @@ class Sharding:
                 sleep(self.balancer_sleep)
             else:
                 stop_timer.stop()
-                logging.info("Balancer stopped after %s seconds" % stop_timer.duration())
+                logging.info("Balancer stopped after %.2f seconds" % stop_timer.duration())
                 return
         logging.fatal("Could not stop balancer: %s:%i!" % (self.db.host, self.db.port))
-        raise Exception, "Could not stop balancer: %s:%i" % (self.db.host, self.db.port), None
+        raise DBOperationError("Could not stop balancer: %s:%i" % (self.db.host, self.db.port))
 
     def get_configdb_hosts(self):
         try:
@@ -113,42 +123,32 @@ class Sharding:
             elif cmdlineopts.get('parsed').get('sharding').get('configDB'):
                 config_string = cmdlineopts.get('parsed').get('sharding').get('configDB')
             if config_string:
-                # noinspection PyBroadException
-                try:
-                    if "/" in config_string:
-                        config_replset, config_string = config_string.split("/")
-                    return config_string.split(',')
-                except Exception:
-                    return [config_string]
+		return MongoUri(config_string, 27019)
             else:
                 logging.fatal("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))
-                raise Exception, "Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port), None
+                raise OperationError("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))
         except Exception, e:
-            raise e
+            raise OperationError(e)
 
     def get_config_server(self, force=False):
         if force or not self.config_server:
             configdb_hosts = self.get_configdb_hosts()
+	    configdb_uri   = configdb_hosts.get()
             try:
-                config_host = configdb_hosts[0]
-                config_port = 27019
-                if ":" in configdb_hosts[0]:
-                    config_host, config_port = configdb_hosts[0].split(":")
-                validate_hostname(config_host)
-                logging.info("Found sharding config server: %s:%s" % (config_host, config_port))
+                logging.info("Found sharding config server: %s" % configdb_uri)
 
-                self.config_db = DB(config_host, config_port, self.user, self.password, self.authdb)
+                self.config_db = DB(configdb_uri.host, configdb_uri.port, self.user, self.password, self.authdb)
                 rs = Replset(self.config, self.config_db)
                 # noinspection PyBroadException
                 try:
                     if rs.get_rs_status(False, True):
                         self.config_server = rs
                 except Exception:
-                    self.config_server = { 'host': configdb_hosts[0], 'replset': False }
+                    self.config_server = { 'host': configdb_uri }
                 finally:
                     return self.config_server
             except Exception, e:
-                logging.fatal("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))
-                raise e
+                logging.fatal("Unable to locate config servers using %s:%i!" % (self.db.host, self.db.port))
+                raise OperationError(e)
 
         return self.config_server

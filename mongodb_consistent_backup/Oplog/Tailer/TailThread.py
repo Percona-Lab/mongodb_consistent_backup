@@ -13,15 +13,13 @@ from mongodb_consistent_backup.Oplog import Oplog
 
 
 class TailThread(Process):
-    def __init__(self, do_stop, backup_name, oplog_file, state, host, port, dump_gzip=False, user=None,
-                 password=None, authdb='admin', status_secs=15):
+    def __init__(self, do_stop, uri, oplog_file, state, dump_gzip=False, user=None, password=None,
+                 authdb='admin', status_secs=15):
         Process.__init__(self)
         self.do_stop     = do_stop
-        self.backup_name = backup_name
+        self.uri         = uri
         self.oplog_file  = oplog_file
         self.state       = state
-        self.host        = host
-        self.port        = int(port)
         self.dump_gzip   = dump_gzip
         self.user        = user
         self.password    = password
@@ -41,7 +39,7 @@ class TailThread(Process):
     # the DB connection has to be made outside of __init__ due to threading:
     def connection(self):
         try:
-            self._connection = DB(self.host, self.port, self.user, self.password, self.authdb).connection()
+            self._connection = DB(self.uri.host, self.uri.port, self.user, self.password, self.authdb).connection()
         except Exception, e:
             logging.fatal("Cannot get connection - %s" % e)
             raise e
@@ -69,17 +67,17 @@ class TailThread(Process):
         now = time()
         if (now - self.status_last) >= self.status_secs:
             state = self.state.get()
-            logging.info("Oplog tailer %s/%s:%i status: %i changes captured to: %s" % (self.backup_name, self.host, self.port, state['count'], state['last_ts']))
+            logging.info("Oplog tailer %s status: %i changes captured to: %s" % (self.uri, state['count'], state['last_ts']))
             self.status_last = now
 
     def run(self):
-        conn = self.connection()
-        db   = conn['local']
 
-        logging.info("Tailing oplog on %s/%s:%i for changes (options: gzip=%s, status_secs=%i)" % (self.backup_name, self.host, self.port, self.dump_gzip, self.status_secs))
+        logging.info("Tailing oplog on %s for changes (options: gzip=%s, status_secs=%i)" % (self.uri, self.dump_gzip, self.status_secs))
 
-        self.state.set('running', True)
+        conn  = self.connection()
+        db    = conn['local']
         oplog = self.oplog()
+        self.state.set('running', True)
         tail_start_ts = db.oplog.rs.find().sort('$natural', -1)[0]['ts']
         while not self.do_stop.is_set():
             query  = {'ts': {'$gt': tail_start_ts}}
@@ -89,15 +87,17 @@ class TailThread(Process):
                     try:
                         # get the next oplog doc and write it
                         doc = cursor.next()
+                        if not doc:
+                            continue
                         oplog.write(doc)
 
                         # update states
                         self.count += 1
+                        if self.count == 1:
+                            self.state.set('first_ts', doc['ts'])
                         self.last_ts = doc['ts']
                         self.state.set('count', self.count)
                         self.state.set('last_ts', self.last_ts)
-                        if self.state.get('first_ts'):
-                            self.state.set('first_ts', doc['ts'])
 
                         # print status report every N seconds
                         self.status()
@@ -106,11 +106,11 @@ class TailThread(Process):
                             break
                         sleep(1)
             finally:
-                logging.debug("Stopping oplog cursor on %s/%s:%i" % (self.backup_name, self.host, self.port))
+                logging.debug("Stopping oplog cursor on %s" % self.uri)
                 cursor.close()
                 oplog.flush()
         oplog.close()
         self.stopped = True
 
-        logging.info("Done tailing oplog on %s/%s:%i, %i changes captured to: %s" % (self.backup_name, self.host, self.port, self.state.get('count'), self.state.get('last_ts')))
+        logging.info("Done tailing oplog on %s, %i changes captured to: %s" % (self.uri, self.state.get('count'), self.state.get('last_ts')))
         self.state.set('running', False)

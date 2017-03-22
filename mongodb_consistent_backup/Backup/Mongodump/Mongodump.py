@@ -6,6 +6,7 @@ from math import floor
 from multiprocessing import Manager, cpu_count
 from time import sleep
 
+from mongodb_consistent_backup.Common import MongoUri
 from mongodb_consistent_backup.Oplog import OplogState
 
 from MongodumpThread import MongodumpThread
@@ -23,14 +24,14 @@ class Mongodump:
         self.authdb   = self.config.authdb
         self.verbose  = self.config.verbose
 
-        self.manager = Manager()
-        self.threads_per_dump_max = 8
-        self.config_replset    = False
-        self.cpu_count         = cpu_count()
-        self.threads           = []
-        self.states            = {}
-        self._summary          = {}
-        self._threads_per_dump = None
+        self.manager              = Manager()
+        self.threads_per_dump_max = 16
+        self.config_replset       = False
+        self.cpu_count            = cpu_count()
+        self.threads              = []
+        self.states               = {}
+        self._summary             = {}
+        self._threads_per_dump    = None
 
         with hide('running', 'warnings'), settings(warn_only=True):
             self.version = local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary, capture=True)
@@ -57,6 +58,14 @@ class Mongodump:
     def summary(self):
         return self._summary
 
+    # get oplog summaries from the queue
+    def get_summaries(self):
+        for shard in self.states:
+            state = self.states[shard]
+            host  = state.get('host')
+            port  = state.get('port')
+            self._summary[shard] = state.get().copy()
+
     def wait(self):
         completed = 0
         start_threads = len(self.threads)
@@ -69,17 +78,9 @@ class Mongodump:
                     self.threads.remove(thread)
             sleep(1)
 
-        # sleep for 3 sec to fix logging order
+        # sleep for 3 sec to fix logging order before gathering summaries
         sleep(3)
-
-        # get oplog summaries from the queue
-        for shard in self.states:
-            state = self.states[shard]
-            host  = state.get('host')
-            port  = state.get('port')
-            if host not in self._summary:
-                self._summary[host] = {}
-            self._summary[host][port] = state.get()
+        self.get_summaries()
 
         # check if all threads completed
         if completed == start_threads:
@@ -105,19 +106,11 @@ class Mongodump:
         # backup a secondary from each shard:
         for shard in self.replsets:
             secondary = self.replsets[shard].find_secondary()
-
-            # TODO: make this a func
-            host = secondary['host']
-            port = 27017
-            if ":" in secondary['host']:
-                  host, port = secondary['host'].split(":")
-
-            self.states[shard] = OplogState(self.manager, host, port)
+            mongo_uri = secondary['uri']
+            self.states[shard] = OplogState(self.manager, mongo_uri)
             thread = MongodumpThread(
                 self.states[shard],
-                shard,
-                host,
-                port,
+                mongo_uri,
                 self.user,
                 self.password,
                 self.authdb,
@@ -140,30 +133,26 @@ class Mongodump:
         self.wait()
 
         # backup a single sccc/non-replset config server, if exists:
-        config_server = self.sharding.get_config_server()
-        if config_server and isinstance(config_server, dict):
-            host = config_server['host']
-            port = 27019
-            if ":" in config_server['host']:
-                host, port = config_server['host'].split(".")
-            logging.info("Using non-replset backup method for config server mongodump")
-            self.states['configsvr'] = OplogState(self.manager, host, port)
-            self.threads = [MongodumpThread(
-                self.states['configsvr'],
-                'configsvr',
-                host,
-                port,
-                self.user,
-                self.password,
-                self.authdb,
-                self.base_dir,
-                self.binary,
-                self.threads_per_dump(),
-                self.do_gzip,
-                self.verbose
-            )]
-            self.threads[0].start()
-            self.wait()
+        if self.sharding:
+            config_server = self.sharding.get_config_server()
+            if config_server and isinstance(config_server, dict):
+                logging.info("Using non-replset backup method for config server mongodump")
+                mongo_uri = MongoUri(config_server['host'], 27019, 'configsvr').get()
+                self.states['configsvr'] = OplogState(self.manager, mongo_uri)
+                self.threads = [MongodumpThread(
+                    self.states['configsvr'],
+                    mongo_uri,
+                    self.user,
+                    self.password,
+                    self.authdb,
+                    self.base_dir,
+                    self.binary,
+                    self.threads_per_dump(),
+                    self.do_gzip,
+                    self.verbose
+                )]
+                self.threads[0].start()
+                self.wait()
 
         return self._summary
 

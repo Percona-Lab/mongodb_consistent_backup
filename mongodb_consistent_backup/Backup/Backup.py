@@ -46,7 +46,7 @@ class Backup:
             info = self._method.run()
 
             self.timer.stop()
-            logging.info("Backup completed in %s seconds" % self.timer.duration())
+            logging.info("Backup completed in %.2f seconds" % self.timer.duration())
 
             return info
 

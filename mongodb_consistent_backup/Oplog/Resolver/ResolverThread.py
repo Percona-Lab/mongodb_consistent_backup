@@ -7,9 +7,8 @@ from bson import BSON, decode_file_iter
 
 
 class ResolverThread:
-    def __init__(self, host, port, tailed_oplog_file, mongodump_oplog_file, mongodump_oplog_last_ts, max_end_ts, dump_gzip=False):
-        self.host                    = host
-        self.port                    = port
+    def __init__(self, uri, tailed_oplog_file, mongodump_oplog_file, mongodump_oplog_last_ts, max_end_ts, dump_gzip=False):
+        self.uri                     = uri
         self.tailed_oplog_file       = tailed_oplog_file
         self.mongodump_oplog_file    = mongodump_oplog_file
         self.mongodump_oplog_last_ts = mongodump_oplog_last_ts
@@ -20,7 +19,7 @@ class ResolverThread:
         self.last_ts = None
 
     def run(self):
-        logging.info("Resolving oplog for host %s:%s to max timestamp: %s" % (self.host, self.port, self.max_end_ts))
+        logging.info("Resolving oplog for %s to max timestamp: %s" % (self.uri, self.max_end_ts))
 
         try:
             if self.dump_gzip:
@@ -47,4 +46,4 @@ class ResolverThread:
             logging.fatal("Resolving of oplogs failed! Error: %s" % e)
             raise e
 
-        logging.info("Applied %i changes to host %s:%s oplog. New end timestamp: %s" % (self.changes, self.host, self.port, self.last_ts))
+        logging.info("Applied %i changes to %s oplog. New end timestamp: %s" % (self.changes, self.uri, self.last_ts))

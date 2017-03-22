@@ -1,7 +1,9 @@
 import logging
+import pymongo
 
-from pymongo import MongoClient
 from time import sleep
+
+from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError
 
 
 class DB:
@@ -21,14 +23,15 @@ class DB:
     def connect(self):
         try:
             logging.debug("Getting MongoDB connection to %s:%s" % (self.host, self.port))
-            conn = MongoClient(
+            conn = pymongo.MongoClient(
                 host=self.host,
                 port=int(self.port),
                 connectTimeoutMS=int(self.conn_timeout)
             )
-        except Exception, e:
+            conn['admin'].command({"ping":1})
+        except (pymongo.errors.ConnectionFailure, pymongo.errors.OperationFailure, pymongo.errors.ServerSelectionTimeoutError), e:
             logging.fatal("Unable to connect to %s:%s! Error: %s" % (self.host, self.port, e))
-            raise e
+            raise DBConnectionError(e)
         if conn is not None:
             self._conn = conn
         return self._conn
@@ -38,8 +41,10 @@ class DB:
             try:
                 logging.debug("Authenticating connection with username: %s" % self.username)
                 self._conn[self.authdb].authenticate(self.username, self.password)
-            except Exception, e:
+            except pymongo.errors.OperationFailure, e:
                 logging.fatal("Unable to authenticate with host %s:%s: %s" % (self.host, self.port, e))
+                raise DBAuthenticationError(e)
+            except Exception, e:
                 raise e
         else:
             pass
@@ -50,13 +55,15 @@ class DB:
         while not status and tries < self.retries:
             try:
                 status = self._conn['admin'].command(admin_command)
-            except Exception, e:
+            except pymongo.errors.OperationFailure, e:
                 if not quiet:
                     logging.error("Error running admin command '%s': %s" % (admin_command, e))
                 tries += 1
                 sleep(1)
+            except Exception, e:
+                raise e
         if not status:
-            raise Exception, "Could not get output from command: '%s' after %i retries!" % (admin_command, self.retries), None
+            raise DBOperationError("Could not get output from command: '%s' after %i retries!" % (admin_command, self.retries))
         return status
 
     def server_version(self):
@@ -65,8 +72,8 @@ class DB:
             if 'version' in status:
                 version = status['version'].split('-')[0]
                 return tuple(version.split('.'))
-        except Exception:
-            raise Exception, "Unable to determine version from serverStatus!", None
+        except pymongo.errors.OperationFailure, e:
+            raise DBOperationError("Unable to determine version from serverStatus! Error: %s" % e)
 
     def connection(self):
         return self._conn

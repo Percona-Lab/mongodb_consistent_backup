@@ -48,7 +48,7 @@ class Archive:
             self._archiver.run()
 
             self.timer.stop()
-            logging.info("Archiving completed in %s seconds" % self.timer.duration())
+            logging.info("Archiving completed in %.2f seconds" % self.timer.duration())
 
     def close(self):
         if self._archiver:

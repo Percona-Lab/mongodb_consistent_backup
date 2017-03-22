@@ -4,7 +4,7 @@ import socket
 def config_to_string(config):
     config_vars = ""
     for key in config:
-        config_vars += "%s=%s," % (key, config[key])
+        config_vars += "%s=%s, " % (key, config[key])
     return config_vars[:-1]
 
 def parse_method(method):

@@ -77,4 +77,4 @@ class Tar:
         if self._pool is not None:
             self._pool.terminate()
             self._pool.join()
-        logging.info("Stopped all tar archiving threads")
+            logging.info("Stopped all tar archiving threads")

@@ -77,7 +77,7 @@ if [ -d ${srcdir} ]; then
 	if [ -z "$git_commit" ]; then
 		echo "Warning: cannot find git commit hash!"
 	else
-		sed -i -e s@GIT_COMMIT_HASH@${git_commit}@g ${builddir}/${mod_name}/Common/Config.py
+		sed -i -e s@GIT_COMMIT_HASH@${git_commit}@g ${builddir}/${mod_name}/__init__.py
 	fi
 
 	${python_bin} ${virtualenv_bin} -p ${python_bin} ${venvdir}

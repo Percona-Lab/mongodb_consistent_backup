@@ -8,6 +8,7 @@ from signal import signal, SIGINT, SIGTERM
 from Archive import Archive
 from Backup import Backup
 from Common import Config, DB, Lock, Timer, validate_hostname
+from Errors import OperationError
 from Notify import Notify
 from Oplog import Tailer, Resolver
 from Replication import Replset, ReplsetSharded
@@ -35,7 +36,7 @@ class MongodbConsistentBackup(object):
         self.is_sharded               = False
         self.log_level                = None
         self.timer                    = Timer()
-	self.replsets                 = {}
+        self.replsets                 = {}
         self.oplog_summary            = {}
         self.backup_summary           = {}
 
@@ -122,8 +123,11 @@ class MongodbConsistentBackup(object):
 
             sys.exit(1)
 
-    def exception(self, error_message):
-        logging.exception(error_message)
+    def exception(self, error_message, error):
+        if isinstance(error, OperationError):
+            logging.fatal(error_message)
+        else:
+            logging.exception(error_message)
         return self.cleanup_and_exit(None, None)
 
     def run(self):
@@ -153,7 +157,7 @@ class MongodbConsistentBackup(object):
         try:
             self.notify = Notify(self.config)
         except Exception, e:
-            self.exception("Problem starting notifier! Error: %s" % e)
+            self.exception("Problem starting notifier! Error: %s" % e, e)
 
         # Setup the archiver
         try:
@@ -162,7 +166,7 @@ class MongodbConsistentBackup(object):
                 self.backup_root_directory, 
             )
         except Exception, e:
-            self.exception("Problem starting archiver! Error: %s" % e)
+            self.exception("Problem starting archiver! Error: %s" % e, e)
 
         # Setup the uploader
         try:
@@ -172,10 +176,10 @@ class MongodbConsistentBackup(object):
                 self.backup_root_subdirectory
             )
         except Exception, e:
-            self.exception("Problem starting uploader! Error: %s" % e)
+            self.exception("Problem starting uploader! Error: %s" % e, e)
 
         if not self.is_sharded:
-            logging.info("Running backup of %s:%s in replset mode" % (self.config.host, self.config.port))
+            logging.info("Running backup in replset mode using seed node: %s:%i" % (self.config.host, self.config.port))
 
             # get shard secondary
             try:
@@ -186,7 +190,7 @@ class MongodbConsistentBackup(object):
                 replset_name = self.replset.get_rs_name()
                 self.replsets[replset_name] = self.replset
             except Exception, e:
-                self.exception("Problem getting shard secondaries! Error: %s" % e)
+                self.exception("Problem getting shard secondaries! Error: %s" % e, e)
 
             # run backup
             try:
@@ -200,12 +204,12 @@ class MongodbConsistentBackup(object):
                     logging.info("Backup method supports gzip compression, disabling compression in archive step")
                     self.archive.compression('none')
             except Exception, e:
-                self.exception("Problem performing replset mongodump! Error: %s" % e)
+                self.exception("Problem performing replset mongodump! Error: %s" % e, e)
 
             # use 1 archive thread for single replset
             self.archive.threads(1)
         else:
-            logging.info("Running backup of %s:%s in sharded mode" % (self.config.host, self.config.port))
+            logging.info("Running backup in sharding mode using seed node: %s:%i" % (self.config.host, self.config.port))
 
             # connect to balancer and stop it
             try:
@@ -215,7 +219,7 @@ class MongodbConsistentBackup(object):
                 )
                 self.sharding.get_start_state()
             except Exception, e:
-                self.exception("Problem connecting to the balancer! Error: %s" % e)
+                self.exception("Problem connecting to the balancer! Error: %s" % e, e)
 
             # get shard replsets
             try:
@@ -224,15 +228,15 @@ class MongodbConsistentBackup(object):
                     self.sharding,
                     self.db
                 )
-		self.replsets = self.replset_sharded.get_replsets()
+                self.replsets = self.replset_sharded.get_replsets()
             except Exception, e:
-                self.exception("Problem getting shard/replica set info! Error: %s" % e)
+                self.exception("Problem getting shard/replica set info! Error: %s" % e, e)
 
             # stop the balancer
             try:
                 self.sharding.stop_balancer()
             except Exception, e:
-                self.exception("Problem stopping the balancer! Error: %s" % e)
+                self.exception("Problem stopping the balancer! Error: %s" % e, e)
 
             # init the oplogtailers
             try:
@@ -242,7 +246,7 @@ class MongodbConsistentBackup(object):
                     self.backup_root_directory
                 )
             except Exception, e:
-                self.exception("Problem initializing oplog tailer! Error: %s" % e)
+                self.exception("Problem initializing oplog tailer! Error: %s" % e, e)
 
             # init the backup
             try:
@@ -257,19 +261,19 @@ class MongodbConsistentBackup(object):
                     self.archive.compression('none')
                     self.oplogtailer.compression('gzip')
             except Exception, e:
-                self.exception("Problem initializing backup! Error: %s" % e)
+                self.exception("Problem initializing backup! Error: %s" % e, e)
 
             # start the oplog tailers, before the backups start
             try:
                 self.oplogtailer.run()
             except Exception, e:
-                self.exception("Failed to start oplog tailing threads! Error: %s" % e)
+                self.exception("Failed to start oplog tailing threads! Error: %s" % e, e)
 
             # run the backup(s)
             try:
                 self.backup_summary = self.backup.backup()
             except Exception, e:
-                self.exception("Problem performing backup! Error: %s" % e)
+                self.exception("Problem performing backup! Error: %s" % e, e)
 
             # stop the oplog tailer(s)
             if self.oplogtailer:
@@ -279,7 +283,7 @@ class MongodbConsistentBackup(object):
             try:
                 self.sharding.restore_balancer_state()
             except Exception, e:
-                self.exception("Problem restoring balancer lock! Error: %s" % e)
+                self.exception("Problem restoring balancer lock! Error: %s" % e, e)
 
             # resolve/merge tailed oplog into mongodump oplog.bson to a consistent point for all shards
             if self.backup.method == "mongodump" and self.oplogtailer:
@@ -291,13 +295,13 @@ class MongodbConsistentBackup(object):
         try:
             self.archive.archive()
         except Exception, e:
-            self.exception("Problem performing archiving! Error: %s" % e)
+            self.exception("Problem performing archiving! Error: %s" % e, e)
 
         # upload backup
         try:
             self.upload.upload()
         except Exception, e:
-            self.exception("Problem performing upload of backup! Error: %s" % e)
+            self.exception("Problem performing upload of backup! Error: %s" % e, e)
 
         self.timer.stop()
 
@@ -309,11 +313,11 @@ class MongodbConsistentBackup(object):
                 self.timer.duration()
             ), True)
         except Exception, e:
-            self.exception("Problem running Notifier! Error: %s" % e)
+            self.exception("Problem running Notifier! Error: %s" % e, e)
 
         if self.db:
             self.db.close()
 
         self.release_lock()
 
-        logging.info("Completed %s in %s sec" % (self.program_name, self.timer.duration()))
+        logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration()))

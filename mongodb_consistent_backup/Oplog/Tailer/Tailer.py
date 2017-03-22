@@ -7,7 +7,7 @@ from multiprocessing import Event, Manager
 from time import time, sleep
 
 from TailThread import TailThread
-from mongodb_consistent_backup.Common import parse_method
+from mongodb_consistent_backup.Common import parse_method, MongoUri
 from mongodb_consistent_backup.Oplog import OplogState
 
 
@@ -56,20 +56,16 @@ class Tailer:
         for shard in self.replsets:
             stop        = Event()
             secondary   = self.replsets[shard].find_secondary()
-            shard_name  = secondary['replSet']
-            host, port  = secondary['host'].split(":")
-
-            print self.replsets[shard].get_mongo_config()
+            mongo_uri   = secondary['uri']
+            shard_name  = mongo_uri.replset
 
             oplog_file, oplog_state_file = self.prepare_oplog_files(shard_name)
-            oplog_state = OplogState(self.manager, host, port, oplog_file)
+            oplog_state = OplogState(self.manager, mongo_uri, oplog_file)
             thread = TailThread(
                 stop,
-                shard_name,
+                mongo_uri,
                 oplog_file,
                 oplog_state,
-                host,
-                port,
                 self.do_gzip(),
                 self.user,
                 self.password,
@@ -90,8 +86,7 @@ class Tailer:
             state_file = self.shards[shard]['state_file']
             stop       = self.shards[shard]['stop']
             thread     = self.shards[shard]['thread']
-            host       = state.get('host')
-            port       = int(state.get('port'))
+            uri        = MongoUri(state.get('uri')).get()
 
             if not kill:
                 # get current optime of replset primary to use a stop position
@@ -100,11 +95,11 @@ class Tailer:
                 except:
                     logging.warning("Could not get current optime from PRIMARY! Using now as a stop time")
                     timestamp = Timestamp(int(time()), 0)
-                logging.info("Stopping tailer %s:%i at >= PRIMARY optime: %s" % (host, port, timestamp))
+                logging.info("Stopping tailing of %s at optime >= %s" % (uri, timestamp))
     
                 # wait for replication to get in sync
                 while state.get('last_ts') and state.get('last_ts') < timestamp:
-                    logging.info('Waiting for tailer %s:%i to reach position: %s, currrently: %s' % (host, port, timestamp, state.get('last_ts')))
+                    logging.info('Waiting for %s tailer to reach ts: %s, currrent: %s' % (uri, timestamp, state.get('last_ts')))
                     sleep(sleep_secs)
 
             # set thread stop event
@@ -113,19 +108,12 @@ class Tailer:
 
             # wait for thread to stop
             while thread.is_alive():
-                logging.info('Waiting for tailer %s:%i to stop' % (host, port))
+                logging.info('Waiting for tailer %s to stop' % uri)
                 sleep(sleep_secs)
-            logging.info("Stopped tailer thread %s:%i" % (host, port))
 
             # gather state info
-            if host not in self._summary:
-                self._summary[host] = {}
-            state_data = state.get().copy()
-            self._summary[host][port] = state_data
-
-            # write state info
-            self.write_state(state_data, state_file)
-        logging.info("Stopped all oplog threads")
+            self._summary[shard] = state.get().copy()
+        logging.info("Stopped all oplog tailer threads")
         return self._summary
 
     def close(self):

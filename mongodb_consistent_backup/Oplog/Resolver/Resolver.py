@@ -9,7 +9,7 @@ from multiprocessing import Pool, cpu_count
 from types import MethodType
 
 from ResolverThread import ResolverThread
-from mongodb_consistent_backup.Common import Timer, parse_method
+from mongodb_consistent_backup.Common import MongoUri, Timer, parse_method
 
 
 # Allows pooled .apply_async()s to work on Class-methods:
@@ -58,12 +58,11 @@ class Resolver:
 
     def get_consistent_end_ts(self):
         ts = None
-        for host in self.tailed_oplogs:
-            for port in self.tailed_oplogs[host]:
-                instance = self.tailed_oplogs[host][port]
-                if 'last_ts' in instance and instance['last_ts'] is not None:
-                    if ts is None or instance['last_ts'].time < ts.time:
-                        ts = Timestamp(instance['last_ts'].time, 0)
+        for shard in self.tailed_oplogs:
+            instance = self.tailed_oplogs[shard]
+            if 'last_ts' in instance and instance['last_ts'] is not None:
+                if ts is None or instance['last_ts'].time < ts.time:
+                    ts = Timestamp(instance['last_ts'].time, 0)
         return ts
 
     def run(self):
@@ -71,39 +70,38 @@ class Resolver:
         self.timer.start()
 
         self.end_ts = self.get_consistent_end_ts()
-        for host in self.backup_oplogs:
-            for port in self.backup_oplogs[host]:
-                backup_oplog = self.backup_oplogs[host][port]
-                if host in self.tailed_oplogs and port in self.tailed_oplogs[host]:
-                    tailed_oplog = self.tailed_oplogs[host][port]
-                    tailed_oplog_file = tailed_oplog['file']
-                    self.delete_oplogs[tailed_oplog_file] = {
-                        'host': host,
-                        'port': port
-                    }
+        for shard in self.backup_oplogs:
+            backup_oplog = self.backup_oplogs[shard]
+            uri = MongoUri(backup_oplog['uri']).get()
+            if shard in self.tailed_oplogs:
+                tailed_oplog = self.tailed_oplogs[shard]
+                tailed_oplog_file = tailed_oplog['file']
+                self.delete_oplogs[tailed_oplog_file] = {
+                    'host': uri.host,
+                    'port': uri.port
+                }
 
-                    if backup_oplog['last_ts'] is None and tailed_oplog['last_ts'] is None:
-                        logging.info("No oplog changes to resolve for %s:%s" % (host, port))
-                    elif backup_oplog['last_ts'] > tailed_oplog['last_ts']:
-                        logging.fatal(
-                            "Backup oplog is newer than the tailed oplog! This situation is unsupported. Please retry backup")
-                        raise Exception, "Backup oplog is newer than the tailed oplog!", None
-                    else:
-                        try:
-                            self._pool.apply_async(ResolverThread(
-                                host,
-                                port,
-                                tailed_oplog['file'],
-                                backup_oplog['file'],
-                                backup_oplog['last_ts'],
-                                self.end_ts,
-                                self.do_gzip()
-                            ).run)
-                        except Exception, e:
-                            logging.fatal("Resolve failed for %s:%s! Error: %s" % (host, port, e))
-                            raise e
+                if backup_oplog['last_ts'] is None and tailed_oplog['last_ts'] is None:
+                    logging.info("No oplog changes to resolve for %s" % uri)
+                elif backup_oplog['last_ts'] > tailed_oplog['last_ts']:
+                    logging.fatal(
+                        "Backup oplog is newer than the tailed oplog! This situation is unsupported. Please retry backup")
+                    raise Exception, "Backup oplog is newer than the tailed oplog!", None
                 else:
-                    logging.info("No tailed oplog for host %s:%s" % (host, port))
+                    try:
+                        self._pool.apply_async(ResolverThread(
+                            uri,
+                            tailed_oplog['file'],
+                            backup_oplog['file'],
+                            backup_oplog['last_ts'],
+                            self.end_ts,
+                            self.do_gzip()
+                        ).run)
+                    except Exception, e:
+                        logging.fatal("Resolve failed for %s! Error: %s" % (uri, e))
+                        raise e
+            else:
+                logging.info("No tailed oplog for host %s" % uri)
         self._pool.close()
         self._pool.join()
 
@@ -111,7 +109,7 @@ class Resolver:
             try:
                 logging.debug("Deleting tailed oplog file for %s:%i" % (
                     self.delete_oplogs[oplog_file]['host'],
-                    self.delete_oplogs[oplog_file]['port']
+                    int(self.delete_oplogs[oplog_file]['port'])
                 ))
                 os.remove(oplog_file)
             except Exception, e:
@@ -119,4 +117,4 @@ class Resolver:
                 raise e
 
         self.timer.stop()
-        logging.info("Oplog resolving completed in %s seconds" % self.timer.duration())
+        logging.info("Oplog resolving completed in %.2f seconds" % self.timer.duration())
