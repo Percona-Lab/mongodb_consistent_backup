@@ -26,8 +26,8 @@ class ReplsetSharded:
         # Get a DB connection
         if isinstance(self.db, DB):
             self.connection = self.db.connection()
-            if not self.connection.is_mongos:
-                raise Error('MongoDB connection is not to a mongos!')
+            if not self.db.is_mongos() and not self.db.is_configsvr():
+                raise Error('MongoDB connection is not to a mongos or configsvr!')
         else:
             raise Error("'db' field is not an instance of class: 'DB'!")
 

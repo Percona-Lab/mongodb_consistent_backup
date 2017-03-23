@@ -7,6 +7,7 @@ from multiprocessing import Manager, cpu_count
 from time import sleep
 
 from mongodb_consistent_backup.Common import MongoUri
+from mongodb_consistent_backup.Errors import Error, OperationError
 from mongodb_consistent_backup.Oplog import OplogState
 
 from MongodumpThread import MongodumpThread
@@ -41,7 +42,7 @@ class Mongodump:
             logging.warning("mongodump gzip compression requested on binary that does not support gzip!")
 
         if not isinstance(self.replsets, dict):
-            raise Exception, "Field 'replsets' must be a dictionary of mongodb_consistent_backup.Replication.Replset classes!", None
+            raise Error("Field 'replsets' must be a dictionary of mongodb_consistent_backup.Replication.Replset classes!")
 
     def can_gzip(self):
         if os.path.isfile(self.binary) and os.access(self.binary, os.X_OK):
@@ -86,7 +87,7 @@ class Mongodump:
         if completed == start_threads:
             logging.info("All mongodump backups completed successfully")
         else:
-            raise Exception, "Not all mongodump threads completed successfully!", None
+            raise OperationError("Not all mongodump threads completed successfully!")
 
     def threads_per_dump(self, threads=None):
         if threads:
@@ -123,7 +124,7 @@ class Mongodump:
             self.threads.append(thread)
 
         if not len(self.threads) > 0:
-            raise Exception, 'No backup threads started!', None
+            raise OperationError('No backup threads started!')
 
         # start all threads and wait
         logging.info(

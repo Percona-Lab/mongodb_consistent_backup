@@ -2,6 +2,7 @@ import logging
 
 from Tar import Tar
 from mongodb_consistent_backup.Common import Timer, config_to_string, parse_method
+from mongodb_consistent_backup.Errors import Error, OperationError
 
 
 class Archive:
@@ -27,9 +28,9 @@ class Archive:
                     self.backup_dir
                 )
             except LookupError, e:
-                raise Exception, 'No archiving method: %s' % self.method, None
+                raise OperationError('No archiving method: %s' % self.method)
             except Exception, e:
-                raise e
+                raise Error("Problem performing %s! Error: %s" % (self.method, e))
 
     def compression(self, method=None):
         if self._archiver:

@@ -2,6 +2,7 @@ import logging
 
 from Mongodump import Mongodump
 from mongodb_consistent_backup.Common import Timer, config_to_string, parse_method
+from mongodb_consistent_backup.Errors import Error, OperationError
 
 
 class Backup:
@@ -19,7 +20,7 @@ class Backup:
     def init(self):
         backup_method = self.config.backup.method
         if not backup_method or parse_method(backup_method) == "none":
-            raise Exception, 'Must specify a backup method!', None
+            raise OperationError('Must specify a backup method!')
         self.method = parse_method(backup_method)
         try:
             self._method = globals()[self.method.capitalize()](
@@ -29,9 +30,9 @@ class Backup:
                 self.sharding
             )
         except LookupError, e:
-            raise Exception, 'No backup method: %s' % self.method, None
+            raise OperationError('No backup method: %s' % self.method)
         except Exception, e:
-            raise Exception, "Problem performing %s! Error: %s" % (self.method, e), None
+            raise Error("Problem performing %s! Error: %s" % (self.method, e))
 
     def is_compressed(self):
         if self._method:

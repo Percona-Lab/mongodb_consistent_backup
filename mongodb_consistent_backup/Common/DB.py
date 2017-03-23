@@ -3,7 +3,7 @@ import pymongo
 
 from time import sleep
 
-from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError
+from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError, Error
 
 
 class DB:
@@ -16,7 +16,8 @@ class DB:
         self.conn_timeout = conn_timeout
         self.retries      = retries
 
-        self._conn = None
+        self._conn      = None
+        self._is_master = None
         self.connect()
         self.auth_if_required()
 
@@ -44,8 +45,6 @@ class DB:
             except pymongo.errors.OperationFailure, e:
                 logging.fatal("Unable to authenticate with host %s:%s: %s" % (self.host, self.port, e))
                 raise DBAuthenticationError(e)
-            except Exception, e:
-                raise e
         else:
             pass
 
@@ -60,23 +59,50 @@ class DB:
                     logging.error("Error running admin command '%s': %s" % (admin_command, e))
                 tries += 1
                 sleep(1)
-            except Exception, e:
-                raise e
         if not status:
             raise DBOperationError("Could not get output from command: '%s' after %i retries!" % (admin_command, self.retries))
         return status
 
     def server_version(self):
-        status  = self.admin_command('serverStatus')
+        status = self.admin_command('serverStatus')
         try:
             if 'version' in status:
                 version = status['version'].split('-')[0]
                 return tuple(version.split('.'))
-        except pymongo.errors.OperationFailure, e:
-            raise DBOperationError("Unable to determine version from serverStatus! Error: %s" % e)
+        except Exception, e:
+            raise Error("Unable to determine version from serverStatus! Error: %s" % e)
 
     def connection(self):
         return self._conn
+
+    def is_mongos(self):
+        return self._conn.is_mongos
+
+    def is_master(self, force=False):
+        try:
+            if force or not self._is_master:
+                self._is_master = self.admin_command('isMaster', True)
+        except pymongo.errors.OperationFailure, e:
+            raise DBOperationError("Unable to run isMaster command! Error: %s" % e)
+        return self._is_master
+
+    def is_replset(self):
+        isMaster = self.is_master()
+        if 'setName' in isMaster and isMaster['setName'] != "":
+            return True
+        return False
+
+    def is_configsvr(self):
+        isMaster = self.is_master()
+        if 'configsvr' in isMaster and isMaster['configsvr']:
+            return True
+        return False
+
+    def replset(self):
+        isMaster = self.is_master()
+        if 'setName' in isMaster:
+            return isMaster['setName']
+        return None
 
     def close(self):
         if self._conn:

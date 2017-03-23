@@ -2,6 +2,7 @@ import os
 import logging
 
 from fcntl import flock, LOCK_EX, LOCK_NB
+from mongodb_consistent_backup.Errors import OperationError
 
 
 class Lock:
@@ -21,7 +22,7 @@ class Lock:
             logging.debug("Error acquiring lock on file: %s" % self.lock_file)
             if self._lock:
                 self._lock.close()
-            raise Exception, "Could not acquire lock!", None
+	    raise OperationError("Could not acquire lock on file: %s!" % self.lock_file)
     
     def release(self):
         if self._lock:

@@ -77,8 +77,6 @@ class Config(object):
                     mod.config(self._config.parser)
                 except AttributeError, e:
                     continue
-                except Exception, e:
-                    raise e
 
     def check_required(self):
         required = [
@@ -89,7 +87,7 @@ class Config(object):
             try:
                 self._get(key)
             except:
-                raise Exception, 'Field "%s" must be set via command-line or config file!' % key, None
+                raise mongodb_consistent_backup.Errors.OperationError('Field "%s" must be set via command-line or config file!' % key)
 
     def parse(self):
         self._config.parse(self.cmdline)

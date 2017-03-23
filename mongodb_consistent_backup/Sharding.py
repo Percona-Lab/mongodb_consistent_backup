@@ -25,8 +25,8 @@ class Sharding:
         try:
             if isinstance(self.db, DB):
                 self.connection = self.db.connection()
-                if not self.connection.is_mongos:
-                    raise DBOperationError('MongoDB connection is not to a mongos!')
+                if not self.db.is_mongos() and not self.db.is_configsvr():
+                    raise DBOperationError('MongoDB connection is not to a mongos or configsvr!')
             else:
                 raise Exception, "'db' field is not an instance of class: 'DB'!", None
         except Exception, e:
@@ -45,9 +45,12 @@ class Sharding:
 
     def shards(self):
         try:
-            listShards = self.db.admin_command("listShards")
-            if 'shards' in listShards:
-                return listShards['shards']
+            if self.db.is_configsvr() and self.db.server_version() < tuple("3.4.0".split(".")):
+                return self.connection['config'].shards.find()
+            else:
+                listShards = self.db.admin_command("listShards")
+                if 'shards' in listShards:
+                    return listShards['shards']
         except Exception, e:
             raise DBOperationError(e)
 
@@ -124,8 +127,13 @@ class Sharding:
                 config_string = cmdlineopts.get('parsed').get('configdb')
             elif cmdlineopts.get('parsed').get('sharding').get('configDB'):
                 config_string = cmdlineopts.get('parsed').get('sharding').get('configDB')
+
             if config_string:
                 return MongoUri(config_string, 27019)
+            elif self.db.is_configsvr() and self.db.is_replset():
+                return MongoUri(self.db.host, self.db.port, self.db.replset())
+            elif self.db.is_configsvr():
+                return MongoUri(self.db.host, self.db.port)
             else:
                 logging.fatal("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))
                 raise OperationError("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))
