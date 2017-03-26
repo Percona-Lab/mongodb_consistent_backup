@@ -83,6 +83,7 @@ class Tailer:
                 sleep(0.5)
 
     def stop(self, kill=False, sleep_secs=2):
+        logging.info("Stopping all oplog tailers")
         for shard in self.shards:
             replset    = self.replsets[shard]
             state      = self.shards[shard]['state']
@@ -98,7 +99,6 @@ class Tailer:
                 except:
                     logging.warning("Could not get current optime from PRIMARY! Using now as a stop time")
                     timestamp = Timestamp(int(time()), 0)
-                logging.info("Stopping tailing of %s at optime >= %s" % (uri, timestamp))
     
                 # wait for replication to get in sync
                 while state.get('last_ts') and state.get('last_ts') < timestamp:

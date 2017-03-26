@@ -81,9 +81,9 @@ class MongodumpThread(Process):
         self.state.set('last_ts', oplog.last_ts())
         self.timer.stop()
 
-        log_msg_extra = "%i changes captured" % oplog.count()
+        log_msg_extra = "%i oplog changes" % oplog.count()
         if oplog.last_ts():
-            log_msg_extra = "%s to: %s" % (log_msg_extra, oplog.last_ts())
+            log_msg_extra = "%s, end ts: %s" % (log_msg_extra, oplog.last_ts())
         logging.info("Backup %s completed in %.2f sec(s), %s" % (self.uri, self.timer.duration(), log_msg_extra))
 
         sys.exit(self.exit_code)

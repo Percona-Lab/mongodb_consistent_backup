@@ -22,7 +22,7 @@ class ResolverThread:
         self.mongodump_oplog_h = Oplog(self.mongodump_oplog['file'], self.dump_gzip, 'a+')
         self.tailed_oplog_fh   = Oplog(self.tailed_oplog['file'], self.dump_gzip)
 
-        logging.info("Resolving oplog for %s to max timestamp: %s" % (self.uri, self.max_end_ts))
+        logging.info("Resolving oplog for %s to max ts: %s" % (self.uri, self.max_end_ts))
         try:
             for change in decode_file_iter(self.tailed_oplog_fh):
                 ts = change['ts']
@@ -42,4 +42,4 @@ class ResolverThread:
             logging.exception("Resolving of oplogs failed! Error: %s" % e)
             raise e
 
-        logging.info("Applied %i changes to %s oplog. New end timestamp: %s" % (self.changes, self.uri, self.mongodump_oplog_h.last_ts()))
+        logging.info("Applied %i oplog changes to %s oplog, end ts: %s" % (self.changes, self.uri, self.mongodump_oplog_h.last_ts()))
