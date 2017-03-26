@@ -64,7 +64,7 @@ class TailThread(Process):
             self.status_last = now
 
     def run(self):
-        logging.info("Tailing oplog on %s for changes (options: gzip=%s, status_secs=%i)" % (self.uri, self.dump_gzip, self.status_secs))
+        logging.info("Tailing oplog on %s for changes" % self.uri)
 
         conn  = self.connection()
         db    = conn['local']

@@ -12,7 +12,7 @@ from mongodb_consistent_backup.Oplog import OplogState
 
 
 class Tailer:
-    def __init__(self, config, replsets, base_dir):
+    def __init__(self, config, replsets, base_dir, status_secs=15):
         self.config      = config
         self.replsets    = replsets
         self.base_dir    = base_dir
@@ -20,6 +20,7 @@ class Tailer:
         self.user        = self.config.user
         self.password    = self.config.password
         self.authdb      = self.config.authdb
+        self.status_secs = status_secs
 
         self.manager  = Manager()
         self.shards   = {}
@@ -53,7 +54,7 @@ class Tailer:
         f.close()
 
     def run(self):
-        logging.info("Starting oplog tailers on all replica sets")
+        logging.info("Starting oplog tailers on all replica sets (options: gzip=%s, status_secs=%i)" % (self.do_gzip(), self.status_secs))
         for shard in self.replsets:
             stop        = Event()
             secondary   = self.replsets[shard].find_secondary()
@@ -70,7 +71,8 @@ class Tailer:
                 self.do_gzip(),
                 self.user,
                 self.password,
-                self.authdb
+                self.authdb,
+		self.status_secs
             )
             self.shards[shard] = {
                 'stop':   stop,
@@ -116,7 +118,7 @@ class Tailer:
 
             # gather state info
             self._summary[shard] = state.get().copy()
-        logging.info("Stopped all oplog tailer threads")
+        logging.info("Stopped all oplog tailers")
         return self._summary
 
     def close(self):
