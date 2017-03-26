@@ -73,7 +73,7 @@ class MongodumpThread(Process):
             return None
 
         oplog = Oplog(self.oplog_file, self.dump_gzip)
-        oplog.read()
+        oplog.load()
 
         self.state.set('running', False)
         self.state.set('count', oplog.count())

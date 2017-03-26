@@ -38,20 +38,13 @@ class TailThread(Process):
 
     # the DB connection has to be made outside of __init__ due to threading:
     def connection(self):
-        try:
+        if not self._connection:
             self._connection = DB(self.uri.host, self.uri.port, self.user, self.password, self.authdb).connection()
-        except Exception, e:
-            logging.fatal("Cannot get connection - %s" % e)
-            raise e
         return self._connection
 
     def oplog(self):
         if not self._oplog:
-            try:
-                self._oplog = Oplog(self.oplog_file, self.dump_gzip)
-            except Exception, e:
-                logging.fatal("Could not open oplog tailing file %s! Error: %s" % (self.oplog_file, e))
-                raise e
+            self._oplog = Oplog(self.oplog_file, self.dump_gzip, 'w+')
         return self._oplog
 
     def close(self, exit_code=None, frame=None):
@@ -80,15 +73,14 @@ class TailThread(Process):
         self.state.set('running', True)
         tail_start_ts = db.oplog.rs.find().sort('$natural', -1)[0]['ts']
         while not self.do_stop.is_set():
+            # http://api.mongodb.com/python/current/examples/tailable.html
             query  = {'ts': {'$gt': tail_start_ts}}
-            cursor = db.oplog.rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT)
+            cursor = db.oplog.rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True)
             try:
                 while not self.do_stop.is_set():
                     try:
                         # get the next oplog doc and write it
                         doc = cursor.next()
-                        if not doc:
-                            continue
                         oplog.write(doc)
 
                         # update states

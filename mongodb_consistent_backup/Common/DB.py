@@ -1,6 +1,7 @@
 import logging
-import pymongo
 
+from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure, OperationFailure, ServerSelectionTimeoutError
 from time import sleep
 
 from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError, Error
@@ -24,13 +25,13 @@ class DB:
     def connect(self):
         try:
             logging.debug("Getting MongoDB connection to %s:%s" % (self.host, self.port))
-            conn = pymongo.MongoClient(
+            conn = MongoClient(
                 host=self.host,
                 port=int(self.port),
                 connectTimeoutMS=int(self.conn_timeout)
             )
             conn['admin'].command({"ping":1})
-        except (pymongo.errors.ConnectionFailure, pymongo.errors.OperationFailure, pymongo.errors.ServerSelectionTimeoutError), e:
+        except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
             logging.fatal("Unable to connect to %s:%s! Error: %s" % (self.host, self.port, e))
             raise DBConnectionError(e)
         if conn is not None:
@@ -42,7 +43,7 @@ class DB:
             try:
                 logging.debug("Authenticating connection with username: %s" % self.username)
                 self._conn[self.authdb].authenticate(self.username, self.password)
-            except pymongo.errors.OperationFailure, e:
+            except OperationFailure, e:
                 logging.fatal("Unable to authenticate with host %s:%s: %s" % (self.host, self.port, e))
                 raise DBAuthenticationError(e)
         else:
@@ -54,7 +55,7 @@ class DB:
         while not status and tries < self.retries:
             try:
                 status = self._conn['admin'].command(admin_command)
-            except pymongo.errors.OperationFailure, e:
+            except OperationFailure, e:
                 if not quiet:
                     logging.error("Error running admin command '%s': %s" % (admin_command, e))
                 tries += 1
@@ -82,7 +83,7 @@ class DB:
         try:
             if force or not self._is_master:
                 self._is_master = self.admin_command('isMaster', True)
-        except pymongo.errors.OperationFailure, e:
+        except OperationFailure, e:
             raise DBOperationError("Unable to run isMaster command! Error: %s" % e)
         return self._is_master
 

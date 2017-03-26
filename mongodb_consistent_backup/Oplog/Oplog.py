@@ -4,11 +4,14 @@ import logging
 from gzip import GzipFile
 from bson import BSON, decode_file_iter
 
+from mongodb_consistent_backup.Errors import OperationError
+
 
 class Oplog:
-    def __init__(self, oplog_file, do_gzip=False):
+    def __init__(self, oplog_file, do_gzip=False, file_mode="r"):
         self.oplog_file = oplog_file
         self.do_gzip    = do_gzip
+        self.file_mode  = file_mode
 
         self._count    = 0
         self._first_ts = None
@@ -17,23 +20,27 @@ class Oplog:
 
         self.open()
 
+    def handle(self):
+        return self._oplog
+
     def open(self):
         if not self._oplog:
             try:
                 logging.debug("Opening oplog file %s" % self.oplog_file)
-                mode = "w+"
-                if os.path.isfile(self.oplog_file):
-                    mode = "r"
                 if self.do_gzip:
-                    self._oplog = GzipFile(self.oplog_file, mode)
+                    self._oplog  = GzipFile(self.oplog_file, self.file_mode)
                 else:
-                    self._oplog = open(self.oplog_file, mode)
+                    self._oplog = open(self.oplog_file, self.file_mode)
             except Exception, e:
                 logging.fatal("Error opening oplog file %s! Error: %s" % (self.oplog_file, e))
-                raise e
+                raise OperationError(e)
         return self._oplog
 
-    def read(self):
+    def read(self, b):
+        if self._oplog:
+            return self._oplog.read(b)
+
+    def load(self):
         try:
             oplog = self.open()
             logging.debug("Reading oplog file %s" % self.oplog_file)
@@ -46,7 +53,7 @@ class Oplog:
             oplog.close()
         except Exception, e:
             logging.fatal("Error reading oplog file %s! Error: %s" % (self.oplog_file, e))
-            raise e
+            raise OperationError(e)
 
     def write(self, doc):
         try:
@@ -57,7 +64,7 @@ class Oplog:
             self._last_ts = doc['ts']
         except Exception, e:
             logging.fatal("Cannot write to oplog file %s! Error: %s" % (self.oplog_file, e))
-            raise e
+            raise OperationError(e)
 
     def flush(self):
         if self._oplog:
