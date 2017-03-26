@@ -64,14 +64,13 @@ class TailThread(Process):
             self.status_last = now
 
     def run(self):
-
         logging.info("Tailing oplog on %s for changes (options: gzip=%s, status_secs=%i)" % (self.uri, self.dump_gzip, self.status_secs))
 
         conn  = self.connection()
         db    = conn['local']
         oplog = self.oplog()
-        self.state.set('running', True)
         tail_start_ts = db.oplog.rs.find().sort('$natural', -1)[0]['ts']
+        self.state.set('running', True)
         while not self.do_stop.is_set():
             # http://api.mongodb.com/python/current/examples/tailable.html
             query  = {'ts': {'$gt': tail_start_ts}}
@@ -81,7 +80,7 @@ class TailThread(Process):
                     try:
                         # get the next oplog doc and write it
                         doc = cursor.next()
-                        oplog.write(doc)
+                        oplog.add(doc)
 
                         # update states
                         self.count += 1

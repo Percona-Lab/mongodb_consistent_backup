@@ -20,7 +20,7 @@ class ResolverThread:
 
     def run(self):
         self.mongodump_oplog_h = Oplog(self.mongodump_oplog['file'], self.dump_gzip, 'a+')
-        self.tailed_oplog_fh   = Oplog(self.tailed_oplog['file'], self.dump_gzip, 'r')
+        self.tailed_oplog_fh   = Oplog(self.tailed_oplog['file'], self.dump_gzip)
 
         logging.info("Resolving oplog for %s to max timestamp: %s" % (self.uri, self.max_end_ts))
         try:
@@ -28,7 +28,7 @@ class ResolverThread:
                 ts = change['ts']
                 if not self.mongodump_oplog['last_ts'] or ts > self.mongodump_oplog['last_ts']:
                     if ts < self.max_end_ts:
-                        self.mongodump_oplog_h.write(change)
+                        self.mongodump_oplog_h.add(change)
                         self.changes += 1
                     elif ts > self.max_end_ts:
                         break

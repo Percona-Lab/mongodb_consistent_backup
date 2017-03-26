@@ -55,7 +55,7 @@ class Oplog:
             logging.fatal("Error reading oplog file %s! Error: %s" % (self.oplog_file, e))
             raise OperationError(e)
 
-    def write(self, doc):
+    def add(self, doc):
         try:
             self._oplog.write(BSON.encode(doc))
             self._count += 1

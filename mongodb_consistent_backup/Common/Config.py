@@ -1,9 +1,11 @@
+import json
 import mongodb_consistent_backup
 import sys
 
 from argparse import Action
 from pkgutil import walk_packages
 from yconf import BaseConfiguration
+from yconf.util import NestedDict
 
 
 class PrintVersions(Action):
@@ -92,6 +94,25 @@ class Config(object):
     def parse(self):
         self._config.parse(self.cmdline)
         self.check_required()
+
+    def to_dict(self, data):
+        if isinstance(data, dict) or isinstance(data, NestedDict):
+            ret = {}
+            for key in data:
+                value = self.to_dict(data[key])
+                if key == "password":
+                    value = "******"
+                if value and key is not ('merge'):
+                    ret[key] = value
+            return ret
+        elif isinstance(data, (str, int, bool)): # or isinstance(data, int) or isinstance(data, bool):
+            return data
+
+    def dump(self):
+        return self.to_dict(self._config)
+
+    def json(self):
+        return json.dumps(self.dump(), sort_keys=True)
 
     def __getattr__(self, key):
         try:

@@ -13,6 +13,7 @@ from Notify import Notify
 from Oplog import Tailer, Resolver
 from Replication import Replset, ReplsetSharded
 from Sharding import Sharding
+from State import State
 from Upload import Upload
 
 
@@ -44,6 +45,7 @@ class MongodbConsistentBackup(object):
         self.setup_logger()
         self.setup_signal_handlers()
         self.set_backup_dirs()
+        #self.setup_state()
         self.get_db_conn()
 
     def setup_config(self):
@@ -73,14 +75,18 @@ class MongodbConsistentBackup(object):
         self.backup_root_subdirectory = "%s/%s" % (self.config.backup.name, self.backup_time)
         self.backup_root_directory = "%s/%s" % (self.config.backup.location, self.backup_root_subdirectory)
 
+    def setup_state(self):
+        self.state = State(self.config.backup.location, self.backup_time)
+        self.state.add_config(self.config)
+
     def get_db_conn(self):
         try:
             validate_hostname(self.config.host)
             self.db = DB(self.config.host, self.config.port, self.config.user, self.config.password, self.config.authdb)
             self.is_sharded = self.db.is_mongos()
-	    if not self.is_sharded:
+            if not self.is_sharded:
                 self.is_sharded = self.db.is_configsvr()
-	    if not self.is_sharded and not self.db.is_replset():
+            if not self.is_sharded and not self.db.is_replset():
                 raise OperationError("Host %s:%i is not part of a replset and is not a sharding config/mongos server!")
         except Exception, e:
             raise e
@@ -153,15 +159,10 @@ class MongodbConsistentBackup(object):
         self.log(backup_complete_message,INFO)
         """
         logging.info("Starting %s version %s (git commit: %s)" % (self.program_name, self.config.version, self.config.git_commit))
+        logging.info("Loaded config: %s" % self.config.json())
 
         self.get_lock()
         self.timer.start()
-
-        # Setup the notifier
-        try:
-            self.notify = Notify(self.config)
-        except Exception, e:
-            self.exception("Problem starting notifier! Error: %s" % e, e)
 
         # Setup the archiver
         try:
@@ -171,6 +172,12 @@ class MongodbConsistentBackup(object):
             )
         except Exception, e:
             self.exception("Problem starting archiver! Error: %s" % e, e)
+
+        # Setup the notifier
+        try:
+            self.notify = Notify(self.config)
+        except Exception, e:
+            self.exception("Problem starting notifier! Error: %s" % e, e)
 
         # Setup the uploader
         try:
@@ -203,10 +210,10 @@ class MongodbConsistentBackup(object):
                     self.backup_root_directory,
                     self.replsets
                 )
-                self.backup.backup()
                 if self.backup.is_compressed():
                     logging.info("Backup method supports gzip compression, disabling compression in archive step")
                     self.archive.compression('none')
+                self.backup.backup()
             except Exception, e:
                 self.exception("Problem performing replset mongodump! Error: %s" % e, e)
 

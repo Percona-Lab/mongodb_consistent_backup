@@ -53,6 +53,7 @@ class Tailer:
         f.close()
 
     def run(self):
+        logging.info("Starting oplog tailers on all replica sets")
         for shard in self.replsets:
             stop        = Event()
             secondary   = self.replsets[shard].find_secondary()
@@ -78,6 +79,8 @@ class Tailer:
                 'state_file': oplog_state_file
             }
             self.shards[shard]['thread'].start()
+	    while not oplog_state.get('running'):
+                sleep(0.5)
 
     def stop(self, kill=False, sleep_secs=2):
         for shard in self.shards:
