@@ -37,7 +37,8 @@ class DB:
                 readPreference=self.read_pref,
                 connectTimeoutMS=self.conn_timeout,
 		serverSelectionTimeoutMS=self.conn_timeout,
-		maxPoolSize=1
+		maxPoolSize=1,
+		w="majority"
             )
             conn['admin'].command({"ping":1})
         except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
