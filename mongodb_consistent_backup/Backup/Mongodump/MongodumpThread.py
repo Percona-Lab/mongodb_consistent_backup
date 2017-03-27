@@ -49,11 +49,11 @@ class MongodumpThread(Process):
     def parse_mongodump_line(self, line):
         try:
             line = line.rstrip()
-	    if line == "":
-	        return None
+            if line == "":
+                return None
             if "\t" in line:
                 (date, line) = line.split("\t")
-	    return "%s:\t%s" % (self.uri, line) 
+            return "%s:\t%s" % (self.uri, line) 
         except:
             return None
 
@@ -66,7 +66,7 @@ class MongodumpThread(Process):
                         read = self._process.stderr.readline()
                         line = self.parse_mongodump_line(read)
                         if line:
-			    logging.info(line)
+                            logging.info(line)
                 if self._process.poll() != None:
                     break
         except Exception, e:
@@ -74,13 +74,7 @@ class MongodumpThread(Process):
         finally:
             self._process.communicate()
 
-    def run(self):
-        logging.info("Starting mongodump (with oplog) backup of %s" % self.uri)
-
-        self.timer.start()
-        self.state.set('running', True)
-        self.state.set('file', self.oplog_file)
-
+    def mongodump_cmd(self):
         mongodump_cmd   = [self.binary]
         mongodump_flags = ["--host", self.uri.host, "--port", str(self.uri.port), "--oplog", "--out", "%s/dump" % self.backup_dir]
         if self.threads > 0:
@@ -93,11 +87,21 @@ class MongodumpThread(Process):
         if self.user and self.password:
             mongodump_flags.extend(["-u", self.user, "-p", self.password])
         mongodump_cmd.extend(mongodump_flags)
+        return mongodump_cmd
 
+    def run(self):
+        logging.info("Starting mongodump backup of %s" % self.uri)
+
+        self.timer.start()
+        self.state.set('running', True)
+        self.state.set('file', self.oplog_file)
+
+        mongodump_cmd = self.mongodump_cmd()
         try:
             if os.path.isdir(self.dump_dir):
                 os.removedirs(self.dump_dir)
             os.makedirs(self.dump_dir)
+            logging.debug("Running mongodump cmd: %s" % mongodump_cmd)
             self._process = Popen(mongodump_cmd, stderr=PIPE)
             self.wait()
             self.exit_code = self._process.returncode

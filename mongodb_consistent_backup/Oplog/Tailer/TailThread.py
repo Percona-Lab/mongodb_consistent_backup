@@ -1,4 +1,5 @@
 import logging
+import sys
 
 # Skip bson in requirements , pymongo provides
 # noinspection PyPackageRequirements
@@ -13,34 +14,26 @@ from mongodb_consistent_backup.Oplog import Oplog
 
 
 class TailThread(Process):
-    def __init__(self, do_stop, uri, oplog_file, state, dump_gzip=False, user=None, password=None,
-                 authdb='admin', status_secs=15):
+    def __init__(self, do_stop, uri, config, oplog_file, state, dump_gzip=False, status_secs=15):
         Process.__init__(self)
         self.do_stop     = do_stop
         self.uri         = uri
+	self.config      = config
         self.oplog_file  = oplog_file
         self.state       = state
         self.dump_gzip   = dump_gzip
-        self.user        = user
-        self.password    = password
-        self.authdb      = authdb
         self.status_secs = status_secs
         self.status_last = time()
 
-        self.count       = 0
-        self.last_ts     = None
-        self.stopped     = False
-        self._connection = None
-        self._oplog      = None
+        self.conn      = None
+        self.count     = 0
+        self.last_ts   = None
+        self.stopped   = False
+        self._oplog    = None
+        self.exit_code = 0
 
         signal(SIGINT, self.close)
         signal(SIGTERM, self.close)
-
-    # the DB connection has to be made outside of __init__ due to threading:
-    def connection(self):
-        if not self._connection:
-            self._connection = DB(self.uri.host, self.uri.port, self.user, self.password, self.authdb).connection()
-        return self._connection
 
     def oplog(self):
         if not self._oplog:
@@ -53,6 +46,8 @@ class TailThread(Process):
         self.do_stop.set()
         while not self.stopped:
             sleep(1)
+        if self.conn:
+            self.conn.close()
 
     def status(self):
         if self.do_stop.is_set():
@@ -66,8 +61,8 @@ class TailThread(Process):
     def run(self):
         logging.info("Tailing oplog on %s for changes" % self.uri)
 
-        conn  = self.connection()
-        db    = conn['local']
+        self.conn = DB(self.uri, self.config, True, 'secondary').connection()
+        db    = self.conn['local']
         oplog = self.oplog()
         tail_start_ts = db.oplog.rs.find().sort('$natural', -1)[0]['ts']
         self.state.set('running', True)
@@ -96,6 +91,9 @@ class TailThread(Process):
                         if self.do_stop.is_set():
                             break
                         sleep(1)
+            except Exception, e:
+                logging.fatal("Tailer %s error: %s" % (self.uri, e))
+                self.exit_code = 1
             finally:
                 logging.debug("Stopping oplog cursor on %s" % self.uri)
                 cursor.close()
@@ -103,9 +101,12 @@ class TailThread(Process):
         oplog.close()
         self.stopped = True
 
-        log_msg_extra = "%i oplog changes" % self.state.get('count')
-        last_ts = self.state.get('last_ts')
-        if last_ts:
-            log_msg_extra = "%s, end ts: %s" % (log_msg_extra, last_ts)
-        logging.info("Done tailing oplog on %s, %s" % (self.uri, log_msg_extra))
+        if self.exit_code == 0:
+            log_msg_extra = "%i oplog changes" % self.state.get('count')
+            last_ts = self.state.get('last_ts')
+            if last_ts:
+                log_msg_extra = "%s, end ts: %s" % (log_msg_extra, last_ts)
+            logging.info("Done tailing oplog on %s, %s" % (self.uri, log_msg_extra))
+
         self.state.set('running', False)
+        sys.exit(self.exit_code)

@@ -111,8 +111,11 @@ class Config(object):
     def dump(self):
         return self.to_dict(self._config)
 
-    def json(self):
+    def to_json(self):
         return json.dumps(self.dump(), sort_keys=True)
+
+    def __repr__(self):
+        return self.to_json()
 
     def __getattr__(self, key):
         try:

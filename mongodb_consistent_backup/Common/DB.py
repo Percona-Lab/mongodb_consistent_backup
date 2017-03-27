@@ -8,15 +8,17 @@ from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnection
 
 
 class DB:
-    def __init__(self, host='localhost', port=27017, username=None, password=None, authdb="admin", conn_timeout=5000, retries=5):
-        self.host         = host
-        self.port         = port
-        self.username     = username
-        self.password     = password
-        self.authdb       = authdb
+    def __init__(self, uri, config, do_replset=False, read_pref='secondary', conn_timeout=5000, retries=5):
+        self.uri          = uri
+        self.username     = config.user
+        self.password     = config.password
+        self.authdb       = config.authdb
+        self.do_replset   = do_replset
+        self.read_pref    = read_pref
         self.conn_timeout = conn_timeout
         self.retries      = retries
 
+        self.replset    = None
         self._conn      = None
         self._is_master = None
         self.connect()
@@ -24,15 +26,22 @@ class DB:
 
     def connect(self):
         try:
-            logging.debug("Getting MongoDB connection to %s:%s" % (self.host, self.port))
+            if self.do_replset:
+                self.replset = self.uri.replset
+            logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s)" % 
+			 (self.uri, self.replset, self.read_pref))
             conn = MongoClient(
-                host=self.host,
-                port=int(self.port),
-                connectTimeoutMS=int(self.conn_timeout)
+                host=self.uri.host,
+                port=self.uri.port,
+                replicaSet=self.replset,
+                readPreference=self.read_pref,
+                connectTimeoutMS=self.conn_timeout,
+		serverSelectionTimeoutMS=self.conn_timeout,
+		maxPoolSize=1
             )
             conn['admin'].command({"ping":1})
         except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
-            logging.fatal("Unable to connect to %s:%s! Error: %s" % (self.host, self.port, e))
+            logging.fatal("Unable to connect to %s! Error: %s" % (self.uri, e))
             raise DBConnectionError(e)
         if conn is not None:
             self._conn = conn
@@ -44,7 +53,7 @@ class DB:
                 logging.debug("Authenticating connection with username: %s" % self.username)
                 self._conn[self.authdb].authenticate(self.username, self.password)
             except OperationFailure, e:
-                logging.fatal("Unable to authenticate with host %s:%s: %s" % (self.host, self.port, e))
+                logging.fatal("Unable to authenticate with host %s: %s" % (self.uri, e))
                 raise DBAuthenticationError(e)
         else:
             pass

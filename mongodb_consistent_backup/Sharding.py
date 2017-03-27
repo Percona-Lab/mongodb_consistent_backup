@@ -11,9 +11,6 @@ class Sharding:
     def __init__(self, config, db):
         self.config             = config
         self.db                 = db
-        self.user               = self.config.user
-        self.password           = self.config.password
-        self.authdb             = self.config.authdb
         self.balancer_wait_secs = self.config.sharding.balancer.wait_secs
         self.balancer_sleep     = self.config.sharding.balancer.ping_secs
 
@@ -116,8 +113,8 @@ class Sharding:
                 stop_timer.stop()
                 logging.info("Balancer stopped after %.2f seconds" % stop_timer.duration())
                 return
-        logging.fatal("Could not stop balancer: %s:%i!" % (self.db.host, self.db.port))
-        raise DBOperationError("Could not stop balancer: %s:%i" % (self.db.host, self.db.port))
+	logging.fatal("Could not stop balancer %s: %s!" % (self.db.uri, e))
+	raise DBOperationError("Could not stop balancer %s: %s" % (self.db.uri, e))
 
     def get_configdb_hosts(self):
         try:
@@ -129,36 +126,31 @@ class Sharding:
                 config_string = cmdlineopts.get('parsed').get('sharding').get('configDB')
 
             if config_string:
-                return MongoUri(config_string, 27019)
-            elif self.db.is_configsvr() and self.db.is_replset():
-                return MongoUri(self.db.host, self.db.port, self.db.replset())
+                return MongoUri(config_string, 27019).get()
             elif self.db.is_configsvr():
-                return MongoUri(self.db.host, self.db.port)
+                return self.db.uri
             else:
-                logging.fatal("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))
-                raise OperationError("Unable to locate config servers for %s:%i!" % (self.db.host, self.db.port))
+                logging.fatal("Unable to locate config servers for %s!" % self.db.uri)
+                raise OperationError("Unable to locate config servers for %s!" % self.db.uri)
         except Exception, e:
             raise OperationError(e)
 
     def get_config_server(self, force=False):
         if force or not self.config_server:
-            configdb_hosts = self.get_configdb_hosts()
-            configdb_uri   = configdb_hosts.get()
+            configdb_uri = self.get_configdb_hosts()
             try:
                 logging.info("Found sharding config server: %s" % configdb_uri)
-
-                self.config_db = DB(configdb_uri.host, configdb_uri.port, self.user, self.password, self.authdb)
-                rs = Replset(self.config, self.config_db)
-                # noinspection PyBroadException
-                try:
-                    if rs.get_rs_status(False, True):
-                        self.config_server = rs
-                except Exception:
-                    self.config_server = { 'host': configdb_uri }
-                finally:
-                    return self.config_server
+                if self.db.uri.str() == configdb_uri.str():
+		    print "already connected"
+		    self.config_db = self.db
+		else:
+                    self.config_db = DB(configdb_uri, self.config, False, 'secondaryPreferred')
+                if self.config_db.is_replset():
+                    self.config_server = Replset(self.config, self.config_db) 
+		else:
+ 		    self.config_server = { 'host': "%s:%i" % (configdb_uri.host, configdb_uri.port) }
             except Exception, e:
-                logging.fatal("Unable to locate config servers using %s:%i!" % (self.db.host, self.db.port))
-                raise OperationError(e)
-
+                logging.fatal("Unable to locate config servers using %s: %s!" % (self.db.uri, e))
+                raise e
+                #raise OperationError(e)
         return self.config_server

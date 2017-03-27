@@ -7,7 +7,7 @@ from multiprocessing import Event, Manager
 from time import time, sleep
 
 from TailThread import TailThread
-from mongodb_consistent_backup.Common import parse_method, MongoUri, Timer
+from mongodb_consistent_backup.Common import parse_method, MongoUri, Timer, DB
 from mongodb_consistent_backup.Oplog import OplogState
 
 
@@ -68,12 +68,10 @@ class Tailer:
             thread = TailThread(
                 stop,
                 mongo_uri,
+		self.config,
                 oplog_file,
                 oplog_state,
                 self.do_gzip(),
-                self.user,
-                self.password,
-                self.authdb,
 		self.status_secs
             )
             self.shards[shard] = {

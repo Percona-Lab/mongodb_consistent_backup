@@ -43,7 +43,7 @@ class MongoUri:
             else:
                 addr.host = url
                 if not addr.port:
-                     addr.port = self.default_port
+                    addr.port = self.default_port
             validate_hostname(addr.host)
             self.addrs.append(addr)
         return True

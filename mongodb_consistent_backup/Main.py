@@ -1,3 +1,4 @@
+import os
 import sys
 import logging
 
@@ -7,8 +8,8 @@ from signal import signal, SIGINT, SIGTERM
 
 from Archive import Archive
 from Backup import Backup
-from Common import Config, DB, Lock, Timer, validate_hostname
-from Errors import OperationError
+from Common import Config, DB, Lock, MongoUri, Timer
+from Errors import Error, OperationError
 from Notify import Notify
 from Oplog import Tailer, Resolver
 from Replication import Replset, ReplsetSharded
@@ -31,8 +32,9 @@ class MongodbConsistentBackup(object):
         self.upload                   = None
         self.lock                     = None
         self.backup_time              = None
-        self.backup_root_directory    = None
+        self.backup_directory         = None
         self.backup_root_subdirectory = None
+        self.uri                      = None
         self.db                       = None
         self.is_sharded               = False
         self.log_level                = None
@@ -44,8 +46,9 @@ class MongodbConsistentBackup(object):
         self.setup_config()
         self.setup_logger()
         self.setup_signal_handlers()
+        self.get_lock()
         self.set_backup_dirs()
-        #self.setup_state()
+        self.setup_state()
         self.get_db_conn()
 
     def setup_config(self):
@@ -72,24 +75,25 @@ class MongodbConsistentBackup(object):
 
     def set_backup_dirs(self):
         self.backup_time = datetime.now().strftime("%Y%m%d_%H%M")
-        self.backup_root_subdirectory = "%s/%s" % (self.config.backup.name, self.backup_time)
-        self.backup_root_directory = "%s/%s" % (self.config.backup.location, self.backup_root_subdirectory)
+        self.backup_root_directory = os.path.join(self.config.backup.location, self.config.backup.name)
+        self.backup_root_subdirectory = os.path.join(self.config.backup.name, self.backup_time)
+        self.backup_directory = os.path.join(self.config.backup.location, self.backup_root_subdirectory)
 
     def setup_state(self):
-        self.state = State(self.config.backup.location, self.backup_time)
-        self.state.add_config(self.config)
+        self.state = State(self.backup_root_directory)
+        self.state.new_backup(self.backup_time, self.config)
 
     def get_db_conn(self):
         try:
-            validate_hostname(self.config.host)
-            self.db = DB(self.config.host, self.config.port, self.config.user, self.config.password, self.config.authdb)
+            self.uri = MongoUri(self.config.host, self.config.port).get()
+            self.db  = DB(self.uri, self.config, False, 'secondaryPreferred')
             self.is_sharded = self.db.is_mongos()
             if not self.is_sharded:
                 self.is_sharded = self.db.is_configsvr()
             if not self.is_sharded and not self.db.is_replset():
-                raise OperationError("Host %s:%i is not part of a replset and is not a sharding config/mongos server!")
+                raise OperationError("Host %s is not part of a replset and is not a sharding config/mongos server!" % self.uri)
         except Exception, e:
-            raise e
+            raise Error(e)
 
     def get_lock(self):
         # noinspection PyBroadException
@@ -159,16 +163,15 @@ class MongodbConsistentBackup(object):
         self.log(backup_complete_message,INFO)
         """
         logging.info("Starting %s version %s (git commit: %s)" % (self.program_name, self.config.version, self.config.git_commit))
-        logging.info("Loaded config: %s" % self.config.json())
+        logging.info("Loaded config: %s" % self.config)
 
-        self.get_lock()
         self.timer.start()
 
         # Setup the archiver
         try:
             self.archive = Archive(
                 self.config,
-                self.backup_root_directory, 
+                self.backup_directory, 
             )
         except Exception, e:
             self.exception("Problem starting archiver! Error: %s" % e, e)
@@ -183,14 +186,14 @@ class MongodbConsistentBackup(object):
         try:
             self.upload = Upload(
                 self.config,
-                self.backup_root_directory,
+                self.backup_directory,
                 self.backup_root_subdirectory
             )
         except Exception, e:
             self.exception("Problem starting uploader! Error: %s" % e, e)
 
         if not self.is_sharded:
-            logging.info("Running backup in replset mode using seed node: %s:%i" % (self.config.host, self.config.port))
+            logging.info("Running backup in replset mode using seed node: %s" % self.uri)
 
             # get shard secondary
             try:
@@ -207,7 +210,7 @@ class MongodbConsistentBackup(object):
             try:
                 self.backup = Backup(
                     self.config,
-                    self.backup_root_directory,
+                    self.backup_directory,
                     self.replsets
                 )
                 if self.backup.is_compressed():
@@ -220,7 +223,7 @@ class MongodbConsistentBackup(object):
             # use 1 archive thread for single replset
             self.archive.threads(1)
         else:
-            logging.info("Running backup in sharding mode using seed node: %s:%i" % (self.config.host, self.config.port))
+            logging.info("Running backup in sharding mode using seed node: %s" % self.uri)
 
             # connect to balancer and stop it
             try:
@@ -254,7 +257,7 @@ class MongodbConsistentBackup(object):
                 self.oplogtailer = Tailer(
                     self.config,
                     self.replsets,
-                    self.backup_root_directory
+                    self.backup_directory
                 )
             except Exception, e:
                 self.exception("Problem initializing oplog tailer! Error: %s" % e, e)
@@ -263,7 +266,7 @@ class MongodbConsistentBackup(object):
             try:
                 self.backup = Backup(
                     self.config,
-                    self.backup_root_directory,
+                    self.backup_directory,
                     self.replsets, 
                     self.sharding
                 )

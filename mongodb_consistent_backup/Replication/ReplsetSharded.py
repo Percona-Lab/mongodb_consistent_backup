@@ -11,9 +11,6 @@ class ReplsetSharded:
         self.config       = config
         self.sharding     = sharding
         self.db           = db
-        self.user         = self.config.user
-        self.password     = self.config.password
-        self.authdb       = self.config.authdb
         self.max_lag_secs = self.config.replication.max_lag_secs
 
         self.replsets      = {} 
@@ -31,17 +28,16 @@ class ReplsetSharded:
         else:
             raise Error("'db' field is not an instance of class: 'DB'!")
 
-    def get_replset_connection(self, host, port, force=False):
-        conn_name = "%s-%i" % (host, port)
-        if force or not conn_name in self.replset_conns:
-            self.replset_conns[conn_name] = DB(host, port, self.user, self.password, self.authdb)
-        return self.replset_conns[conn_name]
+    def get_replset_connection(self, uri, force=False):
+        if force or not uri.replset in self.replset_conns:
+            self.replset_conns[uri.replset] = DB(uri, self.config, True, 'secondaryPreferred')
+        return self.replset_conns[uri.replset]
 
     def get_replsets(self, force=False):
         for shard in self.sharding.shards():
             shard_uri = MongoUri(shard['host']).get()
             if force or not shard_uri.replset in self.replsets:
-                rs_db = self.get_replset_connection(shard_uri.host, shard_uri.port)
+                rs_db = self.get_replset_connection(shard_uri)
                 self.replsets[shard_uri.replset] = Replset(self.config, rs_db)
 
         configsvr = self.sharding.get_config_server()
