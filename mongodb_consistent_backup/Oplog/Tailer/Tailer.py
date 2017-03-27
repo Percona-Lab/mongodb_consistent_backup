@@ -7,7 +7,7 @@ from multiprocessing import Event, Manager
 from time import time, sleep
 
 from TailThread import TailThread
-from mongodb_consistent_backup.Common import parse_method, MongoUri
+from mongodb_consistent_backup.Common import parse_method, MongoUri, Timer
 from mongodb_consistent_backup.Oplog import OplogState
 
 
@@ -22,6 +22,7 @@ class Tailer:
         self.authdb      = self.config.authdb
         self.status_secs = status_secs
 
+        self.timer    = Timer()
         self.manager  = Manager()
         self.shards   = {}
         self._summary = {}
@@ -55,6 +56,7 @@ class Tailer:
 
     def run(self):
         logging.info("Starting oplog tailers on all replica sets (options: gzip=%s, status_secs=%i)" % (self.do_gzip(), self.status_secs))
+	self.timer.start()
         for shard in self.replsets:
             stop        = Event()
             secondary   = self.replsets[shard].find_secondary()
@@ -118,7 +120,8 @@ class Tailer:
 
             # gather state info
             self._summary[shard] = state.get().copy()
-        logging.info("Stopped all oplog tailers")
+	self.timer.stop()
+        logging.info("Oplog tailing completed in %.2f seconds" % self.timer.duration())
         return self._summary
 
     def close(self):

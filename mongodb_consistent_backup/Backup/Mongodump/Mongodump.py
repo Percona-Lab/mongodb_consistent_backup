@@ -77,7 +77,7 @@ class Mongodump:
                     if thread.exitcode == 0:
                         completed += 1
                     self.threads.remove(thread)
-            sleep(1)
+            sleep(0.5)
 
         # sleep for 3 sec to fix logging order before gathering summaries
         sleep(3)
@@ -126,7 +126,6 @@ class Mongodump:
         if not len(self.threads) > 0:
             raise OperationError('No backup threads started!')
 
-        # start all threads and wait
         logging.info(
               "Starting backups using mongodump %s (options: gzip=%s, threads_per_dump=%i)" % (self.version, str(self.do_gzip), self.threads_per_dump()))
         for thread in self.threads:
