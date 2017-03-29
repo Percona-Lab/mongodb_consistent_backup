@@ -83,7 +83,7 @@ class MongodbConsistentBackup(object):
 
     def setup_state(self):
         self.root_state   = StateRoot(self.backup_root_directory, self.config)
-	self.backup_state = StateBackup(self.backup_directory, self.config, self.backup_time, self.uri)
+	self.backup_state = StateBackup(self.backup_directory, self.config, self.backup_time, self.uri, sys.argv)
         self.root_state.write()
 	self.backup_state.write()
 
