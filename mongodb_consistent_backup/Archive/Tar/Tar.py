@@ -59,7 +59,9 @@ class Tar:
         if os.path.isdir(self.backup_base_dir):
             try:
                 for backup_dir in os.listdir(self.backup_base_dir):
-                    subdir_name = "%s/%s" % (self.backup_base_dir, backup_dir)
+                    subdir_name = os.path.join(self.backup_base_dir, backup_dir)
+		    if not os.path.isdir(os.path.join(subdir_name, "dump")):
+		        continue
                     output_file = "%s.tar" % subdir_name
 
                     if self.do_gzip():

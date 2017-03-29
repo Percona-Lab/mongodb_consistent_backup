@@ -11,7 +11,8 @@ class OplogState:
 
         try: 
             self._state = manager.dict()
-            self._state['uri'] = self.uri.str()
+	    if uri:
+                self._state['uri'] = self.uri.str()
             self._state['file'] = self.oplog_file
             self._state['count'] = 0
             self._state['first_ts'] = None

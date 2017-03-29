@@ -8,12 +8,12 @@ class Timer:
 
     def start(self):
         self.count += 1
-        self.rounds[self.count] = { 'start': time(), 'started': True }
+        self.rounds[self.count] = { 'start': int(time()), 'started': True }
 
     def stop(self):
         if self.rounds[self.count] and self.rounds[self.count]['started']:
             self.rounds[self.count]['started'] = False
-            self.rounds[self.count]['end']     = time()
+            self.rounds[self.count]['end']     = int(time())
 
     def duration(self):
         if 'start' in self.rounds[self.count]:
@@ -23,3 +23,6 @@ class Timer:
                 end = time()
             return end - self.rounds[self.count]['start']
         return -1
+
+    def dump(self):
+	return self.rounds[self.count]

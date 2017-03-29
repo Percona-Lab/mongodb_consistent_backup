@@ -9,6 +9,7 @@ from types import MethodType
 
 from ResolverThread import ResolverThread
 from mongodb_consistent_backup.Common import MongoUri, Timer, parse_method
+from mongodb_consistent_backup.Oplog import OplogState
 from mongodb_consistent_backup.Errors import Error, OperationError
 
 
@@ -23,11 +24,14 @@ pickle(MethodType, _reduce_method)
 
 
 class Resolver:
-    def __init__(self, config, tailed_oplogs_summary, backup_oplogs_summary):
+    def __init__(self, config, manager, tailed_oplogs_summary, backup_oplogs_summary):
         self.config        = config
+	self.manager       = manager
         self.tailed_oplogs = tailed_oplogs_summary
         self.backup_oplogs = backup_oplogs_summary
 
+        self.resolver_summary = {}
+        self.resolver_state   = {}
         self.timer = Timer()
 
         try:
@@ -69,6 +73,7 @@ class Resolver:
 
         for shard in self.backup_oplogs:
             backup_oplog = self.backup_oplogs[shard]
+            self.resolver_state[shard] = OplogState(self.manager, None, backup_oplog['file'])
             uri = MongoUri(backup_oplog['uri']).get()
             if shard in self.tailed_oplogs:
                 tailed_oplog = self.tailed_oplogs[shard]
@@ -82,6 +87,7 @@ class Resolver:
                 else:
                     try:
                         self._pool.apply_async(ResolverThread(
+			    self.resolver_state[shard],
                             uri,
                             tailed_oplog.copy(),
                             backup_oplog.copy(),
@@ -98,3 +104,7 @@ class Resolver:
 
         self.timer.stop()
         logging.info("Oplog resolving completed in %.2f seconds" % self.timer.duration())
+
+        for shard in self.resolver_state:
+	    self.resolver_summary[shard] = self.resolver_state[shard].get().copy()
+	return self.resolver_summary

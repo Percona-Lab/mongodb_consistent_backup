@@ -25,6 +25,8 @@ class Replset:
         self.secondary    = None
         self.mongo_config = None
 
+	self.replset_summary = {}
+
         # Get a DB connection
         try:
             if isinstance(self.db, DB):
@@ -38,10 +40,14 @@ class Replset:
     def close(self):
         pass
 
+    def summary(self):
+	return self.replset_summary
+
     def get_rs_status(self, force=False, quiet=False):
         try:
             if force or not self.rs_status:
                 self.rs_status = self.db.admin_command('replSetGetStatus', quiet)
+		self.replset_summary['status'] = self.rs_status
             return self.rs_status
         except Exception, e:
             logging.fatal("Error getting replica set status! Error: %s" % e)
@@ -55,6 +61,7 @@ class Replset:
                     self.rs_config = output['config']
                 else:
                     self.rs_config = self.connection['local'].system.replset.find_one()
+		self.replset_summary['config'] = self.rs_config
             except pymongo.errors.OperationFailure, e:
                 raise OperationFailure("Error getting replica set config! Error: %s" % e)
         return self.rs_config
@@ -68,6 +75,7 @@ class Replset:
                 cmdline_opts = self.db.admin_command('getCmdLineOpts', quiet)
                 if 'parsed' in cmdline_opts:
                     self.mongo_config = cmdline_opts['parsed']
+	            self.replset_summary['mongo_config'] = self.mongo_config
             return self.mongo_config
         except pymongo.errors.OperationFailure, e:
             raise OperationFailure("Error getting mongo config! Error: %s" % e)
@@ -106,6 +114,7 @@ class Replset:
                          'uri': member_uri,
                          'optime': optime_ts
                      }
+	             self.replset_summary['secondary'] = { "member": member, "uri": member_uri.str() }
              if self.primary is None:
                  logging.error("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
                  raise OperationError("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
@@ -114,6 +123,7 @@ class Replset:
     def find_secondary(self, force=False, quiet=False):
         rs_status = self.get_rs_status(force, quiet)
         rs_config = self.get_rs_config(force, quiet)
+        db_config = self.get_mongo_config(force, quiet)
         rs_name   = rs_status['set']
         quorum    = ceil(len(rs_status['members']) / 2.0)
 
@@ -171,6 +181,7 @@ class Replset:
                 log_data['optime'] = optime_ts
                 log_data['score']  = int(score)
                 logging.info("%s: %s" % (log_msg, str(log_data)))
+	        self.replset_summary['secondary'] = { "member": member, "uri": member_uri.str(), "data": log_data }
         if self.secondary is None or (self.secondary['count'] + 1) < quorum:
             secondary_count = self.secondary['count'] + 1 if self.secondary else 0
             logging.error("Not enough secondaries in replset %s to take backup! Num replset members: %i, required quorum: %i" % (

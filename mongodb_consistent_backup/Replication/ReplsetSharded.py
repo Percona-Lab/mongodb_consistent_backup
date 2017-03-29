@@ -28,6 +28,12 @@ class ReplsetSharded:
         else:
             raise Error("'db' field is not an instance of class: 'DB'!")
 
+    def summary(self):
+	summary = {}
+        for rs_name in self.get_replsets():
+            summary[rs_name] = self.replsets[rs_name].summary()
+	return summary
+
     def get_replset_connection(self, uri, force=False):
         if force or not uri.replset in self.replset_conns:
             self.replset_conns[uri.replset] = DB(uri, self.config, True, 'secondaryPreferred')

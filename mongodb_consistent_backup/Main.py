@@ -14,7 +14,7 @@ from Notify import Notify
 from Oplog import Tailer, Resolver
 from Replication import Replset, ReplsetSharded
 from Sharding import Sharding
-from State import State
+from State import StateRoot, StateBackup, StateBackupReplset, StateDoneStamp
 from Upload import Upload
 
 
@@ -48,9 +48,10 @@ class MongodbConsistentBackup(object):
         self.setup_logger()
         self.setup_signal_handlers()
         self.get_lock()
+        self.init()
         self.set_backup_dirs()
-        self.setup_state()
         self.get_db_conn()
+        self.setup_state()
 
     def setup_config(self):
         try:
@@ -81,8 +82,10 @@ class MongodbConsistentBackup(object):
         self.backup_directory = os.path.join(self.config.backup.location, self.backup_root_subdirectory)
 
     def setup_state(self):
-        self.state = State(self.manager, self.backup_root_directory)
-        self.state.new_backup(self.backup_time, self.config)
+        self.root_state   = StateRoot(self.backup_root_directory, self.config)
+	self.backup_state = StateBackup(self.backup_directory, self.config, self.backup_time, self.uri)
+        self.root_state.write()
+	self.backup_state.write()
 
     def get_db_conn(self):
         self.uri = MongoUri(self.config.host, self.config.port)
@@ -106,6 +109,10 @@ class MongodbConsistentBackup(object):
     def release_lock(self):
         if self.lock:
             self.lock.release()
+
+    def init(self):
+        logging.info("Starting %s version %s (git commit: %s)" % (self.program_name, self.config.version, self.config.git_commit))
+        logging.info("Loaded config: %s" % self.config)
 
     # TODO Rename class to be more exact as this assumes something went wrong
     # noinspection PyUnusedLocal
@@ -168,9 +175,6 @@ class MongodbConsistentBackup(object):
             self.db.close()
         self.log(backup_complete_message,INFO)
         """
-        logging.info("Starting %s version %s (git commit: %s)" % (self.program_name, self.config.version, self.config.git_commit))
-        logging.info("Loaded config: %s" % self.config)
-
         self.timer.start()
 
         # Setup the archiver
@@ -226,6 +230,10 @@ class MongodbConsistentBackup(object):
                 self.backup.backup()
             except Exception, e:
                 self.exception("Problem performing replset mongodump! Error: %s" % e, e)
+
+            # close master db connection:
+            if self.db:
+                self.db.close()
 
             # use 1 archive thread for single replset
             self.archive.threads(1)
@@ -295,12 +303,14 @@ class MongodbConsistentBackup(object):
             # run the backup(s)
             try:
                 self.backup_summary = self.backup.backup()
+		self.backup_state.backup_oplog_summary(self.backup_summary)
             except Exception, e:
                 self.exception("Problem performing backup! Error: %s" % e, e)
 
             # stop the oplog tailer(s)
             if self.oplogtailer:
                 self.oplog_summary = self.oplogtailer.stop()
+		self.backup_state.tailer_summary(self.oplog_summary)
                 self.oplogtailer.close()
 
             # set balancer back to original value
@@ -312,19 +322,25 @@ class MongodbConsistentBackup(object):
 
             # close replset_sharded:
             try:
+		rs_sharded_summary = self.replset_sharded.summary()
+		for shard in rs_sharded_summary:
+                    state = StateBackupReplset(self.backup_directory, self.config, self.backup_time, shard)
+                    state.load_state(rs_sharded_summary[shard]) 
+		    state.write()
                 self.replset_sharded.close()
             except Exception, e:
                 self.exception("Problem closing replsets! Error: %s" % e, e)
 
+            # close master db connection:
+            if self.db:
+                self.db.close()
+
             # resolve/merge tailed oplog into mongodump oplog.bson to a consistent point for all shards
             if self.backup.method == "mongodump" and self.oplogtailer:
-                self.oplog_resolver = Resolver(self.config, self.oplog_summary, self.backup_summary)
+                self.oplog_resolver = Resolver(self.config, self.manager, self.oplog_summary, self.backup_summary)
                 self.oplog_resolver.compression(self.oplogtailer.compression())
-                self.oplog_resolver.run()
-
-        # close master db connection:
-        if self.db:
-            self.db.close()
+                resolver_summary = self.oplog_resolver.run()
+		self.backup_state.resolver_summary(resolver_summary)
 
         # archive backup directories
         try:
@@ -339,6 +355,7 @@ class MongodbConsistentBackup(object):
             self.exception("Problem performing upload of backup! Error: %s" % e, e)
 
         self.timer.stop()
+	self.backup_state.timer_summary(self.timer.dump())
 
         # send notifications of backup state
         try:
@@ -350,5 +367,6 @@ class MongodbConsistentBackup(object):
         except Exception, e:
             self.exception("Problem running Notifier! Error: %s" % e, e)
 
+	StateDoneStamp(self.backup_directory, self.config).write()
         logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration()))
         self.release_lock()
