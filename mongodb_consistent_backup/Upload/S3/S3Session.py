@@ -3,6 +3,7 @@ import logging
 import boto
 import boto.s3
 
+from mongodb_consistent_backup.Errors import OperationError
 
 class S3Session:
     def __init__(self, access_key, secret_key, s3_host='s3.amazonaws.com', secure=True, num_retries=5, socket_timeout=15):
@@ -41,7 +42,7 @@ class S3Session:
                 logging.debug("Successfully connected to AWS S3 with Access Key: %s" % self.access_key)
             except Exception, e:
                 logging.error("Cannot connect to AWS S3 with Access Key: %s!" % self.access_key)
-                raise e
+                raise OperationError(e)
         return self._conn
 
     def get_bucket(self, bucket_name):
@@ -50,4 +51,4 @@ class S3Session:
             return self._conn.get_bucket(bucket_name)
         except Exception, e:
             logging.error("Cannot connect to AWS S3 Bucket: %s!" % bucket_name)
-            raise e
+            raise OperationError(e)

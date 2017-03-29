@@ -9,6 +9,8 @@ from types import MethodType
 from S3Session import S3Session
 from S3UploadThread import S3UploadThread
 
+from mongodb_consistent_backup.Errors import OperationError
+
 
 # Allows pooled .apply_async()s to work on Class-methods:
 def _reduce_method(m):
@@ -43,7 +45,7 @@ class S3:
             self.s3_conn = S3Session(self.access_key, self.secret_key, self.s3_host)
             self.bucket  = self.s3_conn.get_bucket(self.bucket_name)
         except Exception, e:
-            raise e
+            raise OperationError(e)
 
     def run(self):
         if not os.path.isdir(self.source_dir):
@@ -104,7 +106,7 @@ class S3:
                     else:
                         self._multipart.cancel_upload()
                         logging.error("Failed to upload all multiparts for key: %s%s! Upload cancelled" % (self.bucket_name, key_name))
-                        raise Exception, "Failed to upload all multiparts for key: %s%s! Upload cancelled" % (self.bucket_name, key_name), None
+                        raise OperationError("Failed to upload all multiparts for key: %s%s! Upload cancelled" % (self.bucket_name, key_name))
 
                 if self.remove_uploaded:
                     logging.info("Removing backup source dir after successful AWS S3 upload of all backups")
@@ -113,7 +115,7 @@ class S3:
                 logging.error("Uploading to AWS S3 failed! Error: %s" % e)
                 if self._multipart:
                     self._multipart.cancel_upload()
-                raise e
+                raise OperationError(e)
 
     def close(self):
         if self._pool:

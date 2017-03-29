@@ -1,6 +1,8 @@
 import logging
 
 from mongodb_consistent_backup.Common import config_to_string, parse_method
+from mongodb_consistent_backup.Errors import Error, OperationError
+from mongodb_consistent_backup.Notify.Nsca import Nsca
 
 
 class Notify:
@@ -22,9 +24,7 @@ class Notify:
             try:
                 self._notifier = globals()[self.method.capitalize()](self.config)
             except LookupError, e:
-                raise Exception, 'No notify method: %s' % self.method, None
-            except Exception, e:
-                raise e
+                raise OperationError('No notify method: %s' % self.method)
 
     def notify(self, message, success=False):
         if self._notifier:

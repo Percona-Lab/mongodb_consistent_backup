@@ -1,10 +1,10 @@
-import os
-import sys
 import logging
+import os
+import signal
+import sys
 
 from datetime import datetime
-from multiprocessing import current_process
-from signal import signal, SIGINT, SIGTERM
+from multiprocessing import current_process, Manager
 
 from Archive import Archive
 from Backup import Backup
@@ -42,6 +42,7 @@ class MongodbConsistentBackup(object):
         self.replsets                 = {}
         self.oplog_summary            = {}
         self.backup_summary           = {}
+        self.manager                  = Manager()
 
         self.setup_config()
         self.setup_logger()
@@ -67,8 +68,8 @@ class MongodbConsistentBackup(object):
 
     def setup_signal_handlers(self):
         try:
-            signal(SIGINT, self.cleanup_and_exit)
-            signal(SIGTERM, self.cleanup_and_exit)
+            signal.signal(signal.SIGINT, self.cleanup_and_exit)
+            signal.signal(signal.SIGTERM, self.cleanup_and_exit)
         except Exception, e:
             logging.fatal("Cannot setup signal handlers, error: %s" % e)
             sys.exit(1)
@@ -80,20 +81,17 @@ class MongodbConsistentBackup(object):
         self.backup_directory = os.path.join(self.config.backup.location, self.backup_root_subdirectory)
 
     def setup_state(self):
-        self.state = State(self.backup_root_directory)
+        self.state = State(self.manager, self.backup_root_directory)
         self.state.new_backup(self.backup_time, self.config)
 
     def get_db_conn(self):
-        try:
-            self.uri = MongoUri(self.config.host, self.config.port).get()
-            self.db  = DB(self.uri, self.config, False, 'secondaryPreferred')
-            self.is_sharded = self.db.is_mongos()
-            if not self.is_sharded:
-                self.is_sharded = self.db.is_configsvr()
-            if not self.is_sharded and not self.db.is_replset():
-                raise OperationError("Host %s is not part of a replset and is not a sharding config/mongos server!" % self.uri)
-        except Exception, e:
-            raise Error(e)
+        self.uri = MongoUri(self.config.host, self.config.port)
+        self.db  = DB(self.uri, self.config, True, 'secondaryPreferred')
+        self.is_sharded = self.db.is_mongos()
+        if not self.is_sharded:
+            self.is_sharded = self.db.is_configsvr()
+        if not self.is_sharded and not self.db.is_replset():
+            raise OperationError("Host %s is not part of a replset and is not a sharding config/mongos server!" % self.uri.get())
 
     def get_lock(self):
         # noinspection PyBroadException
@@ -112,30 +110,38 @@ class MongodbConsistentBackup(object):
     # TODO Rename class to be more exact as this assumes something went wrong
     # noinspection PyUnusedLocal
     def cleanup_and_exit(self, code, frame):
-        if current_process().name == "MainProcess":
-            logging.info("Starting cleanup procedure! Stopping running threads")
+        if not current_process().name == "MainProcess":
+            return
+        logging.info("Starting cleanup procedure! Stopping running threads")
 
-            # TODO Move submodules into self that populates as used?
-            submodules = ['replset', 'sharding', 'backup', 'oplogtailer', 'archive', 'upload']
-            for submodule_name in submodules:
+        # TODO Move submodules into self that populates as used?
+        submodules = ['replset', 'sharding', 'backup', 'oplogtailer', 'archive', 'upload']
+        for submodule_name in submodules:
+            try:
                 submodule = getattr(self, submodule_name)
                 if submodule:
                     submodule.close()
+            except:
+                continue
 
-            if self.notify:
+        if self.manager:
+            self.manager.shutdown()
+
+        if self.notify:
+            try:
                 self.notify.notify("%s: backup '%s' failed!" % (
                     self.config,
                     self.program_name
                 ), False)
+            except:
+                pass
 
-            if self.db:
-                self.db.close()
+        if self.db:
+            self.db.close()
 
-            self.release_lock()
-
-            logging.info("Cleanup complete. Exiting")
-
-            sys.exit(1)
+        logging.info("Cleanup complete, exiting")
+        self.release_lock()
+        sys.exit(1)
 
     def exception(self, error_message, error):
         if isinstance(error, OperationError):
@@ -193,7 +199,7 @@ class MongodbConsistentBackup(object):
             self.exception("Problem starting uploader! Error: %s" % e, e)
 
         if not self.is_sharded:
-            logging.info("Running backup in replset mode using seed node: %s" % self.uri)
+            logging.info("Running backup in replset mode using seed node(s): %s" % self.uri)
 
             # get shard secondary
             try:
@@ -209,6 +215,7 @@ class MongodbConsistentBackup(object):
             # run backup
             try:
                 self.backup = Backup(
+                    self.manager,
                     self.config,
                     self.backup_directory,
                     self.replsets
@@ -223,7 +230,7 @@ class MongodbConsistentBackup(object):
             # use 1 archive thread for single replset
             self.archive.threads(1)
         else:
-            logging.info("Running backup in sharding mode using seed node: %s" % self.uri)
+            logging.info("Running backup in sharding mode using seed node(s): %s" % self.uri)
 
             # connect to balancer and stop it
             try:
@@ -255,6 +262,7 @@ class MongodbConsistentBackup(object):
             # init the oplogtailers
             try:
                 self.oplogtailer = Tailer(
+                    self.manager,
                     self.config,
                     self.replsets,
                     self.backup_directory
@@ -265,6 +273,7 @@ class MongodbConsistentBackup(object):
             # init the backup
             try:
                 self.backup = Backup(
+                    self.manager,
                     self.config,
                     self.backup_directory,
                     self.replsets, 
@@ -292,18 +301,30 @@ class MongodbConsistentBackup(object):
             # stop the oplog tailer(s)
             if self.oplogtailer:
                 self.oplog_summary = self.oplogtailer.stop()
+                self.oplogtailer.close()
 
             # set balancer back to original value
             try:
                 self.sharding.restore_balancer_state()
+                self.sharding.close()
             except Exception, e:
                 self.exception("Problem restoring balancer lock! Error: %s" % e, e)
+
+            # close replset_sharded:
+            try:
+                self.replset_sharded.close()
+            except Exception, e:
+                self.exception("Problem closing replsets! Error: %s" % e, e)
 
             # resolve/merge tailed oplog into mongodump oplog.bson to a consistent point for all shards
             if self.backup.method == "mongodump" and self.oplogtailer:
                 self.oplog_resolver = Resolver(self.config, self.oplog_summary, self.backup_summary)
                 self.oplog_resolver.compression(self.oplogtailer.compression())
                 self.oplog_resolver.run()
+
+        # close master db connection:
+        if self.db:
+            self.db.close()
 
         # archive backup directories
         try:
@@ -329,9 +350,5 @@ class MongodbConsistentBackup(object):
         except Exception, e:
             self.exception("Problem running Notifier! Error: %s" % e, e)
 
-        if self.db:
-            self.db.close()
-
-        self.release_lock()
-
         logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration()))
+        self.release_lock()

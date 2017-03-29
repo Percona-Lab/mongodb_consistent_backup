@@ -1,5 +1,6 @@
 import os
 import logging
+import sys
 
 from signal import signal, SIGINT, SIGTERM
 
@@ -40,16 +41,12 @@ class TarThread:
                         log_msg   = "Archiving directory: %s" % self.backup_dir
                         cmd_flags = ["-C", backup_base_dir, "-czf", self.output_file, "--remove-files", backup_base_name]
 
-                    try:
-                        logging.info(log_msg)
-                        self._command = LocalCommand(self.binary, cmd_flags, self.verbose)
-                        self._command.run()
-                    except Exception, e:
-                        raise e
+                    logging.info(log_msg)
+                    self._command = LocalCommand(self.binary, cmd_flags, self.verbose)
+                    self._command.run()
                 except Exception, e:
                     logging.fatal("Failed archiving file: %s! Error: %s" % (self.output_file, e))
-                    raise e
+		    sys.exit(1)
             elif os.path.isfile(self.output_file):
                 logging.fatal("Output file: %s already exists!" % self.output_file)
-                raise Exception, "Output file %s already exists!" % self.output_file, None
-
+		sys.exit(1)

@@ -35,7 +35,7 @@ class ReplsetSharded:
 
     def get_replsets(self, force=False):
         for shard in self.sharding.shards():
-            shard_uri = MongoUri(shard['host']).get()
+            shard_uri = MongoUri(shard['host'])
             if force or not shard_uri.replset in self.replsets:
                 rs_db = self.get_replset_connection(shard_uri)
                 self.replsets[shard_uri.replset] = Replset(self.config, rs_db)

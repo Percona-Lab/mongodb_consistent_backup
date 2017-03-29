@@ -1,7 +1,8 @@
 import logging
 
-from S3 import S3
+from mongodb_consistent_backup.Upload.S3 import S3
 from mongodb_consistent_backup.Common import Timer, config_to_string, parse_method
+from mongodb_consistent_backup.Errors import Error, OperationError
 
 
 class Upload:
@@ -28,9 +29,9 @@ class Upload:
                     self.backup_dir
                 )
             except LookupError, e:
-                raise Exception, 'No upload method: %s' % self.method, None
+                raise OperationError('No upload method: %s' % self.method)
             except Exception, e:
-                raise Exception, "Problem settings up %s Uploader Error: %s" % (self.method, e), None
+                raise Error("Problem settings up %s Uploader Error: %s" % (self.method, e))
 
     def upload(self):
         if self._uploader:

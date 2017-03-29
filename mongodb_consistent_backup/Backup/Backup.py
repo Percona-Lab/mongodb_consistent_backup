@@ -1,12 +1,13 @@
 import logging
 
-from Mongodump import Mongodump
+from mongodb_consistent_backup.Backup.Mongodump import Mongodump
 from mongodb_consistent_backup.Common import Timer, config_to_string, parse_method
 from mongodb_consistent_backup.Errors import Error, OperationError
 
 
 class Backup:
-    def __init__(self, config, backup_dir, replsets, sharding=None):
+    def __init__(self, manager, config, backup_dir, replsets, sharding=None):
+	self.manager    = manager
         self.config     = config
         self.backup_dir = backup_dir
         self.replsets   = replsets
@@ -15,6 +16,7 @@ class Backup:
         self.method  = None
         self._method = None
         self.timer   = Timer()
+
         self.init()
 
     def init(self):
@@ -24,6 +26,7 @@ class Backup:
         self.method = parse_method(backup_method)
         try:
             self._method = globals()[self.method.capitalize()](
+                self.manager,
                 self.config,
                 self.backup_dir,
                 self.replsets,

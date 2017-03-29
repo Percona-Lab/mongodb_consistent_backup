@@ -3,7 +3,7 @@ import logging
 from time import sleep
 
 from mongodb_consistent_backup.Common import DB, MongoUri, Timer, validate_hostname
-from mongodb_consistent_backup.Errors import DBOperationError, OperationError
+from mongodb_consistent_backup.Errors import DBOperationError, Error, OperationError
 from mongodb_consistent_backup.Replication import Replset
 
 
@@ -17,6 +17,7 @@ class Sharding:
         self.config_server         = None
         self.config_db             = None
         self._balancer_state_start = None
+        self.restored              = False
 
         # Get a DB connection
         try:
@@ -25,7 +26,7 @@ class Sharding:
                 if not self.db.is_mongos() and not self.db.is_configsvr():
                     raise DBOperationError('MongoDB connection is not to a mongos or configsvr!')
             else:
-                raise Exception, "'db' field is not an instance of class: 'DB'!", None
+                raise Error("'db' field is not an instance of class: 'DB'!")
         except Exception, e:
             logging.fatal("Could not get DB connection! Error: %s" % e)
             raise DBOperationError(e)
@@ -90,10 +91,11 @@ class Sharding:
             raise DBOperationError(e)
 
     def restore_balancer_state(self):
-        if self._balancer_state_start is not None:
+        if self._balancer_state_start is not None and not self.restored:
             try:
                 logging.info("Restoring balancer state to: %s" % str(self._balancer_state_start))
                 self.set_balancer(self._balancer_state_start)
+                self.restored = True
             except Exception, e:
                 logging.fatal("Failed to set balancer state! Error: %s" % e)
                 raise DBOperationError(e)
@@ -113,8 +115,8 @@ class Sharding:
                 stop_timer.stop()
                 logging.info("Balancer stopped after %.2f seconds" % stop_timer.duration())
                 return
-	logging.fatal("Could not stop balancer %s: %s!" % (self.db.uri, e))
-	raise DBOperationError("Could not stop balancer %s: %s" % (self.db.uri, e))
+        logging.fatal("Could not stop balancer %s: %s!" % (self.db.uri, e))
+        raise DBOperationError("Could not stop balancer %s: %s" % (self.db.uri, e))
 
     def get_configdb_hosts(self):
         try:
@@ -126,7 +128,7 @@ class Sharding:
                 config_string = cmdlineopts.get('parsed').get('sharding').get('configDB')
 
             if config_string:
-                return MongoUri(config_string, 27019).get()
+                return MongoUri(config_string, 27019)
             elif self.db.is_configsvr():
                 return self.db.uri
             else:
@@ -140,17 +142,17 @@ class Sharding:
             configdb_uri = self.get_configdb_hosts()
             try:
                 logging.info("Found sharding config server: %s" % configdb_uri)
-                if self.db.uri.str() == configdb_uri.str():
-		    print "already connected"
-		    self.config_db = self.db
-		else:
-                    self.config_db = DB(configdb_uri, self.config, False, 'secondaryPreferred')
+                if self.db.uri.hosts() == configdb_uri.hosts():
+                    self.config_db = self.db
+                    logging.debug("Re-using seed connection to config server(s)")
+                else:
+                    self.config_db = DB(configdb_uri, self.config, True, 'secondaryPreferred')
                 if self.config_db.is_replset():
                     self.config_server = Replset(self.config, self.config_db) 
-		else:
- 		    self.config_server = { 'host': "%s:%i" % (configdb_uri.host, configdb_uri.port) }
+                else:
+                    self.config_server = { 'host': configdb_uri.hosts() }
+                    self.config_db.close()
             except Exception, e:
                 logging.fatal("Unable to locate config servers using %s: %s!" % (self.db.uri, e))
-                raise e
-                #raise OperationError(e)
+                raise OperationError(e)
         return self.config_server

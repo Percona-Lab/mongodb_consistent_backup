@@ -33,7 +33,7 @@ class Replset:
                 raise Error("'db' field is not an instance of class: 'DB'!")
         except Exception, e:
             logging.fatal("Could not get DB connection! Error: %s" % e)
-            raise e
+            raise OperationError(e)
 
     def close(self):
         pass
@@ -45,7 +45,7 @@ class Replset:
             return self.rs_status
         except Exception, e:
             logging.fatal("Error getting replica set status! Error: %s" % e)
-            raise e
+            raise OperationError(e)
 
     def get_rs_config(self, force=False, quiet=False):
         if force or not self.rs_config:
@@ -93,7 +93,7 @@ class Replset:
              rs_name   = rs_status['set']
              for member in rs_status['members']:
                  if member['stateStr'] == 'PRIMARY' and member['health'] > 0:
-                     member_uri = MongoUri(member['name'], 27017, rs_name).get()
+                     member_uri = MongoUri(member['name'], 27017, rs_name)
                      optime_ts = member['optime']
                      if isinstance(member['optime'], dict) and 'ts' in member['optime']:
                          optime_ts = member['optime']['ts']
@@ -108,7 +108,7 @@ class Replset:
                      }
              if self.primary is None:
                  logging.error("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
-                 raise Exception, "Unable to locate a PRIMARY member for replset %s, giving up" % rs_name, None
+                 raise OperationError("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
         return self.primary
 
     def find_secondary(self, force=False, quiet=False):
@@ -121,8 +121,12 @@ class Replset:
             return self.secondary
 
         for member in rs_status['members']:
-            if member['stateStr'] == 'SECONDARY' and member['health'] > 0:
-                member_uri  = MongoUri(member['name'], 27017, rs_name).get()
+            member_uri = MongoUri(member['name'], 27017, rs_name)
+            if member['state'] == 7:
+                logging.info("Found ARBITER %s, skipping" % member_uri)
+            elif member['state'] > 2:
+                logging.warning("Found down or unhealthy SECONDARY %s with state: %s" % (member_uri, member['stateStr']))
+            elif member['state'] == 2 and member['health'] > 0:
                 score       = self.max_lag_secs * 10
                 score_scale = 100 / score
                 log_data    = {}

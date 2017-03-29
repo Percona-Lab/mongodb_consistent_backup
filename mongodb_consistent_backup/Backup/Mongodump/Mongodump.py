@@ -1,9 +1,11 @@
 import os, sys
 import logging
+import signal
 
 from fabric.api import hide, settings, local
 from math import floor
-from multiprocessing import Manager, cpu_count
+from multiprocessing import cpu_count
+from signal import signal, SIGINT, SIG_IGN
 from time import sleep
 
 from mongodb_consistent_backup.Common import MongoUri
@@ -14,7 +16,8 @@ from MongodumpThread import MongodumpThread
 
 
 class Mongodump:
-    def __init__(self, config, base_dir, replsets, sharding=None):
+    def __init__(self, manager, config, base_dir, replsets, sharding=None):
+        self.manager  = manager
         self.config   = config
         self.base_dir = base_dir
         self.replsets = replsets
@@ -25,7 +28,8 @@ class Mongodump:
         self.authdb   = self.config.authdb
         self.verbose  = self.config.verbose
 
-        self.manager              = Manager()
+	signal(SIGINT, SIG_IGN)
+
         self.threads_per_dump_max = 16
         self.config_replset       = False
         self.cpu_count            = cpu_count()
@@ -137,7 +141,7 @@ class Mongodump:
             config_server = self.sharding.get_config_server()
             if config_server and isinstance(config_server, dict):
                 logging.info("Using non-replset backup method for config server mongodump")
-                mongo_uri = MongoUri(config_server['host'], 27019, 'configsvr').get()
+                mongo_uri = MongoUri(config_server['host'], 27019, 'configsvr')
                 self.states['configsvr'] = OplogState(self.manager, mongo_uri)
                 self.threads = [MongodumpThread(
                     self.states['configsvr'],

@@ -4,11 +4,10 @@ import sys
 
 from multiprocessing import Process
 from select import select
-from signal import signal, SIGINT, SIGTERM
+from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from subprocess import Popen, PIPE
 
 from mongodb_consistent_backup.Common import Timer
-from mongodb_consistent_backup.Errors import Error
 from mongodb_consistent_backup.Oplog import Oplog
 
 
@@ -35,7 +34,7 @@ class MongodumpThread(Process):
         self.dump_dir   = "%s/dump" % self.backup_dir
         self.oplog_file = "%s/oplog.bson" % self.dump_dir
 
-        signal(SIGINT, self.close)
+        signal(SIGINT, SIG_IGN)
         signal(SIGTERM, self.close)
 
     def close(self, exit_code=None, frame=None):
@@ -70,13 +69,14 @@ class MongodumpThread(Process):
                 if self._process.poll() != None:
                     break
         except Exception, e:
-            raise Error(e)
+            logging.exception("Error reading mongodump output: %s" % e)
         finally:
             self._process.communicate()
 
     def mongodump_cmd(self):
+	mongodump_uri   = self.uri.get()
         mongodump_cmd   = [self.binary]
-        mongodump_flags = ["--host", self.uri.host, "--port", str(self.uri.port), "--oplog", "--out", "%s/dump" % self.backup_dir]
+        mongodump_flags = ["--host", mongodump_uri.host, "--port", str(mongodump_uri.port), "--oplog", "--out", "%s/dump" % self.backup_dir]
         if self.threads > 0:
             mongodump_flags.extend(["--numParallelCollections="+str(self.threads)])
         if self.dump_gzip:
@@ -106,8 +106,7 @@ class MongodumpThread(Process):
             self.wait()
             self.exit_code = self._process.returncode
         except Exception, e:
-            logging.error("Error performing mongodump: %s" % e)
-            raise e
+            logging.exception("Error performing mongodump: %s" % e)
 
         oplog = Oplog(self.oplog_file, self.dump_gzip)
         oplog.load()

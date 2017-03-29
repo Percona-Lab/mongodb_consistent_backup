@@ -6,10 +6,11 @@ import sys
 from multiprocessing import Process
 from pymongo import CursorType
 from pymongo.errors import AutoReconnect
-from signal import signal, SIGINT, SIGTERM
+from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from time import sleep, time
 
 from mongodb_consistent_backup.Common import DB
+from mongodb_consistent_backup.Errors import OperationError
 from mongodb_consistent_backup.Oplog import Oplog
 
 
@@ -18,7 +19,7 @@ class TailThread(Process):
         Process.__init__(self)
         self.do_stop     = do_stop
         self.uri         = uri
-	self.config      = config
+        self.config      = config
         self.oplog_file  = oplog_file
         self.state       = state
         self.dump_gzip   = dump_gzip
@@ -32,7 +33,7 @@ class TailThread(Process):
         self._oplog    = None
         self.exit_code = 0
 
-        signal(SIGINT, self.close)
+        signal(SIGINT, SIG_IGN)
         signal(SIGTERM, self.close)
 
     def oplog(self):
@@ -44,10 +45,9 @@ class TailThread(Process):
         del exit_code
         del frame
         self.do_stop.set()
-        while not self.stopped:
-            sleep(1)
         if self.conn:
             self.conn.close()
+        sys.exit(1)
 
     def status(self):
         if self.do_stop.is_set():
@@ -91,9 +91,14 @@ class TailThread(Process):
                         if self.do_stop.is_set():
                             break
                         sleep(1)
+		    except Exception, e:
+                        self.do_stop.set()
+			raise e
             except Exception, e:
                 logging.fatal("Tailer %s error: %s" % (self.uri, e))
                 self.exit_code = 1
+		self.do_stop.set()
+		break
             finally:
                 logging.debug("Stopping oplog cursor on %s" % self.uri)
                 cursor.close()
@@ -101,12 +106,15 @@ class TailThread(Process):
         oplog.close()
         self.stopped = True
 
-        if self.exit_code == 0:
-            log_msg_extra = "%i oplog changes" % self.state.get('count')
-            last_ts = self.state.get('last_ts')
-            if last_ts:
-                log_msg_extra = "%s, end ts: %s" % (log_msg_extra, last_ts)
-            logging.info("Done tailing oplog on %s, %s" % (self.uri, log_msg_extra))
-
-        self.state.set('running', False)
+        try:
+            if self.exit_code == 0:
+                log_msg_extra = "%i oplog changes" % self.state.get('count')
+                last_ts = self.state.get('last_ts')
+                if last_ts:
+                    log_msg_extra = "%s, end ts: %s" % (log_msg_extra, last_ts)
+                logging.info("Done tailing oplog on %s, %s" % (self.uri, log_msg_extra))
+            self.state.set('running', False)
+        except OperationError:
+            pass
+ 
         sys.exit(self.exit_code)

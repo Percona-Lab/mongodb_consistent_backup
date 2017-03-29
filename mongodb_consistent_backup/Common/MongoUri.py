@@ -7,15 +7,10 @@ class MongoAddr:
         self.port    = port
         self.replset = replset
 
-    def get(self):
-        return self.host, self.port, self.replset
-
     def str(self):
         if self.host and self.port:
             string = "%s:%i" % (self.host, self.port)
-            if self.replset:
-                string = "%s/%s" % (self.replset, string)
-            return string
+        return string
 
     def __str__(self):
         return self.str()
@@ -30,6 +25,22 @@ class MongoUri:
         self.addr_idx = 0
 
         self.parse()
+
+    def hosts(self):
+        if len(self.addrs) > 0:
+            hosts = []
+            for addr in self.addrs:
+                hosts.append(str(addr))
+            return ",".join(hosts)
+
+    def str(self):
+        string = self.hosts()
+        if self.replset:
+            string = "%s/%s" % (self.replset, string)
+        return string
+
+    def __str__(self):
+        return self.str()
 
     def parse(self):
         if "/" in self.url:

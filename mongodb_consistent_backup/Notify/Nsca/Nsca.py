@@ -3,8 +3,10 @@ import sys
 
 from pynsca import NSCANotifier
 
+from mongodb_consistent_backup.Errors import Error, OperationError
 
-class NSCA:
+
+class Nsca:
     def __init__(self, config):
         self.config     = config
         self.server     = self.config.notify.nsca.server
@@ -14,6 +16,7 @@ class NSCA:
         self.success    = 0
         self.warning    = 1
         self.critical   = 2
+	self.failed     = self.critical
         self.notifier   = None
 
         split = self.server.split(":")
@@ -31,7 +34,7 @@ class NSCA:
         req_attrs = ['server', 'check_name', 'check_host']
         for attr in req_attrs:
             if not getattr(self, attr):
-                raise Exception, 'NSCA module requires attribute: %s!' % attr, None
+                raise OperationError('NSCA module requires attribute: %s!' % attr)
 
         try:
             self.notifier = NSCANotifier(
@@ -42,7 +45,7 @@ class NSCA:
             )
         except Exception, e:
             logging.error('Error initiating NSCANotifier! Error: %s' % e)
-            raise e
+            raise OperationError(e)
 
     def notify(self, ret_code, output):
         if self.notifier:
@@ -55,7 +58,7 @@ class NSCA:
             # noinspection PyBroadException
             try:
                 self.notifier.svc_result(self.check_host, self.check_name, ret_code, str(output))
-            except Exception:
+                logging.debug('Sent %sNSCA report to host %s' % (self.mode_type, self.server))
+            except Exception, e:
                 logging.error('Failed to send %sNSCA report to host %s: %s' % (self.mode_type, self.server, sys.exc_info()[1]))
-
-            logging.debug('Sent %sNSCA report to host %s' % (self.mode_type, self.server))
+                raise OperationError(e)

@@ -7,6 +7,7 @@ from types import MethodType
 
 from TarThread import TarThread
 from mongodb_consistent_backup.Common import parse_method
+from mongodb_consistent_backup.Errors import Error, OperationError
 
 
 # Allows pooled .apply_async()s to work on Class-methods:
@@ -53,7 +54,7 @@ class Tar:
             logging.info("Archiving backup directories with pool of %i thread(s)" % thread_count)
         except Exception, e:
             logging.fatal("Could not start pool! Error: %s" % e)
-            raise e
+            raise Error(e)
 
         if os.path.isdir(self.backup_base_dir):
             try:
@@ -68,7 +69,7 @@ class Tar:
             except Exception, e:
                 self._pool.terminate()
                 logging.fatal("Could not create tar archiving thread! Error: %s" % e)
-                raise e
+                raise Error(e)
             self._pool.close()
             self._pool.join()
 

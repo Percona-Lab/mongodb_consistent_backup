@@ -29,21 +29,20 @@ class DB:
             if self.do_replset:
                 self.replset = self.uri.replset
             logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s)" % 
-			 (self.uri, self.replset, self.read_pref))
+                         (self.uri, self.replset, self.read_pref))
             conn = MongoClient(
-                host=self.uri.host,
-                port=self.uri.port,
+                host=self.uri.hosts(),
                 replicaSet=self.replset,
                 readPreference=self.read_pref,
                 connectTimeoutMS=self.conn_timeout,
-		serverSelectionTimeoutMS=self.conn_timeout,
-		maxPoolSize=1,
-		w="majority"
+                serverSelectionTimeoutMS=self.conn_timeout,
+                maxPoolSize=1,
+                w="majority"
             )
             conn['admin'].command({"ping":1})
         except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
-            logging.fatal("Unable to connect to %s! Error: %s" % (self.uri, e))
-            raise DBConnectionError(e)
+            logging.error("Unable to connect to %s! Error: %s" % (self.uri, e))
+            raise OperationError(e)
         if conn is not None:
             self._conn = conn
         return self._conn
@@ -117,4 +116,5 @@ class DB:
 
     def close(self):
         if self._conn:
+            logging.debug("Closing connection to: %s" % self.uri)
             return self._conn.close()

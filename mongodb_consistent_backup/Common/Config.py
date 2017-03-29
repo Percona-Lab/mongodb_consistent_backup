@@ -35,8 +35,8 @@ class ConfigParser(BaseConfiguration):
         parser = super(ConfigParser, self).makeParser()
         parser.add_argument("-V", "--version", dest="version", help="Print mongodb_consistent_backup version info and exit", action=PrintVersions)
         parser.add_argument("-v", "--verbose", dest="verbose", help="Verbose output", default=False, action="store_true")
-        parser.add_argument("-H", "--host", dest="host", help="MongoDB hostname/IP (default: localhost)", default="localhost", type=str)
-        parser.add_argument("-P", "--port", dest="port", help="MongoDB port (default: 27017)", default=27017, type=int)
+	parser.add_argument("-H", "--host", dest="host", help="MongoDB Hostname, IP address or '<replset>/<host:port>,<host:port>,..' URI (default: localhost)", default="localhost", type=str)
+        parser.add_argument("-P", "--port", dest="port", help="MongoDB Port (default: 27017)", default=27017, type=int)
         parser.add_argument("-u", "--user", dest="user", help="MongoDB Authentication Username (for optional auth)", type=str)
         parser.add_argument("-p", "--password", dest="password", help="MongoDB Authentication Password (for optional auth)", type=str)
         parser.add_argument("-a", "--authdb", dest="authdb", help="MongoDB Auth Database (for optional auth - default: admin)", default='admin', type=str)
@@ -100,9 +100,9 @@ class Config(object):
             ret = {}
             for key in data:
                 value = self.to_dict(data[key])
-                if key == "password":
-                    value = "******"
                 if value and key is not ('merge'):
+                    if key == "password":
+                        value = "******"
                     ret[key] = value
             return ret
         elif isinstance(data, (str, int, bool)): # or isinstance(data, int) or isinstance(data, bool):

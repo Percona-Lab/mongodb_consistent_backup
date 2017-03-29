@@ -9,6 +9,7 @@ from types import MethodType
 
 from ResolverThread import ResolverThread
 from mongodb_consistent_backup.Common import MongoUri, Timer, parse_method
+from mongodb_consistent_backup.Errors import Error, OperationError
 
 
 # Allows pooled .apply_async()s to work on Class-methods:
@@ -33,7 +34,7 @@ class Resolver:
             self._pool = Pool(processes=self.threads())
         except Exception, e:
             logging.fatal("Could not start oplog resolver pool! Error: %s" % e)
-            raise e
+            raise Error(e)
 
     def compression(self, method=None):
         if method:
@@ -77,7 +78,7 @@ class Resolver:
                 elif backup_oplog['last_ts'] > tailed_oplog['last_ts']:
                     logging.fatal(
                         "Backup oplog is newer than the tailed oplog! This situation is unsupported. Please retry backup")
-                    raise Exception, "Backup oplog is newer than the tailed oplog!", None
+                    raise OperationError("Backup oplog is newer than the tailed oplog!")
                 else:
                     try:
                         self._pool.apply_async(ResolverThread(
@@ -89,7 +90,7 @@ class Resolver:
                         ).run)
                     except Exception, e:
                         logging.fatal("Resolve failed for %s! Error: %s" % (uri, e))
-                        raise e
+                        raise Error(e)
             else:
                 logging.info("No tailed oplog for host %s" % uri)
         self._pool.close()

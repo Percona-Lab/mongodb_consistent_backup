@@ -1,4 +1,4 @@
-from NSCA import NSCA
+from Nsca import Nsca
 
 
 def config(parser):

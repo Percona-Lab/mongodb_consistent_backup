@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 
 # Skip bson in requirements , pymongo provides
 # noinspection PyPackageRequirements
@@ -40,6 +41,6 @@ class ResolverThread:
             os.remove(self.tailed_oplog['file'])
         except Exception, e:
             logging.exception("Resolving of oplogs failed! Error: %s" % e)
-            raise e
+            sys.exit(1)
 
         logging.info("Applied %i oplog changes to %s oplog, end ts: %s" % (self.changes, self.uri, self.mongodump_oplog_h.last_ts()))

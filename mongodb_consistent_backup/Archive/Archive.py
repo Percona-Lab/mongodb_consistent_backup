@@ -1,6 +1,6 @@
 import logging
 
-from Tar import Tar
+from mongodb_consistent_backup.Archive.Tar import Tar
 from mongodb_consistent_backup.Common import Timer, config_to_string, parse_method
 from mongodb_consistent_backup.Errors import Error, OperationError
 
