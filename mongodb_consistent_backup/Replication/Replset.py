@@ -143,6 +143,7 @@ class Replset:
 
                 priority = 0
                 hidden_weight = 0.20
+                pri0_weight   = 0.10
                 for member_config in rs_config['members']:
                     if member_config['host'] == member['name']:
                         if 'hidden' in member_config and member_config['hidden']:
@@ -151,8 +152,10 @@ class Replset:
                         if 'priority' in member_config:
                             priority = int(member_config['priority'])
                             log_data['priority'] = priority
-                            if member_config['priority'] > 0:
-                                score -= priority
+                            if member_config['priority'] > 1:
+                                score -= priority - 1
+                            elif member_config['priority'] == 0:
+                                score += (score * pri0_weight)
                         break
 
                 if priority < self.min_priority or priority > self.max_priority:
