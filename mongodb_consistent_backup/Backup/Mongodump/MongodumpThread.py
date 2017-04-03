@@ -7,17 +7,17 @@ from select import select
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from subprocess import Popen, PIPE
 
-from mongodb_consistent_backup.Common import Timer
 from mongodb_consistent_backup.Oplog import Oplog
 
 
 # noinspection PyStringFormat
 class MongodumpThread(Process):
-    def __init__(self, state, uri, user, password, authdb, base_dir, binary,
+    def __init__(self, state, uri, timer, user, password, authdb, base_dir, binary,
                  threads=0, dump_gzip=False, verbose=False):
         Process.__init__(self)
         self.state       = state
         self.uri         = uri
+        self.timer       = timer
         self.user        = user
         self.password    = password
         self.authdb      = authdb
@@ -27,12 +27,12 @@ class MongodumpThread(Process):
         self.dump_gzip   = dump_gzip
         self.verbose     = verbose
 
+        self.timer_name = "%s-%s" % (self.__class__.__name__, self.uri.replset)
         self.exit_code  = 1
-        self.timer      = Timer()
         self._command   = None
-        self.backup_dir = "%s/%s" % (self.base_dir, self.uri.replset)
-        self.dump_dir   = "%s/dump" % self.backup_dir
-        self.oplog_file = "%s/oplog.bson" % self.dump_dir
+        self.backup_dir = os.path.join(self.base_dir, self.uri.replset)
+        self.dump_dir   = os.path.join(self.backup_dir, "dump")
+        self.oplog_file = os.path.join(self.dump_dir, "oplog.bson")
 
         signal(SIGINT, SIG_IGN)
         signal(SIGTERM, self.close)
@@ -74,7 +74,7 @@ class MongodumpThread(Process):
             self._process.communicate()
 
     def mongodump_cmd(self):
-	mongodump_uri   = self.uri.get()
+        mongodump_uri   = self.uri.get()
         mongodump_cmd   = [self.binary]
         mongodump_flags = ["--host", mongodump_uri.host, "--port", str(mongodump_uri.port), "--oplog", "--out", "%s/dump" % self.backup_dir]
         if self.threads > 0:
@@ -92,7 +92,7 @@ class MongodumpThread(Process):
     def run(self):
         logging.info("Starting mongodump backup of %s" % self.uri)
 
-        self.timer.start()
+        self.timer.start(self.timer_name)
         self.state.set('running', True)
         self.state.set('file', self.oplog_file)
 
@@ -112,14 +112,15 @@ class MongodumpThread(Process):
         oplog.load()
 
         self.state.set('running', False)
+        self.state.set('completed', True)
         self.state.set('count', oplog.count())
         self.state.set('first_ts', oplog.first_ts())
         self.state.set('last_ts', oplog.last_ts())
-        self.timer.stop()
+        self.timer.stop(self.timer_name)
 
         log_msg_extra = "%i oplog changes" % oplog.count()
         if oplog.last_ts():
             log_msg_extra = "%s, end ts: %s" % (log_msg_extra, oplog.last_ts())
-        logging.info("Backup %s completed in %.2f seconds, %s" % (self.uri, self.timer.duration(), log_msg_extra))
+        logging.info("Backup %s completed in %.2f seconds, %s" % (self.uri, self.timer.duration(self.timer_name), log_msg_extra))
 
         sys.exit(self.exit_code)

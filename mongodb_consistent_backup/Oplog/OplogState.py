@@ -11,13 +11,14 @@ class OplogState:
 
         try: 
             self._state = manager.dict()
-	    if uri:
+            if uri:
                 self._state['uri'] = self.uri.str()
             self._state['file'] = self.oplog_file
             self._state['count'] = 0
             self._state['first_ts'] = None
             self._state['last_ts'] = None
             self._state['running'] = False
+            self._state['completed'] = False
         except Exception, e:
             raise OperationError(e)
 
@@ -37,7 +38,7 @@ class OplogState:
             raise OperationError(e)
 
     def set(self, key, value):
-	try:
+        try:
             self._state[key] = value
         except Exception, e:
             raise OperationError(e)

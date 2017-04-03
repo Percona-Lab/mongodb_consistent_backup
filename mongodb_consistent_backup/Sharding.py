@@ -2,18 +2,20 @@ import logging
 
 from time import sleep
 
-from mongodb_consistent_backup.Common import DB, MongoUri, Timer, validate_hostname
+from mongodb_consistent_backup.Common import DB, MongoUri, validate_hostname
 from mongodb_consistent_backup.Errors import DBOperationError, Error, OperationError
 from mongodb_consistent_backup.Replication import Replset
 
 
 class Sharding:
-    def __init__(self, config, db):
+    def __init__(self, config, timer, db):
         self.config             = config
+	self.timer              = timer
         self.db                 = db
         self.balancer_wait_secs = self.config.sharding.balancer.wait_secs
         self.balancer_sleep     = self.config.sharding.balancer.ping_secs
 
+        self.timer_name            = self.__class__.__name__
         self.config_server         = None
         self.config_db             = None
         self._balancer_state_start = None
@@ -103,8 +105,7 @@ class Sharding:
     def stop_balancer(self):
         logging.info("Stopping the balancer and waiting a max of %i sec" % self.balancer_wait_secs)
         wait_cnt = 0
-        stop_timer = Timer()
-        stop_timer.start()
+        self.timer.start(self.timer_name)
         self.set_balancer(False)
         while wait_cnt < self.balancer_wait_secs:
             if self.check_balancer_running():
@@ -112,8 +113,8 @@ class Sharding:
                 logging.info("Balancer is still running, sleeping for %i sec(s)" % self.balancer_sleep)
                 sleep(self.balancer_sleep)
             else:
-                stop_timer.stop()
-                logging.info("Balancer stopped after %.2f seconds" % stop_timer.duration())
+                self.timer.stop(self.timer_name)
+                logging.info("Balancer stopped after %.2f seconds" % self.timer.duration(self.timer_name))
                 return
         logging.fatal("Could not stop balancer %s: %s!" % (self.db.uri, e))
         raise DBOperationError("Could not stop balancer %s: %s" % (self.db.uri, e))

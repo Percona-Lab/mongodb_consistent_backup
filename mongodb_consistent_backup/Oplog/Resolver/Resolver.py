@@ -8,7 +8,7 @@ from multiprocessing import Pool, cpu_count
 from types import MethodType
 
 from ResolverThread import ResolverThread
-from mongodb_consistent_backup.Common import MongoUri, Timer, parse_method
+from mongodb_consistent_backup.Common import MongoUri, parse_method
 from mongodb_consistent_backup.Oplog import OplogState
 from mongodb_consistent_backup.Errors import Error, OperationError
 
@@ -24,21 +24,27 @@ pickle(MethodType, _reduce_method)
 
 
 class Resolver:
-    def __init__(self, config, manager, tailed_oplogs_summary, backup_oplogs_summary):
+    def __init__(self, manager, config, timer, tailed_oplogs_summary, backup_oplogs_summary):
+        self.manager       = manager
         self.config        = config
-	self.manager       = manager
+        self.timer         = timer
         self.tailed_oplogs = tailed_oplogs_summary
         self.backup_oplogs = backup_oplogs_summary
 
+        self.timer_name       = self.__class__.__name__
         self.resolver_summary = {}
         self.resolver_state   = {}
-        self.timer = Timer()
 
         try:
             self._pool = Pool(processes=self.threads())
         except Exception, e:
             logging.fatal("Could not start oplog resolver pool! Error: %s" % e)
             raise Error(e)
+
+    def close(self):
+       if self._pool:
+           self._pool.terminate()
+           self._pool.join()
 
     def compression(self, method=None):
         if method:
@@ -69,7 +75,7 @@ class Resolver:
 
     def run(self):
         logging.info("Resolving oplogs (options: threads=%s,compression=%s)" % (self.threads(), self.compression()))
-        self.timer.start()
+        self.timer.start(self.timer_name)
 
         for shard in self.backup_oplogs:
             backup_oplog = self.backup_oplogs[shard]
@@ -87,7 +93,7 @@ class Resolver:
                 else:
                     try:
                         self._pool.apply_async(ResolverThread(
-			    self.resolver_state[shard],
+                            self.resolver_state[shard],
                             uri,
                             tailed_oplog.copy(),
                             backup_oplog.copy(),
@@ -102,9 +108,9 @@ class Resolver:
         self._pool.close()
         self._pool.join()
 
-        self.timer.stop()
-        logging.info("Oplog resolving completed in %.2f seconds" % self.timer.duration())
+        self.timer.stop(self.timer_name)
+        logging.info("Oplog resolving completed in %.2f seconds" % self.timer.duration(self.timer_name))
 
         for shard in self.resolver_state:
-	    self.resolver_summary[shard] = self.resolver_state[shard].get().copy()
-	return self.resolver_summary
+            self.resolver_summary[shard] = self.resolver_state[shard].get()
+        return self.resolver_summary

@@ -16,9 +16,10 @@ from MongodumpThread import MongodumpThread
 
 
 class Mongodump:
-    def __init__(self, manager, config, base_dir, replsets, sharding=None):
+    def __init__(self, manager, config, timer, base_dir, replsets, sharding=None):
         self.manager  = manager
         self.config   = config
+        self.timer    = timer
         self.base_dir = base_dir
         self.replsets = replsets
         self.sharding = sharding
@@ -28,8 +29,10 @@ class Mongodump:
         self.authdb   = self.config.authdb
         self.verbose  = self.config.verbose
 
-	signal(SIGINT, SIG_IGN)
+        signal(SIGINT, SIG_IGN)
+        signal(SIGINT, self.close)
 
+        self.timer_name           = self.__class__.__name__
         self.threads_per_dump_max = 16
         self.config_replset       = False
         self.cpu_count            = cpu_count()
@@ -90,6 +93,7 @@ class Mongodump:
         # check if all threads completed
         if completed == start_threads:
             logging.info("All mongodump backups completed successfully")
+            self.timer.stop(self.timer_name)
         else:
             raise OperationError("Not all mongodump threads completed successfully!")
 
@@ -108,6 +112,8 @@ class Mongodump:
         return self._threads_per_dump
 
     def run(self):
+        self.timer.start(self.timer_name)
+
         # backup a secondary from each shard:
         for shard in self.replsets:
             secondary = self.replsets[shard].find_secondary()
@@ -116,6 +122,7 @@ class Mongodump:
             thread = MongodumpThread(
                 self.states[shard],
                 mongo_uri,
+                self.timer,
                 self.user,
                 self.password,
                 self.authdb,
@@ -131,7 +138,7 @@ class Mongodump:
             raise OperationError('No backup threads started!')
 
         logging.info(
-              "Starting backups using mongodump %s (options: gzip=%s, threads_per_dump=%i)" % (self.version, str(self.do_gzip), self.threads_per_dump()))
+            "Starting backups using mongodump %s (options: gzip=%s, threads_per_dump=%i)" % (self.version, str(self.do_gzip), self.threads_per_dump()))
         for thread in self.threads:
             thread.start()
         self.wait()
@@ -146,6 +153,7 @@ class Mongodump:
                 self.threads = [MongodumpThread(
                     self.states['configsvr'],
                     mongo_uri,
+                    self.timer,
                     self.user,
                     self.password,
                     self.authdb,
@@ -165,4 +173,5 @@ class Mongodump:
         if len(self.threads) > 0:
             for thread in self.threads:
                 thread.terminate()
+        self.timer.stop(self.timer_name)
         logging.info("Stopped all mongodump threads")

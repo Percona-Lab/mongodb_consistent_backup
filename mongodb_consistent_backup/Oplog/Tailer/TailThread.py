@@ -15,23 +15,25 @@ from mongodb_consistent_backup.Oplog import Oplog
 
 
 class TailThread(Process):
-    def __init__(self, do_stop, uri, config, oplog_file, state, dump_gzip=False, status_secs=15):
+    def __init__(self, do_stop, uri, config, timer, oplog_file, state, dump_gzip=False, status_secs=15):
         Process.__init__(self)
         self.do_stop     = do_stop
         self.uri         = uri
         self.config      = config
+        self.timer       = timer
         self.oplog_file  = oplog_file
         self.state       = state
         self.dump_gzip   = dump_gzip
         self.status_secs = status_secs
         self.status_last = time()
 
-        self.conn      = None
-        self.count     = 0
-        self.last_ts   = None
-        self.stopped   = False
-        self._oplog    = None
-        self.exit_code = 0
+        self.timer_name = "%s-%s" % (self.__class__.__name__, self.uri.replset)
+        self.conn       = None
+        self.count      = 0
+        self.last_ts    = None
+        self.stopped    = False
+        self._oplog     = None
+        self.exit_code  = 0
 
         signal(SIGINT, SIG_IGN)
         signal(SIGTERM, self.close)
@@ -60,6 +62,7 @@ class TailThread(Process):
 
     def run(self):
         logging.info("Tailing oplog on %s for changes" % self.uri)
+        self.timer.start(self.timer_name)
 
         self.conn = DB(self.uri, self.config, True, 'secondary').connection()
         db    = self.conn['local']
@@ -68,7 +71,7 @@ class TailThread(Process):
         self.state.set('running', True)
         while not self.do_stop.is_set():
             # http://api.mongodb.com/python/current/examples/tailable.html
-            query  = {'ts': {'$gt': tail_start_ts}}
+            query  = {'ts':{'$gt':tail_start_ts}}
             cursor = db.oplog.rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True)
             try:
                 while not self.do_stop.is_set():
@@ -91,20 +94,21 @@ class TailThread(Process):
                         if self.do_stop.is_set():
                             break
                         sleep(1)
-		    except Exception, e:
+                    except Exception, e:
                         self.do_stop.set()
-			raise e
+                        raise e
             except Exception, e:
                 logging.fatal("Tailer %s error: %s" % (self.uri, e))
                 self.exit_code = 1
-		self.do_stop.set()
-		break
+                self.do_stop.set()
+                break
             finally:
                 logging.debug("Stopping oplog cursor on %s" % self.uri)
                 cursor.close()
                 oplog.flush()
         oplog.close()
         self.stopped = True
+        self.timer.stop(self.timer_name)
 
         try:
             if self.exit_code == 0:
@@ -114,6 +118,7 @@ class TailThread(Process):
                     log_msg_extra = "%s, end ts: %s" % (log_msg_extra, last_ts)
                 logging.info("Done tailing oplog on %s, %s" % (self.uri, log_msg_extra))
             self.state.set('running', False)
+            self.state.set('completed', True)
         except OperationError:
             pass
  

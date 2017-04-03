@@ -35,7 +35,7 @@ class ConfigParser(BaseConfiguration):
         parser = super(ConfigParser, self).makeParser()
         parser.add_argument("-V", "--version", dest="version", help="Print mongodb_consistent_backup version info and exit", action=PrintVersions)
         parser.add_argument("-v", "--verbose", dest="verbose", help="Verbose output", default=False, action="store_true")
-	parser.add_argument("-H", "--host", dest="host", help="MongoDB Hostname, IP address or '<replset>/<host:port>,<host:port>,..' URI (default: localhost)", default="localhost", type=str)
+        parser.add_argument("-H", "--host", dest="host", help="MongoDB Hostname, IP address or '<replset>/<host:port>,<host:port>,..' URI (default: localhost)", default="localhost", type=str)
         parser.add_argument("-P", "--port", dest="port", help="MongoDB Port (default: 27017)", default=27017, type=int)
         parser.add_argument("-u", "--user", dest="user", help="MongoDB Authentication Username (for optional auth)", type=str)
         parser.add_argument("-p", "--password", dest="password", help="MongoDB Authentication Password (for optional auth)", type=str)
@@ -79,7 +79,7 @@ class Config(object):
                     mod.config(self._config.parser)
                 except AttributeError, e:
                     continue
-
+    
     def check_required(self):
         required = [
             'backup.name',

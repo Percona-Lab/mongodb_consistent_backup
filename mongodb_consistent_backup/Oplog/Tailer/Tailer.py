@@ -7,15 +7,16 @@ from multiprocessing import Event, Manager
 from time import time, sleep
 
 from TailThread import TailThread
-from mongodb_consistent_backup.Common import parse_method, MongoUri, Timer, DB
+from mongodb_consistent_backup.Common import parse_method, DB, MongoUri
 from mongodb_consistent_backup.Errors import OperationError
 from mongodb_consistent_backup.Oplog import OplogState
 
 
 class Tailer:
-    def __init__(self, manager, config, replsets, base_dir, status_secs=15):
-	self.manager     = manager
+    def __init__(self, manager, config, timer, replsets, base_dir, status_secs=15):
+        self.manager     = manager
         self.config      = config
+	self.timer       = timer
         self.replsets    = replsets
         self.base_dir    = base_dir
         self.backup_name = self.config.name
@@ -24,9 +25,9 @@ class Tailer:
         self.authdb      = self.config.authdb
         self.status_secs = status_secs
 
-        self.timer    = Timer()
-        self.shards   = {}
-        self._summary = {}
+        self.timer_name = self.__class__.__name__
+        self.shards     = {}
+        self._summary   = {}
 
     def compression(self, method=None):
         if method:
@@ -43,28 +44,28 @@ class Tailer:
         return self._summary
 
     def prepare_oplog_files(self, shard_name):
-        oplog_dir = "%s/%s" % (self.base_dir, shard_name)
+        oplog_dir = os.path.join(self.base_dir, shard_name)
         if not os.path.isdir(oplog_dir):
             os.makedirs(oplog_dir)
-        oplog_file = "%s/oplog-tailed.bson" % oplog_dir
-        oplog_state_file = "%s/state.bson" % oplog_dir
-        return oplog_file, oplog_state_file
+        oplog_file = os.path.join(oplog_dir, "oplog-tailed.bson")
+        return oplog_file
 
     def run(self):
         logging.info("Starting oplog tailers on all replica sets (options: gzip=%s, status_secs=%i)" % (self.do_gzip(), self.status_secs))
-        self.timer.start()
+        self.timer.start(self.timer_name)
         for shard in self.replsets:
             stop        = Event()
             secondary   = self.replsets[shard].find_secondary()
             mongo_uri   = secondary['uri']
             shard_name  = mongo_uri.replset
 
-            oplog_file, oplog_state_file = self.prepare_oplog_files(shard_name)
+            oplog_file  = self.prepare_oplog_files(shard_name)
             oplog_state = OplogState(self.manager, mongo_uri, oplog_file)
             thread = TailThread(
                 stop,
                 mongo_uri,
                 self.config,
+		self.timer,
                 oplog_file,
                 oplog_state,
                 self.do_gzip(),
@@ -73,21 +74,19 @@ class Tailer:
             self.shards[shard] = {
                 'stop':   stop,
                 'thread': thread,
-                'state':  oplog_state,
-                'state_file': oplog_state_file
+                'state':  oplog_state
             }
             self.shards[shard]['thread'].start()
             while not oplog_state.get('running'):
                 sleep(0.5)
 
-    def stop(self, kill=False, sleep_secs=2):
+    def stop(self, kill=False, sleep_secs=0.5):
         logging.info("Stopping all oplog tailers")
         for shard in self.shards:
-            replset    = self.replsets[shard]
-            state      = self.shards[shard]['state']
-            state_file = self.shards[shard]['state_file']
-            stop       = self.shards[shard]['stop']
-            thread     = self.shards[shard]['thread']
+            replset = self.replsets[shard]
+            state   = self.shards[shard]['state']
+            stop    = self.shards[shard]['stop']
+            thread  = self.shards[shard]['thread']
 
             try:
                 uri = MongoUri(state.get('uri'))
@@ -111,7 +110,7 @@ class Tailer:
             self.shards[shard]['stop'].set()
             if kill:
                 thread.terminate()
-            sleep(sleep_secs)
+            sleep(1)
 
             # wait for thread to stop
             while thread.is_alive():
@@ -121,18 +120,18 @@ class Tailer:
             # gather state info
             self._summary[shard] = state.get().copy()
 
-        self.timer.stop()
-        logging.info("Oplog tailing completed in %.2f seconds" % self.timer.duration())
+        self.timer.stop(self.timer_name)
+        logging.info("Oplog tailing completed in %.2f seconds" % self.timer.duration(self.timer_name))
 
         return self._summary
 
     def close(self):
-	for shard in self.shards:
-	    try:
-	        self.shards[shard]['stop'].set()
-		thread = self.shards[shard]['thread']
-		thread.terminate()
-		while thread.is_alive():
-		    sleep(1)
-	    except Exception, e:
-  	        logging.error("Cannot stop thread: %s" % e)
+        for shard in self.shards:
+            try:
+                self.shards[shard]['stop'].set()
+                thread = self.shards[shard]['thread']
+                thread.terminate()
+                while thread.is_alive():
+                    sleep(0.5)
+            except Exception, e:
+                logging.error("Cannot stop tailer thread: %s" % e)

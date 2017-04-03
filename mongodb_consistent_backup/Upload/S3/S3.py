@@ -36,6 +36,7 @@ class S3:
         self.chunk_size_mb   = self.config.upload.s3.chunk_size_mb
         self.chunk_size      = self.chunk_size_mb * 1024 * 1024
 
+        self.timer_name   = self.__class__.__name__
         self._pool        = None
         self._multipart   = None
         self._upload_done = False
@@ -52,13 +53,14 @@ class S3:
             logging.error("The source directory: %s does not exist or is not a directory! Skipping AWS S3 Upload!" % self.source_dir)
         else:
             try:
+                self.timer.start(self.timer_name)
                 for file_name in os.listdir(self.source_dir):
                     if self.bucket_prefix == "/":
                         key_name = "/%s/%s" % (self.key_prefix, file_name)
                     else:
                         key_name = "%s/%s/%s" % (self.bucket_prefix, self.key_prefix, file_name)
 
-                    file_path = "%s/%s" % (self.source_dir, file_name)
+                    file_path = os.path.join(self.source_dir, file_name)
                     file_size = os.stat(file_path).st_size
                     chunk_count = int(ceil(file_size / float(self.chunk_size)))
 
@@ -100,7 +102,7 @@ class S3:
 
                         if self.remove_uploaded:
                             logging.info("Uploaded AWS S3 key: %s%s successfully. Removing local file" % (self.bucket_name, key_name))
-                            os.remove("%s/%s" % (self.source_dir, file_name))
+                            os.remove(os.path.join(self.source_dir, file_name))
                         else:
                             logging.info("Uploaded AWS S3 key: %s%s successfully" % (self.bucket_name, key_name))
                     else:
@@ -111,6 +113,7 @@ class S3:
                 if self.remove_uploaded:
                     logging.info("Removing backup source dir after successful AWS S3 upload of all backups")
                     os.rmdir(self.source_dir)
+                self.timer.stop(self.timer_name)
             except Exception, e:
                 logging.error("Uploading to AWS S3 failed! Error: %s" % e)
                 if self._multipart:

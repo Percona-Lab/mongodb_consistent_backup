@@ -7,8 +7,9 @@ from mongodb_consistent_backup.Errors import Error, OperationError
 
 
 class Nsca:
-    def __init__(self, config):
+    def __init__(self, config, timer):
         self.config     = config
+        self.timer      = timer
         self.server     = self.config.notify.nsca.server
         self.check_name = self.config.notify.nsca.check_name
         self.check_host = self.config.notify.nsca.check_host
@@ -16,9 +17,10 @@ class Nsca:
         self.success    = 0
         self.warning    = 1
         self.critical   = 2
-	self.failed     = self.critical
+        self.failed     = self.critical
         self.notifier   = None
 
+        self.timer_name = self.__class__.__name__
         split = self.server.split(":")
         self.server_name = split[0]
         self.server_port = 5667
@@ -47,8 +49,12 @@ class Nsca:
             logging.error('Error initiating NSCANotifier! Error: %s' % e)
             raise OperationError(e)
 
+    def close(self):
+        pass
+
     def notify(self, ret_code, output):
         if self.notifier:
+            self.timer.start(self.timer_name)
             logging.info("Sending %sNSCA report to check host/name '%s/%s' at NSCA host %s" % (
                 self.mode_type,
                 self.check_host,
@@ -59,6 +65,7 @@ class Nsca:
             try:
                 self.notifier.svc_result(self.check_host, self.check_name, ret_code, str(output))
                 logging.debug('Sent %sNSCA report to host %s' % (self.mode_type, self.server))
+                self.timer.stop(self.timer_name)
             except Exception, e:
                 logging.error('Failed to send %sNSCA report to host %s: %s' % (self.mode_type, self.server, sys.exc_info()[1]))
                 raise OperationError(e)

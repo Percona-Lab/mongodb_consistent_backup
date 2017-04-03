@@ -1,18 +1,19 @@
 import logging
 
 from mongodb_consistent_backup.Archive.Tar import Tar
-from mongodb_consistent_backup.Common import Timer, config_to_string, parse_method
+from mongodb_consistent_backup.Common import config_to_string, parse_method
 from mongodb_consistent_backup.Errors import Error, OperationError
 
 
 class Archive:
-    def __init__(self, config, backup_dir):
+    def __init__(self, config, timer, backup_dir):
         self.config     = config
+        self.timer      = timer 
         self.backup_dir = backup_dir
 
-        self.method    = None
-        self._archiver = None
-        self.timer     = Timer()
+        self.timer_name = self.__class__.__name__
+        self.method     = None
+        self._archiver  = None
         self.init()
 
     def init(self):
@@ -44,12 +45,12 @@ class Archive:
         if self._archiver:
             config_string = config_to_string(self.config.archive[self.method])
             logging.info("Archiving with method: %s (options: %s)" % (self.method, config_string))
-            self.timer.start()
+            self.timer.start(self.timer_name)
 
             self._archiver.run()
 
-            self.timer.stop()
-            logging.info("Archiving completed in %.2f seconds" % self.timer.duration())
+            self.timer.stop(self.timer_name)
+            logging.info("Archiving completed in %.2f seconds" % self.timer.duration(self.timer_name))
 
     def close(self):
         if self._archiver:

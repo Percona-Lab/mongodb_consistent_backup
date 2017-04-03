@@ -1,19 +1,20 @@
 import logging
 
 from mongodb_consistent_backup.Upload.S3 import S3
-from mongodb_consistent_backup.Common import Timer, config_to_string, parse_method
+from mongodb_consistent_backup.Common import config_to_string, parse_method
 from mongodb_consistent_backup.Errors import Error, OperationError
 
 
 class Upload:
-    def __init__(self, config, base_dir, backup_dir):
+    def __init__(self, config, timer, base_dir, backup_dir):
         self.config     = config
+        self.timer      = timer
         self.base_dir   = base_dir
         self.backup_dir = backup_dir
 
-        self.method    = None
-        self._uploader = None
-        self.timer     = Timer()
+        self.timer_name = self.__class__.__name__
+        self.method     = None
+        self._uploader  = None
         self.init()
 
     def init(self):
@@ -25,6 +26,7 @@ class Upload:
             try:
                 self._uploader = globals()[self.method.capitalize()](
                     self.config,
+                    self.timer,
                     self.base_dir,
                     self.backup_dir
                 )
@@ -37,12 +39,10 @@ class Upload:
         if self._uploader:
             config_string = config_to_string(self.config.upload[self.method])
             logging.info("Using upload method: %s (options: %s)" % (self.method, config_string))
-            self.timer.start()
-
+            self.timer.start(self.timer_name)
             self._uploader.run()
-
-            self.timer.stop()
-            logging.info("Uploading completed in %s seconds" % self.timer.duration())
+            self.timer.stop(self.timer_name)
+            logging.info("Uploading completed in %s seconds" % self.timer.duration(self.timer_name))
 
     def close(self):
         if self._uploader:
