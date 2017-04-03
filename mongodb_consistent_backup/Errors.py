@@ -6,6 +6,10 @@ class OperationError(Error):
     """Raised when an operation failed in an expected but unrecoverable way"""
     pass
 
+class NotifyError(Error):
+    """Raised when an notify operation failed in an expected but unrecoverable way"""
+    pass
+
 class DBConnectionError(OperationError):
     """Raised when a db connection error occurs"""
     pass

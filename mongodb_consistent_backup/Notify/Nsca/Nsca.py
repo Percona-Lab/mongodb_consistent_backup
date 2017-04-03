@@ -3,7 +3,7 @@ import sys
 
 from pynsca import NSCANotifier
 
-from mongodb_consistent_backup.Errors import Error, OperationError
+from mongodb_consistent_backup.Errors import Error, NotifyError, OperationError
 
 
 class Nsca:
@@ -68,4 +68,4 @@ class Nsca:
                 self.timer.stop(self.timer_name)
             except Exception, e:
                 logging.error('Failed to send %sNSCA report to host %s: %s' % (self.mode_type, self.server, sys.exc_info()[1]))
-                raise OperationError(e)
+                raise NotifyError(e)

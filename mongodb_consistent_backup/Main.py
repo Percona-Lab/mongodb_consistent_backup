@@ -9,7 +9,7 @@ from multiprocessing import current_process, Manager
 from Archive import Archive
 from Backup import Backup
 from Common import Config, DB, Lock, MongoUri, Timer
-from Errors import Error, OperationError
+from Errors import Error, NotifyError, OperationError
 from Notify import Notify
 from Oplog import Tailer, Resolver
 from Replication import Replset, ReplsetSharded
@@ -150,11 +150,14 @@ class MongodbConsistentBackup(object):
         sys.exit(1)
 
     def exception(self, error_message, error):
-        if isinstance(error, OperationError):
-            logging.fatal(error_message)
+        if isinstance(error, NotifyError):
+            logging.error(error_message)
         else:
-            logging.exception(error_message)
-        return self.cleanup_and_exit(None, None)
+            if isinstance(error, OperationError):
+                logging.fatal(error_message)
+            else:
+                logging.exception(error_message)
+            return self.cleanup_and_exit(None, None)
 
     def run(self):
         # TODO would be nice to have this code look like: (functions do the work) and its readable
@@ -379,7 +382,7 @@ class MongodbConsistentBackup(object):
             self.notify.notify("%s: backup '%s' succeeded in %s secs" % (
                 self.program_name,
                 self.config.backup.name,
-                self.timer.duration('notify')
+                self.timer.duration('Main')
             ), True)
             self.notify.close()
         except Exception, e:
