@@ -16,7 +16,7 @@ class Tailer:
     def __init__(self, manager, config, timer, replsets, base_dir, status_secs=15):
         self.manager     = manager
         self.config      = config
-	self.timer       = timer
+        self.timer       = timer
         self.replsets    = replsets
         self.base_dir    = base_dir
         self.backup_name = self.config.name
@@ -65,7 +65,7 @@ class Tailer:
                 stop,
                 mongo_uri,
                 self.config,
-		self.timer,
+                self.timer,
                 oplog_file,
                 oplog_state,
                 self.do_gzip(),

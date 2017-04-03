@@ -10,7 +10,7 @@ from mongodb_consistent_backup.Replication import Replset
 class Sharding:
     def __init__(self, config, timer, db):
         self.config             = config
-	self.timer              = timer
+        self.timer              = timer
         self.db                 = db
         self.balancer_wait_secs = self.config.sharding.balancer.wait_secs
         self.balancer_sleep     = self.config.sharding.balancer.ping_secs

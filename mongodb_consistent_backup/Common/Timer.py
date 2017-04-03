@@ -17,7 +17,7 @@ class Timer:
             timer['end'] = time()
             timer['stopped'] = True
             timer['duration'] = timer['end'] - timer['start']
-	    self.timers[timer_name] = timer
+            self.timers[timer_name] = timer
         else:
             raise OperationError("No started timer named %s to stop!" % timer_name)
 
