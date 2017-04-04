@@ -21,7 +21,7 @@ class Mongodump:
         self.config     = config
         self.timer      = timer
         self.base_dir   = base_dir
-	self.backup_dir = backup_dir
+        self.backup_dir = backup_dir
         self.binary     = self.config.backup.mongodump.binary
         self.user       = self.config.user
         self.password   = self.config.password
@@ -30,11 +30,11 @@ class Mongodump:
 
         try:
             self.replsets = kwargs['replsets']
-	except KeyError:
-	    raise Error("'replsets' kwargs required!")
+        except KeyError:
+            raise Error("'replsets' kwargs required!")
 
-	self.sharding = None
-	if 'sharding' in kwargs:
+        self.sharding = None
+        if 'sharding' in kwargs:
             self.sharding = kwargs['sharding']
 
         signal(SIGINT, SIG_IGN)
@@ -181,8 +181,8 @@ class Mongodump:
         if len(self.threads) > 0:
             for thread in self.threads:
                 thread.terminate()
-	try:
+        try:
             self.timer.stop(self.timer_name)
-	except:
-	    pass
+        except:
+            pass
         logging.info("Stopped all mongodump threads")

@@ -65,13 +65,25 @@ class Resolver:
         return int(self.config.oplog.resolver.threads)
 
     def get_consistent_end_ts(self):
-        ts = None
+        end_ts        = None
+        min_tailed_ts = None
+        max_backup_ts = None
         for shard in self.tailed_oplogs:
             instance = self.tailed_oplogs[shard]
             if 'last_ts' in instance and instance['last_ts'] is not None:
-                if ts is None or instance['last_ts'].time < ts.time:
-                    ts = Timestamp(instance['last_ts'].time, 0)
-        return ts
+                if min_tailed_ts is None or instance['last_ts'].time < min_tailed_ts.time:
+                    min_tailed_ts = instance['last_ts']
+        end_ts = min_tailed_ts
+        for shard in self.backup_oplogs:
+            instance = self.backup_oplogs[shard]
+            if 'last_ts' in instance and instance['last_ts'] is not None:
+                if max_backup_ts is None or instance['last_ts'].time > max_backup_ts.time:
+                    max_backup_ts = instance['last_ts']
+        if max_backup_ts:
+            end_ts = Timestamp(max_backup_ts.time + 1, 0)
+        if end_ts > min_tailed_ts:
+            return Error("Backup maximum end time is greater than tailed oplog minimum end time. This should not happen!")
+        return end_ts
 
     def run(self):
         logging.info("Resolving oplogs (options: threads=%s,compression=%s)" % (self.threads(), self.compression()))

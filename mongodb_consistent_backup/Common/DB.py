@@ -15,7 +15,7 @@ class DB:
         self.authdb       = config.authdb
         self.do_replset   = do_replset
         self.read_pref    = read_pref
-	self.do_connect   = do_connect
+        self.do_connect   = do_connect
         self.conn_timeout = conn_timeout
         self.retries      = retries
 
@@ -32,7 +32,7 @@ class DB:
             logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s)" % 
                          (self.uri, self.replset, self.read_pref))
             conn = MongoClient(
-	        connect=self.do_connect,
+                connect=self.do_connect,
                 host=self.uri.hosts(),
                 replicaSet=self.replset,
                 readPreference=self.read_pref,
@@ -41,7 +41,7 @@ class DB:
                 maxPoolSize=1,
                 w="majority"
             )
-	    if self.do_connect:
+            if self.do_connect:
                 conn['admin'].command({"ping":1})
         except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
             logging.error("Unable to connect to %s! Error: %s" % (self.uri, e))

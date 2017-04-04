@@ -19,6 +19,9 @@ class Replset:
         self.max_priority = self.config.replication.max_priority
         self.hidden_only  = self.config.replication.hidden_only
 
+        self.hidden_weight = 0.20
+        self.pri0_weight   = 0.10
+
         self.replset      = True
         self.rs_config    = None
         self.rs_status    = None
@@ -101,7 +104,7 @@ class Replset:
         op_lag = 0
         if 'date' in rs_status and 'lastHeartbeat' in rs_member:
             op_lag = mktime(rs_status['date'].timetuple()) - mktime(rs_member['lastHeartbeat'].timetuple())
-	return op_lag
+        return op_lag
 
     def get_repl_lag(self, rs_member):
         rs_status         = self.get_rs_status(False, True)
@@ -110,7 +113,7 @@ class Replset:
         primary_optime_ts = self.primary_optime(False, True)
         if isinstance(rs_member['optime'], dict) and 'ts' in rs_member['optime']:
             member_optime_ts = rs_member['optime']['ts']
-	op_lag  = self.get_repl_op_lag(rs_status, rs_member)
+        op_lag  = self.get_repl_op_lag(rs_status, rs_member)
         rep_lag = (primary_optime_ts.time - member_optime_ts.time) - op_lag
         if rep_lag < 0:
             rep_lag = 0
@@ -162,11 +165,9 @@ class Replset:
                 score         = self.max_lag_secs * 10
                 score_scale   = 100 / score
                 priority      = 0
-                hidden_weight = 0.20
-                pri0_weight   = 0.10
-		member_config = self.get_rs_config_member(member)
+                member_config = self.get_rs_config_member(member)
                 if 'hidden' in member_config and member_config['hidden']:
-                    score += (score * hidden_weight)
+                    score += (score * self.hidden_weight)
                     log_data['hidden'] = True
                 if 'priority' in member_config:
                     priority = int(member_config['priority'])
@@ -174,7 +175,7 @@ class Replset:
                     if member_config['priority'] > 1:
                         score -= priority - 1
                     elif member_config['priority'] == 0:
-                        score += (score * pri0_weight)            
+                        score += (score * self.pri0_weight)            
                     if priority < self.min_priority or priority > self.max_priority:
                         logging.info("Found SECONDARY %s with out-of-bounds priority! Skipping" % member_uri)
                         continue
