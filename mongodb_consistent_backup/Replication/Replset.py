@@ -17,6 +17,7 @@ class Replset:
         self.max_lag_secs = self.config.replication.max_lag_secs
         self.min_priority = self.config.replication.min_priority
         self.max_priority = self.config.replication.max_priority
+        self.hidden_only  = self.config.replication.hidden_only
 
         self.replset      = True
         self.rs_config    = None
@@ -63,8 +64,16 @@ class Replset:
                     self.rs_config = self.connection['local'].system.replset.find_one()
                 self.replset_summary['config'] = self.rs_config
             except pymongo.errors.OperationFailure, e:
-                raise OperationFailure("Error getting replica set config! Error: %s" % e)
+                raise OperationError("Error getting replica set config! Error: %s" % e)
         return self.rs_config
+
+    def get_rs_config_member(self, member, force=False, quiet=False):
+        rs_config = self.get_rs_config(force, quiet)
+        if 'name' in member:
+            for cnf_member in rs_config['members']:
+                if member['name'] == cnf_member['host']:
+                    return cnf_member
+        raise OperationError("Member does not exist in mongo config!")
 
     def get_rs_name(self):
         return self.get_rs_status()['set']
@@ -78,18 +87,30 @@ class Replset:
                     self.replset_summary['mongo_config'] = self.mongo_config
             return self.mongo_config
         except pymongo.errors.OperationFailure, e:
-            raise OperationFailure("Error getting mongo config! Error: %s" % e)
+            raise OperationError("Error getting mongo config! Error: %s" % e)
 
-    def get_repl_lag(self, rs_member):
-        rs_status  = self.get_rs_status(False, True)
-        rs_primary = self.find_primary(False, True)
+    def get_mongo_config_member(self, member, force=False, quiet=False):
+        rs_config = self.get_mongo_config(force, quiet)
+        if 'members' in rs_config and 'name' in member:
+            for cnf_member in rs_config:
+                if member['name'] == cnf_member['name']:
+                    return cnf_member
+        raise OperationError("Member does not exist in mongo config!")
+
+    def get_repl_op_lag(self, rs_status, rs_member):
         op_lag = 0
         if 'date' in rs_status and 'lastHeartbeat' in rs_member:
             op_lag = mktime(rs_status['date'].timetuple()) - mktime(rs_member['lastHeartbeat'].timetuple())
+	return op_lag
+
+    def get_repl_lag(self, rs_member):
+        rs_status         = self.get_rs_status(False, True)
+        rs_primary        = self.find_primary(False, True)
         member_optime_ts  = rs_member['optime']
         primary_optime_ts = self.primary_optime(False, True)
         if isinstance(rs_member['optime'], dict) and 'ts' in rs_member['optime']:
             member_optime_ts = rs_member['optime']['ts']
+	op_lag  = self.get_repl_op_lag(rs_status, rs_member)
         rep_lag = (primary_optime_ts.time - member_optime_ts.time) - op_lag
         if rep_lag < 0:
             rep_lag = 0
@@ -102,7 +123,7 @@ class Replset:
              for member in rs_status['members']:
                  if member['stateStr'] == 'PRIMARY' and member['health'] > 0:
                      member_uri = MongoUri(member['name'], 27017, rs_name)
-                     optime_ts = member['optime']
+                     optime_ts  = member['optime']
                      if isinstance(member['optime'], dict) and 'ts' in member['optime']:
                          optime_ts = member['optime']['ts']
                      if quiet == False or not self.primary:
@@ -114,7 +135,7 @@ class Replset:
                          'uri': member_uri,
                          'optime': optime_ts
                      }
-                     self.replset_summary['secondary'] = { "member": member, "uri": member_uri.str() }
+                     self.replset_summary['primary'] = { "member": member, "uri": member_uri.str() }
              if self.primary is None:
                  logging.error("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
                  raise OperationError("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
@@ -137,30 +158,29 @@ class Replset:
             elif member['state'] > 2:
                 logging.warning("Found down or unhealthy SECONDARY %s with state: %s" % (member_uri, member['stateStr']))
             elif member['state'] == 2 and member['health'] > 0:
-                score       = self.max_lag_secs * 10
-                score_scale = 100 / score
-                log_data    = {}
-
-                priority = 0
+                log_data      = {}
+                score         = self.max_lag_secs * 10
+                score_scale   = 100 / score
+                priority      = 0
                 hidden_weight = 0.20
                 pri0_weight   = 0.10
-                for member_config in rs_config['members']:
-                    if member_config['host'] == member['name']:
-                        if 'hidden' in member_config and member_config['hidden']:
-                            score += (score * hidden_weight)
-                            log_data['hidden'] = True
-                        if 'priority' in member_config:
-                            priority = int(member_config['priority'])
-                            log_data['priority'] = priority
-                            if member_config['priority'] > 1:
-                                score -= priority - 1
-                            elif member_config['priority'] == 0:
-                                score += (score * pri0_weight)
-                        break
-
-                if priority < self.min_priority or priority > self.max_priority:
-                    # TODO-timv With out try blocks the log_msg is confused and may not be used, shouldn't we log immediately?
-                    log_msg = "Found SECONDARY %s with out-of-bounds priority! Skipping" % (member_uri, member['name'])
+		member_config = self.get_rs_config_member(member)
+                if 'hidden' in member_config and member_config['hidden']:
+                    score += (score * hidden_weight)
+                    log_data['hidden'] = True
+                if 'priority' in member_config:
+                    priority = int(member_config['priority'])
+                    log_data['priority'] = priority
+                    if member_config['priority'] > 1:
+                        score -= priority - 1
+                    elif member_config['priority'] == 0:
+                        score += (score * pri0_weight)            
+                    if priority < self.min_priority or priority > self.max_priority:
+                        logging.info("Found SECONDARY %s with out-of-bounds priority! Skipping" % member_uri)
+                        continue
+                elif self.hidden_only and not 'hidden' in log_data:
+                    logging.info("Found SECONDARY %s that is non-hidden and hidden-only mode is enabled! Skipping" % member_uri)
+                    continue
 
                 rep_lag, optime_ts = self.get_repl_lag(member)
                 score = ceil((score - rep_lag) * score_scale)
@@ -187,7 +207,7 @@ class Replset:
                 self.replset_summary['secondary'] = { "member": member, "uri": member_uri.str(), "data": log_data }
         if self.secondary is None or (self.secondary['count'] + 1) < quorum:
             secondary_count = self.secondary['count'] + 1 if self.secondary else 0
-            logging.error("Not enough secondaries in replset %s to take backup! Num replset members: %i, required quorum: %i" % (
+            logging.error("Not enough valid secondaries in replset %s to take backup! Num replset members: %i, required quorum: %i" % (
                 rs_name,
                 secondary_count,
                 quorum

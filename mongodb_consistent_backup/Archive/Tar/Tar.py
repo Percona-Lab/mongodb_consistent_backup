@@ -21,9 +21,9 @@ pickle(MethodType, _reduce_method)
 
 
 class Tar:
-    def __init__(self, config, backup_base_dir):
+    def __init__(self, manager, config, timer, base_dir, backup_dir, **kwargs):
         self.config          = config
-        self.backup_base_dir = backup_base_dir
+        self.backup_base_dir = backup_dir
         self.verbose         = self.config.verbose
         self.binary          = "tar"
         self._pool           = None

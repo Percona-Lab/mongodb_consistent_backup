@@ -65,8 +65,9 @@ class TailThread(Process):
         self.timer.start(self.timer_name)
 
         self.conn = DB(self.uri, self.config, True, 'secondary').connection()
-        db    = self.conn['local']
-        oplog = self.oplog()
+        db        = self.conn['local']
+        oplog     = self.oplog()
+
         tail_start_ts = db.oplog.rs.find().sort('$natural', -1)[0]['ts']
         self.state.set('running', True)
         while not self.do_stop.is_set():

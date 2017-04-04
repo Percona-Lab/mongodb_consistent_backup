@@ -43,6 +43,7 @@ class MongodbConsistentBackup(object):
         self.backup_summary           = {}
         self.manager                  = Manager()
         self.timer                    = Timer(self.manager)
+        self.timer_name               = "mongodb_consistent_backup.%s" % self.__class__.__name__
 
         self.setup_config()
         self.setup_logger()
@@ -77,9 +78,11 @@ class MongodbConsistentBackup(object):
 
     def set_backup_dirs(self):
         self.backup_time = datetime.now().strftime("%Y%m%d_%H%M")
-        self.backup_root_directory = os.path.join(self.config.backup.location, self.config.backup.name)
+        self.backup_root_directory    = os.path.join(self.config.backup.location, self.config.backup.name)
+        self.backup_latest_symlink    = os.path.join(self.backup_root_directory, "latest")
+        self.backup_previous_symlink  = os.path.join(self.backup_root_directory, "previous")
         self.backup_root_subdirectory = os.path.join(self.config.backup.name, self.backup_time)
-        self.backup_directory = os.path.join(self.config.backup.location, self.backup_root_subdirectory)
+        self.backup_directory         = os.path.join(self.config.backup.location, self.backup_root_subdirectory)
 
     def setup_state(self):
         StateRoot(self.backup_root_directory, self.config).write(True)
@@ -113,6 +116,29 @@ class MongodbConsistentBackup(object):
         logging.info("Starting %s version %s (git commit: %s)" % (self.program_name, self.config.version, self.config.git_commit))
         logging.info("Loaded config: %s" % self.config)
 
+    def start_timer(self):
+        self.timer.start(self.timer_name)
+
+    def stop_timer(self):
+        self.timer.stop(self.timer_name)
+        self.state.set('timers', self.timer.dump())
+
+    def read_symlink_latest(self):
+        if os.path.islink(self.backup_latest_symlink):
+            return os.readlink(self.backup_latest_symlink)
+
+    def update_symlinks(self):
+        latest = self.read_symlink_latest()
+        if latest:
+            logging.info("Updating %s previous symlink to: %s" % (self.config.backup.name, latest))
+            if os.path.islink(self.backup_previous_symlink):
+                os.remove(self.backup_previous_symlink)
+            os.symlink(latest, self.backup_previous_symlink)
+        if os.path.islink(self.backup_latest_symlink):
+            os.remove(self.backup_latest_symlink)
+        logging.info("Updating %s latest symlink to: %s" % (self.config.backup.name, self.backup_directory))
+        return os.symlink(self.backup_directory, self.backup_latest_symlink)
+
     # TODO Rename class to be more exact as this assumes something went wrong
     # noinspection PyUnusedLocal
     def cleanup_and_exit(self, code, frame):
@@ -139,6 +165,8 @@ class MongodbConsistentBackup(object):
                     self.config,
                     self.program_name
                 ), False)
+                self.notify.run()
+                self.notify.close()
             except:
                 pass
 
@@ -177,14 +205,16 @@ class MongodbConsistentBackup(object):
             self.db.close()
         self.log(backup_complete_message,INFO)
         """
-        self.timer.start('Main')
+        self.start_timer()
 
         # Setup the archiver
         try:
             self.archive = Archive(
+                self.manager,
                 self.config,
                 self.timer,
-                self.backup_directory, 
+                self.backup_root_subdirectory,
+                self.backup_directory
             )
         except Exception, e:
             self.exception("Problem starting archiver! Error: %s" % e, e)
@@ -192,8 +222,11 @@ class MongodbConsistentBackup(object):
         # Setup the notifier
         try:
             self.notify = Notify(
+                self.manager,
                 self.config,
-                self.timer
+                self.timer,
+                self.backup_root_subdirectory,
+                self.backup_directory
             )
         except Exception, e:
             self.exception("Problem starting notifier! Error: %s" % e, e)
@@ -201,10 +234,11 @@ class MongodbConsistentBackup(object):
         # Setup the uploader
         try:
             self.upload = Upload(
+                self.manager,
                 self.config,
                 self.timer,
-                self.backup_directory,
-                self.backup_root_subdirectory
+                self.backup_root_subdirectory,
+                self.backup_directory
             )
         except Exception, e:
             self.exception("Problem starting uploader! Error: %s" % e, e)
@@ -232,13 +266,14 @@ class MongodbConsistentBackup(object):
                     self.manager,
                     self.config,
                     self.timer,
+                    self.backup_root_subdirectory,
                     self.backup_directory,
                     self.replsets
                 )
                 if self.backup.is_compressed():
                     logging.info("Backup method supports gzip compression, disabling compression in archive step")
                     self.archive.compression('none')
-                self.backup_summary = self.backup.backup()
+                self.backup_summary = self.backup.run()
                 self.state.set('backup_oplog', self.backup_summary)
             except Exception, e:
                 self.exception("Problem performing replset mongodump! Error: %s" % e, e)
@@ -298,6 +333,7 @@ class MongodbConsistentBackup(object):
                     self.manager,
                     self.config,
                     self.timer,
+                    self.backup_root_subdirectory,
                     self.backup_directory,
                     self.replsets, 
                     self.sharding
@@ -317,7 +353,7 @@ class MongodbConsistentBackup(object):
 
             # run the backup(s)
             try:
-                self.backup_summary = self.backup.backup()
+                self.backup_summary = self.backup.run()
                 self.state.set('backup_oplog', self.backup_summary)
             except Exception, e:
                 self.exception("Problem performing backup! Error: %s" % e, e)
@@ -363,7 +399,7 @@ class MongodbConsistentBackup(object):
 
         # archive backup directories
         try:
-            self.archive.archive()
+            self.archive.run()
             self.archive.close()
         except Exception, e:
             self.archive.close()
@@ -371,27 +407,30 @@ class MongodbConsistentBackup(object):
 
         # upload backup
         try:
-            self.upload.upload()
+            self.upload.run()
             self.upload.close()
         except Exception, e:
             self.upload.close()
             self.exception("Problem performing upload of backup! Error: %s" % e, e)
+
+        # stop timer
+        self.stop_timer()
 
         # send notifications of backup state
         try:
             self.notify.notify("%s: backup '%s' succeeded in %s secs" % (
                 self.program_name,
                 self.config.backup.name,
-                self.timer.duration('Main')
+                self.timer.duration(self.timer)
             ), True)
+            self.notify.run()
             self.notify.close()
         except Exception, e:
             self.notify.close()
             self.exception("Problem running Notifier! Error: %s" % e, e)
 
-        self.timer.stop('Main')
-        self.state.set('timers', self.timer.dump())
-
         StateDoneStamp(self.backup_directory, self.config).write()
-        logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration('Main')))
+        self.update_symlinks()
+        logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration(self.timer_name)))
+
         self.release_lock()

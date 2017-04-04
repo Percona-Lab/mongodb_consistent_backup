@@ -36,7 +36,7 @@ class ReplsetSharded:
 
     def get_replset_connection(self, uri, force=False):
         if force or not uri.replset in self.replset_conns:
-            self.replset_conns[uri.replset] = DB(uri, self.config, True, 'secondaryPreferred')
+            self.replset_conns[uri.replset] = DB(uri, self.config, True)
         return self.replset_conns[uri.replset]
 
     def get_replsets(self, force=False):

@@ -147,7 +147,7 @@ class Sharding:
                     self.config_db = self.db
                     logging.debug("Re-using seed connection to config server(s)")
                 else:
-                    self.config_db = DB(configdb_uri, self.config, True, 'secondaryPreferred')
+                    self.config_db = DB(configdb_uri, self.config, True)
                 if self.config_db.is_replset():
                     self.config_server = Replset(self.config, self.config_db) 
                 else:

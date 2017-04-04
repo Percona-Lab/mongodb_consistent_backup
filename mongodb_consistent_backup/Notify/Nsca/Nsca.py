@@ -7,7 +7,7 @@ from mongodb_consistent_backup.Errors import Error, NotifyError, OperationError
 
 
 class Nsca:
-    def __init__(self, config, timer):
+    def __init__(self, manager, config, timer, base_dir, backup_dir):
         self.config     = config
         self.timer      = timer
         self.server     = self.config.notify.nsca.server
@@ -26,6 +26,7 @@ class Nsca:
         self.server_port = 5667
         if len(split) == 2:
             self.server_port = int(split[1])
+        self.server = "%s:%i" % (self.server_name, self.server_port)
 
         self.mode_type  = ''
         self.encryption = 1

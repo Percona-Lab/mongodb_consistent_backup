@@ -8,13 +8,14 @@ from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnection
 
 
 class DB:
-    def __init__(self, uri, config, do_replset=False, read_pref='secondary', conn_timeout=5000, retries=5):
+    def __init__(self, uri, config, do_replset=False, read_pref='primaryPreferred', do_connect=True, conn_timeout=5000, retries=5):
         self.uri          = uri
         self.username     = config.user
         self.password     = config.password
         self.authdb       = config.authdb
         self.do_replset   = do_replset
         self.read_pref    = read_pref
+	self.do_connect   = do_connect
         self.conn_timeout = conn_timeout
         self.retries      = retries
 
@@ -31,6 +32,7 @@ class DB:
             logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s)" % 
                          (self.uri, self.replset, self.read_pref))
             conn = MongoClient(
+	        connect=self.do_connect,
                 host=self.uri.hosts(),
                 replicaSet=self.replset,
                 readPreference=self.read_pref,
@@ -39,7 +41,8 @@ class DB:
                 maxPoolSize=1,
                 w="majority"
             )
-            conn['admin'].command({"ping":1})
+	    if self.do_connect:
+                conn['admin'].command({"ping":1})
         except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
             logging.error("Unable to connect to %s! Error: %s" % (self.uri, e))
             raise OperationError(e)

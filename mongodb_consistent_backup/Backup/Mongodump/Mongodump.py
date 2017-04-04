@@ -16,18 +16,26 @@ from MongodumpThread import MongodumpThread
 
 
 class Mongodump:
-    def __init__(self, manager, config, timer, base_dir, replsets, sharding=None):
-        self.manager  = manager
-        self.config   = config
-        self.timer    = timer
-        self.base_dir = base_dir
-        self.replsets = replsets
-        self.sharding = sharding
-        self.binary   = self.config.backup.mongodump.binary
-        self.user     = self.config.user
-        self.password = self.config.password
-        self.authdb   = self.config.authdb
-        self.verbose  = self.config.verbose
+    def __init__(self, manager, config, timer, base_dir, backup_dir, **kwargs):
+        self.manager    = manager
+        self.config     = config
+        self.timer      = timer
+        self.base_dir   = base_dir
+	self.backup_dir = backup_dir
+        self.binary     = self.config.backup.mongodump.binary
+        self.user       = self.config.user
+        self.password   = self.config.password
+        self.authdb     = self.config.authdb
+        self.verbose    = self.config.verbose
+
+        try:
+            self.replsets = kwargs['replsets']
+	except KeyError:
+	    raise Error("'replsets' kwargs required!")
+
+	self.sharding = None
+	if 'sharding' in kwargs:
+            self.sharding = kwargs['sharding']
 
         signal(SIGINT, SIG_IGN)
         signal(SIGINT, self.close)
@@ -126,7 +134,7 @@ class Mongodump:
                 self.user,
                 self.password,
                 self.authdb,
-                self.base_dir,
+                self.backup_dir,
                 self.binary,
                 self.threads_per_dump(),
                 self.do_gzip,
@@ -157,7 +165,7 @@ class Mongodump:
                     self.user,
                     self.password,
                     self.authdb,
-                    self.base_dir,
+                    self.backup_dir,
                     self.binary,
                     self.threads_per_dump(),
                     self.do_gzip,
@@ -173,5 +181,8 @@ class Mongodump:
         if len(self.threads) > 0:
             for thread in self.threads:
                 thread.terminate()
-        self.timer.stop(self.timer_name)
+	try:
+            self.timer.stop(self.timer_name)
+	except:
+	    pass
         logging.info("Stopped all mongodump threads")
