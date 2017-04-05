@@ -271,7 +271,7 @@ class MongodbConsistentBackup(object):
                     self.replsets
                 )
                 if self.backup.is_compressed():
-                    logging.info("Backup method supports gzip compression, disabling compression in archive step")
+                    logging.info("Backup method supports compression, disabling compression in archive step")
                     self.archive.compression('none')
                 self.backup_summary = self.backup.run()
                 self.state.set('backup_oplog', self.backup_summary)
@@ -321,8 +321,9 @@ class MongodbConsistentBackup(object):
                     self.manager,
                     self.config,
                     self.timer,
-                    self.replsets,
-                    self.backup_directory
+                    self.backup_root_subdirectory,
+                    self.backup_directory,
+                    self.replsets
                 )
             except Exception, e:
                 self.exception("Problem initializing oplog tailer! Error: %s" % e, e)
@@ -339,9 +340,9 @@ class MongodbConsistentBackup(object):
                     self.sharding
                 )
                 if self.backup.is_compressed():
-                    logging.info("Backup method supports gzip compression, disabling compression in archive step and enabling oplog compression")
+                    logging.info("Backup method supports compression, disabling compression in archive step and enabling oplog compression")
                     self.archive.compression('none')
-                    self.oplogtailer.compression('gzip')
+                    self.oplogtailer.compression(self.backup.compression())
             except Exception, e:
                 self.exception("Problem initializing backup! Error: %s" % e, e)
 
@@ -387,8 +388,16 @@ class MongodbConsistentBackup(object):
                 self.db.close()
 
             # resolve/merge tailed oplog into mongodump oplog.bson to a consistent point for all shards
-            if self.backup.method == "mongodump" and self.oplogtailer:
-                self.resolver = Resolver(self.manager, self.config, self.timer, self.oplog_summary, self.backup_summary)
+            if self.backup.task.lower() == "mongodump" and self.oplogtailer:
+                self.resolver = Resolver(
+                    self.manager,
+                    self.config,
+                    self.timer,
+                    self.backup_root_subdirectory,
+                    self.backup_directory,
+		    self.oplog_summary,
+		    self.backup_summary
+		)
                 self.resolver.compression(self.oplogtailer.compression())
                 resolver_summary = self.resolver.run()
                 for shard in resolver_summary:

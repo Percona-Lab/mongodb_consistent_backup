@@ -10,6 +10,7 @@ from S3Session import S3Session
 from S3UploadThread import S3UploadThread
 
 from mongodb_consistent_backup.Errors import OperationError
+from mongodb_consistent_backup.Pipeline import Task
 
 
 # Allows pooled .apply_async()s to work on Class-methods:
@@ -21,11 +22,9 @@ def _reduce_method(m):
 pickle(MethodType, _reduce_method)
 
 
-class S3:
-    def __init__(self, config, source_dir, key_prefix):
-        self.config          = config
-        self.source_dir      = source_dir
-        self.key_prefix      = key_prefix
+class S3(Task):
+    def __init__(self, manager, config, timer, base_dir, backup_dir, **kwargs):
+        super(Nsca, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir, **kwargs)
         self.remove_uploaded = self.config.upload.remove_uploaded
         self.s3_host         = self.config.upload.s3.host
         self.bucket_name     = self.config.upload.s3.bucket_name
@@ -36,8 +35,10 @@ class S3:
         self.chunk_size_mb   = self.config.upload.s3.chunk_size_mb
         self.chunk_size      = self.chunk_size_mb * 1024 * 1024
 
-        self.completed    = False
-        self.timer_name   = self.__class__.__name__
+        self.key_prefix = None
+        if 'key_prefix' in self.args:
+            self.key_prefix = key_prefix
+
         self._pool        = None
         self._multipart   = None
         self._upload_done = False
@@ -50,18 +51,18 @@ class S3:
             raise OperationError(e)
 
     def run(self):
-        if not os.path.isdir(self.source_dir):
-            logging.error("The source directory: %s does not exist or is not a directory! Skipping AWS S3 Upload!" % self.source_dir)
+        if not os.path.isdir(self.backup_dir):
+            logging.error("The source directory: %s does not exist or is not a directory! Skipping AWS S3 Upload!" % self.backup_dir)
             return
         try:
             self.timer.start(self.timer_name)
-            for file_name in os.listdir(self.source_dir):
+            for file_name in os.listdir(self.backup_dir):
                 if self.bucket_prefix == "/":
                     key_name = "/%s/%s" % (self.key_prefix, file_name)
                 else:
                     key_name = "%s/%s/%s" % (self.bucket_prefix, self.key_prefix, file_name)
 
-                file_path = os.path.join(self.source_dir, file_name)
+                file_path = os.path.join(self.backup_dir, file_name)
                 file_size = os.stat(file_path).st_size
                 chunk_count = int(ceil(file_size / float(self.chunk_size)))
 
@@ -103,7 +104,7 @@ class S3:
 
                     if self.remove_uploaded:
                         logging.info("Uploaded AWS S3 key: %s%s successfully. Removing local file" % (self.bucket_name, key_name))
-                        os.remove(os.path.join(self.source_dir, file_name))
+                        os.remove(os.path.join(self.backup_dir, file_name))
                     else:
                         logging.info("Uploaded AWS S3 key: %s%s successfully" % (self.bucket_name, key_name))
                 else:
@@ -113,7 +114,7 @@ class S3:
 
             if self.remove_uploaded:
                 logging.info("Removing backup source dir after successful AWS S3 upload of all backups")
-                os.rmdir(self.source_dir)
+                os.rmdir(self.backup_dir)
             self.timer.stop(self.timer_name)
         except Exception, e:
             logging.error("Uploading to AWS S3 failed! Error: %s" % e)

@@ -10,35 +10,21 @@ from TailThread import TailThread
 from mongodb_consistent_backup.Common import parse_method, DB, MongoUri
 from mongodb_consistent_backup.Errors import OperationError
 from mongodb_consistent_backup.Oplog import OplogState
+from mongodb_consistent_backup.Pipeline import Task
 
 
-class Tailer:
-    def __init__(self, manager, config, timer, replsets, base_dir, status_secs=15):
-        self.manager     = manager
-        self.config      = config
-        self.timer       = timer
-        self.replsets    = replsets
-        self.base_dir    = base_dir
+class Tailer(Task):
+    def __init__(self, manager, config, timer, base_dir, backup_dir, replsets, status_secs=15):
+        super(Tailer, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir)
         self.backup_name = self.config.name
         self.user        = self.config.user
         self.password    = self.config.password
         self.authdb      = self.config.authdb
+        self.replsets    = replsets
         self.status_secs = status_secs
 
-        self.timer_name = self.__class__.__name__
-        self.shards     = {}
-        self._summary   = {}
-
-    def compression(self, method=None):
-        if method:
-            self.config.oplog.compression = parse_method(method)
-            logging.info("Setting oplog compression method to: %s" % self.config.oplog.compression)
-        return parse_method(self.config.oplog.compression)
-
-    def do_gzip(self):
-        if self.compression() == 'gzip':
-            return True
-        return False
+        self.shards   = {}
+        self._summary = {}
 
     def summary(self):
         return self._summary
@@ -51,7 +37,7 @@ class Tailer:
         return oplog_file
 
     def run(self):
-        logging.info("Starting oplog tailers on all replica sets (options: gzip=%s, status_secs=%i)" % (self.do_gzip(), self.status_secs))
+        logging.info("Starting oplog tailers on all replica sets (options: compression=%s, status_secs=%i)" % (self.compression(), self.status_secs))
         self.timer.start(self.timer_name)
         for shard in self.replsets:
             stop        = Event()

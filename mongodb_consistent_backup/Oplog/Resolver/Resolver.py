@@ -4,13 +4,14 @@ import logging
 # noinspection PyPackageRequirements
 from bson.timestamp import Timestamp
 from copy_reg import pickle
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 from types import MethodType
 
 from ResolverThread import ResolverThread
 from mongodb_consistent_backup.Common import MongoUri, parse_method
-from mongodb_consistent_backup.Oplog import OplogState
 from mongodb_consistent_backup.Errors import Error, OperationError
+from mongodb_consistent_backup.Oplog import OplogState
+from mongodb_consistent_backup.Pipeline import Task
 
 
 # Allows pooled .apply_async()s to work on Class-methods:
@@ -23,20 +24,17 @@ def _reduce_method(m):
 pickle(MethodType, _reduce_method)
 
 
-class Resolver:
-    def __init__(self, manager, config, timer, tailed_oplogs_summary, backup_oplogs_summary):
-        self.manager       = manager
-        self.config        = config
-        self.timer         = timer
-        self.tailed_oplogs = tailed_oplogs_summary
-        self.backup_oplogs = backup_oplogs_summary
+class Resolver(Task):
+    def __init__(self, manager, config, timer, base_dir, backup_dir, tailed_oplogs, backup_oplogs):
+        super(Resolver, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir)
+        self.tailed_oplogs = tailed_oplogs
+        self.backup_oplogs = backup_oplogs
 
-        self.timer_name       = self.__class__.__name__
         self.resolver_summary = {}
         self.resolver_state   = {}
 
         try:
-            self._pool = Pool(processes=self.threads())
+            self._pool = Pool(processes=self.threads(None, 2))
         except Exception, e:
             logging.fatal("Could not start oplog resolver pool! Error: %s" % e)
             raise Error(e)
@@ -45,24 +43,6 @@ class Resolver:
        if self._pool:
            self._pool.terminate()
            self._pool.join()
-
-    def compression(self, method=None):
-        if method:
-            logging.debug("Setting oplog resolver compression to: %s" % method)
-            self.config.oplog.compression = parse_method(method)
-        return parse_method(self.config.oplog.compression)
-
-    def do_gzip(self):
-        if self.compression() == 'gzip':
-           return True
-        return False
-
-    def threads(self, threads=None):
-        if threads:
-            self.config.oplog.resolver.threads = int(threads)
-        if self.config.oplog.resolver.threads is None or self.config.oplog.resolver.threads < 1:
-            self.config.oplog.resolver.threads = int(cpu_count() * 2)
-        return int(self.config.oplog.resolver.threads)
 
     def get_consistent_end_ts(self):
         ts = None

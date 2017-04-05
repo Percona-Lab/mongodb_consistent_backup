@@ -4,12 +4,12 @@ import sys
 from pynsca import NSCANotifier
 
 from mongodb_consistent_backup.Errors import Error, NotifyError, OperationError
+from mongodb_consistent_backup.Pipeline import Task
 
 
-class Nsca:
-    def __init__(self, manager, config, timer, base_dir, backup_dir):
-        self.config     = config
-        self.timer      = timer
+class Nsca(Task):
+    def __init__(self, manager, config, timer, base_dir, backup_dir, **kwargs):
+        super(Nsca, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir, **kwargs)
         self.server     = self.config.notify.nsca.server
         self.check_name = self.config.notify.nsca.check_name
         self.check_host = self.config.notify.nsca.check_host
@@ -20,7 +20,6 @@ class Nsca:
         self.failed     = self.critical
         self.notifier   = None
 
-        self.timer_name = self.__class__.__name__
         split = self.server.split(":")
         self.server_name = split[0]
         self.server_port = 5667
@@ -53,7 +52,7 @@ class Nsca:
     def close(self):
         pass
 
-    def notify(self, ret_code, output):
+    def run(self, ret_code, output):
         if self.notifier:
             self.timer.start(self.timer_name)
             logging.info("Sending %sNSCA report to check host/name '%s/%s' at NSCA host %s" % (
