@@ -37,7 +37,8 @@ Requirements:
 
 -  Backup consistency depends on consistent server time across all
    hosts. Server time **must be synchronized on all nodes** using ntpd
-   and a consistent time source
+   and a consistent time source or virtualization guest agent that 
+   syncs time
 -  Must have 'mongodump' installed and specified if not at default:
    */usr/bin/mongodump*. Even if you do not run MongoDB 3.2+, it is
    strongly recommended to use MongoDB 3.2+ binaries due to inline
@@ -89,6 +90,8 @@ User and password are set using the 'user' and 'password' config-file fields or 
 Run a Backup
 ~~~~~~~~~~~~
 
+**Using Command-Line Flags**
+
 ::
 
     $ mongodb-consistent-backup -H mongos1.example.com -P 27018 -u mongodb-consistent-backup -p s3cr3t -n prodwebsite -l /opt/mongobackups
@@ -97,21 +100,49 @@ Run a Backup
     $ ls /opt/mongobackups
     prodwebsite
 
+**Using a Config File**
+
+::
+
+    $ mongodb-consistent-backup --config /etc/mongodb-consistent-backup.yml
+    ...
+
 Restore a Backup
 ~~~~~~~~~~~~~~~~
+
+The backups are mongorestore compatible. The *--oplogReplay* flag **MUST** be present to replay the oplogs to ensure consistency.
 
 ::
 
     $ tar xfvz <shardname>.tar.gz
     ...
-    $ mongorestore --host mongod12.example.com --port 27017 -u admin -p 123456 --oplogReplay /path/to/backup
+    $ mongorestore --host mongod12.example.com --port 27017 -u admin -p 123456 --oplogReplay --dir /path/to/backup/dump
+
+Run as Docker Container (Experimental)
+~~~~~~~~~~~~~~~~~~~~~~~
+
+*Note: you need to use persistent volumes to store backups long-term on disk when using Docker. Data in Docker containers is destroyed when the container is deleted.*
+
+**Via Docker Hub**
+
+::
+
+    $ docker run -i timvaillancourt/mongodb_consistent_backup <mongodb_consistent_backup-flags>
+
+**Build and Run Docker Image**
+
+::
+
+    $ cd /path/to/mongodb_consistent_backup
+    $ make docker
+    $ docker run -t mongodb_consistent_backup <mongodb_consistent_backup-flags>
 
 Roadmap
 ~~~~~~~
 
--  "Distributed Mode" for running/storing backup on remote hosts (*via
-   ssh + magic*)
--  Single collection and/or database backup feature
+-  "Distributed Mode" for running backup on remote hosts *(vs. only on one host)*
+-  Support more notification methods *(Prometheus, PagerDuty, etc)* and upload methods *(Google Cloud Storage, Rsync, etc)*
+-  Support SSL MongoDB connections
 -  Unit tests
 
 Contact
