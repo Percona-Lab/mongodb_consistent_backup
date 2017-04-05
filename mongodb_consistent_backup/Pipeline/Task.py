@@ -34,7 +34,7 @@ class Task(object):
     def compression(self, method=None):
         if method:
             self.compression_method = parse_method(method)
-            logging.info("Setting %s compression method to: %s" % (self.task_name, self.compression_method))
+            logging.info("Setting %s compression method: %s" % (self.task_name, self.compression_method))
         return parse_method(self.compression_method)
 
     def is_compressed(self):
