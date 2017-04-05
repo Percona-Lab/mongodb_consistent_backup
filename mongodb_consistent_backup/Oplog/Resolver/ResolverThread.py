@@ -21,6 +21,13 @@ class ResolverThread:
         self.oplogs  = {}
         self.changes = 0
 
+    def cleanup(self):
+        if 'tailed' in self.oplogs:
+            self.oplogs['tailed'].close()
+            del self.oplogs['tailed']
+        if 'file' in self.tailed_opplog and os.path.isfile(self.tailed_oplog['file']):
+            os.remove(self.tailed_oplog['file'])
+
     def run(self):
         self.oplogs['backup'] = Oplog(self.mongodump_oplog['file'], self.dump_gzip, 'a+')
         self.oplogs['tailed'] = Oplog(self.tailed_oplog['file'], self.dump_gzip)
@@ -40,11 +47,6 @@ class ResolverThread:
                     elif self.last_ts > self.max_end_ts:
                         break
 
-            # remove temporary tailed oplog
-            self.oplogs['tailed'].close()
-            os.remove(self.tailed_oplog['file'])
-            del self.oplogs['tailed']
-
             self.state.set('count', self.mongodump_oplog['count'] + self.changes)
             self.state.set('last_ts', self.last_ts)
             self.state.set('running', False)
@@ -59,6 +61,7 @@ class ResolverThread:
         sys.exit(self.exit_code)
 
     def close(self):
+        self.cleanup()
         if len(self.oplogs) > 0:
             for oplog in self.oplogs:
                 self.oplogs[oplog].flush()
