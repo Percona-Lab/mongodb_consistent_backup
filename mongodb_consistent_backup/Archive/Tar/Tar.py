@@ -26,7 +26,10 @@ class Tar:
         self.backup_base_dir = backup_dir
         self.verbose         = self.config.verbose
         self.binary          = "tar"
-        self._pool           = None
+
+        self._pool     = None
+        self.stopped   = False
+        self.completed = False
 
     def compression(self, method=None):
         if method:
@@ -72,10 +75,12 @@ class Tar:
                 raise Error(e)
             self._pool.close()
             self._pool.join()
+            self.completed = True
 
     def close(self):
         logging.debug("Stopping tar archiving threads")
-        if self._pool is not None:
+        if not self.stopped and self._pool is not None:
             self._pool.terminate()
             self._pool.join()
             logging.info("Stopped all tar archiving threads")
+            self.stopped = True

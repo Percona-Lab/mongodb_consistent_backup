@@ -40,6 +40,7 @@ class Mongodump:
         signal(SIGINT, SIG_IGN)
         signal(SIGINT, self.close)
 
+        self.completed            = False
         self.timer_name           = self.__class__.__name__
         self.threads_per_dump_max = 16
         self.config_replset       = False
@@ -174,6 +175,7 @@ class Mongodump:
                 self.threads[0].start()
                 self.wait()
 
+        self.completed = True
         return self._summary
 
     def close(self):

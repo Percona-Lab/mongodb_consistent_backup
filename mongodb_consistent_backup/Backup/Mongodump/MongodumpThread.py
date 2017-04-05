@@ -105,11 +105,16 @@ class MongodumpThread(Process):
             self._process = Popen(mongodump_cmd, stderr=PIPE)
             self.wait()
             self.exit_code = self._process.returncode
+            if self.exit_code > 0:
+                sys.exit(self.exit_code)
         except Exception, e:
             logging.exception("Error performing mongodump: %s" % e)
 
-        oplog = Oplog(self.oplog_file, self.dump_gzip)
-        oplog.load()
+        try:
+            oplog = Oplog(self.oplog_file, self.dump_gzip)
+            oplog.load()
+        except Exception, e:
+            logging.exception("Error loading oplog: %s" % e)
 
         self.state.set('running', False)
         self.state.set('completed', True)
@@ -122,5 +127,3 @@ class MongodumpThread(Process):
         if oplog.last_ts():
             log_msg_extra = "%s, end ts: %s" % (log_msg_extra, oplog.last_ts())
         logging.info("Backup %s completed in %.2f seconds, %s" % (self.uri, self.timer.duration(self.timer_name), log_msg_extra))
-
-        sys.exit(self.exit_code)

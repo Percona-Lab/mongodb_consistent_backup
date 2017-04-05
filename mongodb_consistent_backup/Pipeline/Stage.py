@@ -15,8 +15,9 @@ class Stage(object):
         self.backup_dir = backup_dir
         self.args       = kwargs
 
-        self.running  = False
-        self.stopped  = False
+        self.running   = False
+        self.stopped   = False
+        self.completed = False
 
         self.stage   = "mongodb_consistent_backup.%s" % self.stage_name
         self.module  = None
@@ -72,7 +73,7 @@ class Stage(object):
             try:
                 self.timers.start(self.stage)
                 self.running = True
-                logging.info("Running backup stage %s with method: %s" % (self.stage, self.method.capitalize()))
+                logging.info("Running stage %s with method: %s" % (self.stage, self.method.capitalize()))
                 data = self._method.run()
             except Exception, e:
                 raise OperationError(e)
@@ -80,6 +81,11 @@ class Stage(object):
                 self.running = False
                 self.stopped = True
                 self.timers.stop(self.stage)
-                logging.info("Completed running backup stage %s with method %s in %.2f seconds" % (self.stage, self.method.capitalize(), self.timers.duration(self.stage)))
+                if self._method.completed:
+                    logging.info("Completed running stage %s with method %s in %.2f seconds" % (self.stage, self.method.capitalize(), self.timers.duration(self.stage)))
+                    self.completed = True
+                else:
+                    logging.error("Stage %s did not complete!" % self.stage)
+                    raise OperationError("Stage %s did not complete!" % self.stage)
                 self.close()
             return data

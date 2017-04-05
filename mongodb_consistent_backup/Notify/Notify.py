@@ -9,6 +9,7 @@ class Notify(Stage):
         super(Notify, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir)
         self.method = self.config.notify.method
 
+        self.completed = False
         self.notifications = []
         self.init()
 
@@ -30,6 +31,7 @@ class Notify(Stage):
                 except:
                     continue
             self.timers.stop(self.stage)
+        self.completed = True
 
     def close(self):
         if self._method:
