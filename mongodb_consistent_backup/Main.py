@@ -395,9 +395,9 @@ class MongodbConsistentBackup(object):
                     self.timer,
                     self.backup_root_subdirectory,
                     self.backup_directory,
-		    self.oplog_summary,
-		    self.backup_summary
-		)
+                    self.oplog_summary,
+                    self.backup_summary
+                )
                 self.resolver.compression(self.oplogtailer.compression())
                 resolver_summary = self.resolver.run()
                 for shard in resolver_summary:
