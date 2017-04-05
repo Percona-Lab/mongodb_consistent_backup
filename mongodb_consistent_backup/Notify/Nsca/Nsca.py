@@ -3,10 +3,13 @@ import sys
 
 from pynsca import NSCANotifier
 
+from mongodb_consistent_backup.Errors import Error, NotifyError, OperationError
+from mongodb_consistent_backup.Pipeline import Task
 
-class NSCA:
-    def __init__(self, config):
-        self.config     = config
+
+class Nsca(Task):
+    def __init__(self, manager, config, timer, base_dir, backup_dir, **kwargs):
+        super(Nsca, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir, **kwargs)
         self.server     = self.config.notify.nsca.server
         self.check_name = self.config.notify.nsca.check_name
         self.check_host = self.config.notify.nsca.check_host
@@ -14,6 +17,7 @@ class NSCA:
         self.success    = 0
         self.warning    = 1
         self.critical   = 2
+        self.failed     = self.critical
         self.notifier   = None
 
         split = self.server.split(":")
@@ -21,6 +25,7 @@ class NSCA:
         self.server_port = 5667
         if len(split) == 2:
             self.server_port = int(split[1])
+        self.server = "%s:%i" % (self.server_name, self.server_port)
 
         self.mode_type  = ''
         self.encryption = 1
@@ -31,7 +36,7 @@ class NSCA:
         req_attrs = ['server', 'check_name', 'check_host']
         for attr in req_attrs:
             if not getattr(self, attr):
-                raise Exception, 'NSCA module requires attribute: %s!' % attr, None
+                raise OperationError('NSCA module requires attribute: %s!' % attr)
 
         try:
             self.notifier = NSCANotifier(
@@ -42,10 +47,14 @@ class NSCA:
             )
         except Exception, e:
             logging.error('Error initiating NSCANotifier! Error: %s' % e)
-            raise e
+            raise OperationError(e)
 
-    def notify(self, ret_code, output):
+    def close(self):
+        pass
+
+    def run(self, ret_code, output):
         if self.notifier:
+            self.timer.start(self.timer_name)
             logging.info("Sending %sNSCA report to check host/name '%s/%s' at NSCA host %s" % (
                 self.mode_type,
                 self.check_host,
@@ -55,7 +64,8 @@ class NSCA:
             # noinspection PyBroadException
             try:
                 self.notifier.svc_result(self.check_host, self.check_name, ret_code, str(output))
-            except Exception:
+                logging.debug('Sent %sNSCA report to host %s' % (self.mode_type, self.server))
+                self.timer.stop(self.timer_name)
+            except Exception, e:
                 logging.error('Failed to send %sNSCA report to host %s: %s' % (self.mode_type, self.server, sys.exc_info()[1]))
-
-            logging.debug('Sent %sNSCA report to host %s' % (self.mode_type, self.server))
+                raise NotifyError(e)

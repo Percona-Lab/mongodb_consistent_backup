@@ -3,6 +3,8 @@ import logging
 from subprocess import Popen, PIPE
 from time import sleep
 
+from mongodb_consistent_backup.Errors import Error, OperationError
+
 
 class LocalCommand:
     def __init__(self, command, command_flags=None, verbose=False):
@@ -29,7 +31,7 @@ class LocalCommand:
                 if not output == "":
                     self.output.append("\n\t".join(output.split("\n")))
             except Exception, e:
-                raise Exception, "Error parsing output: %s" % e, None
+                raise OperationError("Error parsing output: %s" % e)
         return self.output
 
     def run(self):
@@ -39,19 +41,22 @@ class LocalCommand:
                 self.parse_output()
                 sleep(0.1)
         except Exception, e:
-            raise e
+            raise Error(e)
     
         if self._process.returncode != 0:
-            raise Exception, "%s command failed with exit code %i! Stderr output:\n%s" % (
+            raise OperationError("%s command failed with exit code %i! Stderr output:\n%s" % (
                 self.command,
                 self._process.returncode,
                 "\n".join(self.output)
-            ), None
+            ))
         elif self.verbose:
             if len(self.output) > 0:
                 logging.debug("%s command completed with output:\n\t%s" % (self.command, "\n".join(self.output)))
             else:
                 logging.debug("%s command completed" % self.command)
+
+        # return exit code from mongodump
+        return self._process.returncode
 
     def close(self):
         if self._process:

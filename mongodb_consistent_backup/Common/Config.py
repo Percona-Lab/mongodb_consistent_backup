@@ -1,14 +1,11 @@
+import json
 import mongodb_consistent_backup
 import sys
 
 from argparse import Action
 from pkgutil import walk_packages
 from yconf import BaseConfiguration
-
-
-__version__ = '#.#.#'
-git_commit  = 'GIT_COMMIT_HASH'
-prog_name   = 'mongodb-consistent-backup'
+from yconf.util import NestedDict
 
 
 class PrintVersions(Action):
@@ -16,7 +13,7 @@ class PrintVersions(Action):
         super(PrintVersions, self).__init__(option_strings=option_strings, dest=dest, nargs=nargs, **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        print "%s version: %s, git commit hash: %s" % (prog_name, __version__, git_commit)
+        print "%s version: %s, git commit hash: %s" % (mongodb_consistent_backup.prog_name, mongodb_consistent_backup.__version__, mongodb_consistent_backup.git_commit)
 
         import platform
         print "Python version: %s" % platform.python_version()
@@ -38,8 +35,8 @@ class ConfigParser(BaseConfiguration):
         parser = super(ConfigParser, self).makeParser()
         parser.add_argument("-V", "--version", dest="version", help="Print mongodb_consistent_backup version info and exit", action=PrintVersions)
         parser.add_argument("-v", "--verbose", dest="verbose", help="Verbose output", default=False, action="store_true")
-        parser.add_argument("-H", "--host", dest="host", help="MongoDB hostname/IP (default: localhost)", default="localhost", type=str)
-        parser.add_argument("-P", "--port", dest="port", help="MongoDB port (default: 27017)", default=27017, type=int)
+        parser.add_argument("-H", "--host", dest="host", help="MongoDB Hostname, IP address or '<replset>/<host:port>,<host:port>,..' URI (default: localhost)", default="localhost", type=str)
+        parser.add_argument("-P", "--port", dest="port", help="MongoDB Port (default: 27017)", default=27017, type=int)
         parser.add_argument("-u", "--user", dest="user", help="MongoDB Authentication Username (for optional auth)", type=str)
         parser.add_argument("-p", "--password", dest="password", help="MongoDB Authentication Password (for optional auth)", type=str)
         parser.add_argument("-a", "--authdb", dest="authdb", help="MongoDB Auth Database (for optional auth - default: admin)", default='admin', type=str)
@@ -59,8 +56,8 @@ class Config(object):
         self.parse_submodules()
         self.parse()
 
-        self.version    = __version__
-        self.git_commit = git_commit
+        self.version    = mongodb_consistent_backup.__version__
+        self.git_commit = mongodb_consistent_backup.git_commit
 
     def _get(self, keys, data=None):
         if not data:
@@ -82,9 +79,7 @@ class Config(object):
                     mod.config(self._config.parser)
                 except AttributeError, e:
                     continue
-                except Exception, e:
-                    raise e
-
+    
     def check_required(self):
         required = [
             'backup.name',
@@ -94,11 +89,33 @@ class Config(object):
             try:
                 self._get(key)
             except:
-                raise Exception, 'Field "%s" must be set via command-line or config file!' % key, None
+                raise mongodb_consistent_backup.Errors.OperationError('Field "%s" must be set via command-line or config file!' % key)
 
     def parse(self):
         self._config.parse(self.cmdline)
         self.check_required()
+
+    def to_dict(self, data):
+        if isinstance(data, dict) or isinstance(data, NestedDict):
+            ret = {}
+            for key in data:
+                value = self.to_dict(data[key])
+                if value and key is not ('merge'):
+                    if key == "password":
+                        value = "******"
+                    ret[key] = value
+            return ret
+        elif isinstance(data, (str, int, bool)): # or isinstance(data, int) or isinstance(data, bool):
+            return data
+
+    def dump(self):
+        return self.to_dict(self._config)
+
+    def to_json(self):
+        return json.dumps(self.dump(), sort_keys=True)
+
+    def __repr__(self):
+        return self.to_json()
 
     def __getattr__(self, key):
         try:

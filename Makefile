@@ -2,7 +2,7 @@
 # 
 
 NAME=mongodb_consistent_backup
-VERSION=$(shell cat VERSION)
+VERSION=$(shell cat VERSION | cut -d- -f1)
 PREFIX?=/usr/local
 BASEDIR?=$(DESTDIR)$(PREFIX)
 BINDIR?=$(BASEDIR)/bin

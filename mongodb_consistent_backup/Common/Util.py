@@ -1,10 +1,12 @@
 import socket
 
+from mongodb_consistent_backup.Errors import OperationError
+
 
 def config_to_string(config):
     config_vars = ""
     for key in config:
-        config_vars += "%s=%s," % (key, config[key])
+        config_vars += "%s=%s, " % (key, config[key])
     return config_vars[:-1]
 
 def parse_method(method):
@@ -16,4 +18,4 @@ def validate_hostname(hostname):
             hostname, port = hostname.split(":")
         socket.gethostbyname(hostname)
     except socket.error, e:
-        raise Exception, "Could not resolve host '%s', error: %s" % (hostname, e), None
+        raise OperationError("Could not resolve host '%s', error: %s" % (hostname, e))
