@@ -33,5 +33,8 @@ rpm: clean
 	tar --remove-files -C rpmbuild/SOURCES -czf rpmbuild/SOURCES/$(NAME).tar.gz $(NAME)
 	rpmbuild -D "_topdir $(PWD)/rpmbuild" -D "version $(VERSION)" -bb rpmbuild/SPECS/$(NAME).spec
 
+docker:
+	docker build --no-cache -t mongodb_consistent_backup .
+
 clean:
 	rm -rf bin build rpmbuild $(NAME).egg-info tmp 2>/dev/null
