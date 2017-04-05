@@ -37,8 +37,8 @@ Requirements:
 
 -  Backup consistency depends on consistent server time across all
    hosts. Server time **must be synchronized on all nodes** using ntpd
-   and a consistent time source or virtualization guest agents that 
-   can sync time
+   and a consistent time source or virtualization guest agent that 
+   syncs time
 -  Must have 'mongodump' installed and specified if not at default:
    */usr/bin/mongodump*. Even if you do not run MongoDB 3.2+, it is
    strongly recommended to use MongoDB 3.2+ binaries due to inline
@@ -103,6 +103,7 @@ Run a Backup
 **Using a Config File**
 
 ::
+
     $ mongodb-consistent-backup --config /etc/mongodb-consistent-backup.yml
     ...
 
@@ -123,11 +124,13 @@ Run as Docker Container (Experimental)
 *Note: you need to use persistent volumes to store backups long-term on disk when using Docker. Data in Docker containers is destroyed when the container is deleted.*
 
 **Via Docker Hub**
+
 ::
 
     $ docker run -i timvaillancourt/mongodb_consistent_backup <mongodb_consistent_backup-flags>
 
 **Build and Run Docker Image**
+
 ::
 
     $ cd /path/to/mongodb_consistent_backup
