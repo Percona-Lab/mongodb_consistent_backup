@@ -4,9 +4,10 @@ production:
   #username: 
   #password:
   #authdb: admin
+  log: /tmp/mongodb_consistent_backup.log
   backup:
     method: mongodump
-    name: test
+    name: default
     location: /opt/mongodb/backup
     mongodump:
       binary: /usr/bin/mongodump

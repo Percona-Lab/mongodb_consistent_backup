@@ -10,6 +10,7 @@ from Archive import Archive
 from Backup import Backup
 from Common import Config, DB, Lock, MongoUri, Timer
 from Errors import Error, NotifyError, OperationError
+from Logger import Logger
 from Notify import Notify
 from Oplog import Tailer, Resolver
 from Replication import Replset, ReplsetSharded
@@ -44,6 +45,10 @@ class MongodbConsistentBackup(object):
         self.manager                  = Manager()
         self.timer                    = Timer(self.manager)
         self.timer_name               = "mongodb_consistent_backup.%s" % self.__class__.__name__
+        self.backup_time              = datetime.now().strftime("%Y%m%d_%H%M")
+        self.logger                   = None
+        self.current_log_file         = None
+        self.backup_log_file          = None
 
         try:
             self.setup_config()
@@ -65,11 +70,11 @@ class MongodbConsistentBackup(object):
             sys.exit(1)
 
     def setup_logger(self):
-        self.log_level = logging.INFO
-        if self.config.verbose:
-            self.log_level = logging.DEBUG
-        logging.basicConfig(level=self.log_level,
-                            format='[%(asctime)s] [%(levelname)s] [%(processName)s] [%(module)s:%(funcName)s:%(lineno)d] %(message)s')
+        try:
+            self.logger = Logger(self.config, self.backup_time)
+            self.logger.start()
+        except Exception, e:
+            self.exception("Could not start logger: %s" % e, e)
 
     def setup_signal_handlers(self):
         try:
@@ -80,7 +85,6 @@ class MongodbConsistentBackup(object):
             sys.exit(1)
 
     def set_backup_dirs(self):
-        self.backup_time = datetime.now().strftime("%Y%m%d_%H%M")
         self.backup_root_directory    = os.path.join(self.config.backup.location, self.config.backup.name)
         self.backup_latest_symlink    = os.path.join(self.backup_root_directory, "latest")
         self.backup_previous_symlink  = os.path.join(self.backup_root_directory, "previous")
@@ -107,11 +111,11 @@ class MongodbConsistentBackup(object):
     def get_lock(self):
         # noinspection PyBroadException
         try:
-            if not self.config.lockfile:
-                self.config.lockfile = '/tmp/%s.lock' % self.program_name
-            self.lock = Lock(self.config.lockfile)
+            if not self.config.lock_file:
+                self.config.lock_file = '/tmp/%s.lock' % self.program_name
+            self.lock = Lock(self.config.lock_file)
         except Exception:
-            logging.fatal("Could not acquire lock: '%s'! Is another %s process running? Exiting" % (self.config.lockfile, self.program_name))
+            logging.fatal("Could not acquire lock: '%s'! Is another %s process running? Exiting" % (self.config.lock_file, self.program_name))
             self.cleanup_and_exit(None, None)
 
     def release_lock(self):
@@ -180,6 +184,11 @@ class MongodbConsistentBackup(object):
             self.db.close()
 
         logging.info("Cleanup complete, exiting")
+
+        if self.logger:
+            self.logger.rotate()
+            self.logger.close()
+
         self.release_lock()
         sys.exit(1)
 
@@ -448,4 +457,6 @@ class MongodbConsistentBackup(object):
         self.update_symlinks()
         logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration(self.timer_name)))
 
+        self.logger.rotate()
+        self.logger.close()
         self.release_lock()

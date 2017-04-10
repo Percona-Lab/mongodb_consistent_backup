@@ -43,7 +43,8 @@ class ConfigParser(BaseConfiguration):
         parser.add_argument("-n", "--backup.name", dest="backup.name", help="Name of the backup set (required)", type=str)
         parser.add_argument("-l", "--backup.location", dest="backup.location", help="Base path to store the backup data (required)", type=str)
         parser.add_argument("-m", "--backup.method", dest="backup.method", help="Method to be used for backup (default: mongodump)", default='mongodump', choices=['mongodump'])
-        parser.add_argument("--lockfile", dest="lockfile", help="Location of lock file (default: /tmp/mongodb_consistent_backup.lock)", default='/tmp/mongodb_consistent_backup.lock', type=str)
+        parser.add_argument("-L", "--log-dir", dest="log_dir", help="Path to write log files to (default: disabled)", default='', type=str)
+        parser.add_argument("--lock-file", dest="lock_file", help="Location of lock file (default: /tmp/mongodb_consistent_backup.lock)", default='/tmp/mongodb_consistent_backup.lock', type=str)
         parser.add_argument("--sharding.balancer.wait_secs", dest="sharding.balancer.wait_secs", help="Maximum time to wait for balancer to stop, in seconds (default: 300)", default=300, type=int)
         parser.add_argument("--sharding.balancer.ping_secs", dest="sharding.balancer.ping_secs", help="Interval to check balancer state, in seconds (default: 3)", default=3, type=int)
         return parser
