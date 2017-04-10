@@ -10,7 +10,7 @@ from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnection
 class DB:
     def __init__(self, uri, config, do_replset=False, read_pref='primaryPreferred', do_connect=True, conn_timeout=5000, retries=5):
         self.uri          = uri
-        self.username     = config.user
+        self.username     = config.username
         self.password     = config.password
         self.authdb       = config.authdb
         self.do_replset   = do_replset
