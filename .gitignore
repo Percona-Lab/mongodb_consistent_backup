@@ -1,6 +1,5 @@
 bin
 build
-rpmbuild
 tmp
 *.pyc
 .idea

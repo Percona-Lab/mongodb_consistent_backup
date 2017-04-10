@@ -20,7 +20,7 @@ class Mongodump(Task):
         super(Mongodump, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir)
         self.compression_method = self.config.backup.mongodump.compression
         self.binary             = self.config.backup.mongodump.binary
-        self.user               = self.config.user
+        self.user               = self.config.username
         self.password           = self.config.password
         self.authdb             = self.config.authdb
         self.replsets           = replsets
@@ -152,7 +152,7 @@ class Mongodump(Task):
                     self.verbose
                 )]
                 self.dump_threads[0].start()
-                self.wait()
+                self.dump_threads[0].join()
 
         self.completed = True
         return self._summary
