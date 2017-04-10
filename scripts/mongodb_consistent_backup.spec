@@ -53,8 +53,8 @@ EOF
 
 # Change /etc config file to use rpm paths for logs and data
 sed -i \
-	-e s@/tmp/mongodb_consistent_backup.log@%{log_dir}/mongodb-consistent-backup.log@g \
-	-e s@/opt/mongodb/backup@%{data_dir}@g \
+	-e s@log_dir:\ /tmp@log_dir:\ %{log_dir}@g \
+	-e s@location:\ /opt/mongodb/backup@location:\ %{data_dir}@g \
 	%{buildroot}%{_sysconfdir}/%{bin_name}.yml
 
 
