@@ -152,7 +152,7 @@ class Mongodump(Task):
                     self.verbose
                 )]
                 self.dump_threads[0].start()
-                self.wait()
+                self.dump_threads[0].join()
 
         self.completed = True
         return self._summary

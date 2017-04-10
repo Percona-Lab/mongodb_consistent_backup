@@ -70,8 +70,8 @@ chown %{run_user}:%{run_group} %{data_dir} %{log_dir}
 
 
 %files
-%{_sysconfdir}/%{bin_name}.yml
-%{_sysconfdir}/cron.d/%{name}
+%config(noreplace) %{_sysconfdir}/%{bin_name}.yml
+%config(noreplace) %{_sysconfdir}/cron.d/%{name}
 %{prefix}/bin/%{bin_name}
 %{prefix}/share/%{name}/%{bin_name}.example.yml
 %{prefix}/share/%{name}/LICENSE

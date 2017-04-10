@@ -30,9 +30,9 @@ class Tailer(Task):
         return self._summary
 
     def prepare_oplog_files(self, shard_name):
-        oplog_dir = os.path.join(self.base_dir, shard_name)
+        oplog_dir = os.path.join(self.backup_dir, shard_name)
         if not os.path.isdir(oplog_dir):
-            os.makedirs(oplog_dir)
+            os.mkdir(oplog_dir)
         oplog_file = os.path.join(oplog_dir, "oplog-tailed.bson")
         return oplog_file
 
