@@ -4,7 +4,7 @@ from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure, ServerSelectionTimeoutError
 from time import sleep
 
-from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError, Error
+from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError, Error, OperationError
 
 
 class DB:

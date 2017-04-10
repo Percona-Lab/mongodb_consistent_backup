@@ -45,14 +45,17 @@ class MongodbConsistentBackup(object):
         self.timer                    = Timer(self.manager)
         self.timer_name               = "mongodb_consistent_backup.%s" % self.__class__.__name__
 
-        self.setup_config()
-        self.setup_logger()
-        self.setup_signal_handlers()
-        self.get_lock()
-        self.init()
-        self.set_backup_dirs()
-        self.get_db_conn()
-        self.setup_state()
+        try:
+            self.setup_config()
+            self.setup_logger()
+            self.setup_signal_handlers()
+            self.get_lock()
+            self.init()
+            self.set_backup_dirs()
+            self.get_db_conn()
+            self.setup_state()
+        except OperationError, e:
+            self.exception("Error setting up %s: %s" % (self.program_name, e), e)
 
     def setup_config(self):
         try:
@@ -91,11 +94,14 @@ class MongodbConsistentBackup(object):
 
     def get_db_conn(self):
         self.uri = MongoUri(self.config.host, self.config.port)
-        self.db  = DB(self.uri, self.config, True, 'secondaryPreferred')
+        try:
+            self.db = DB(self.uri, self.config, True, 'secondaryPreferred')
+        except OperationError, e:
+            return self.exception("Cannot connect to seed host(s): %s" % self.uri, e)
         self.is_sharded = self.db.is_mongos()
         if not self.is_sharded:
             self.is_sharded = self.db.is_configsvr()
-        if not self.is_sharded and not self.db.is_replset():
+        if not self.is_sharded and not self.db.is_replset() and not self.db.is_configsvr():
             raise OperationError("Host %s is not part of a replset and is not a sharding config/mongos server!" % self.uri.get())
 
     def get_lock(self):
