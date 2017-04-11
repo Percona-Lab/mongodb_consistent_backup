@@ -54,8 +54,7 @@ class Tailer(Task):
                 self.timer,
                 oplog_file,
                 oplog_state,
-                self.do_gzip(),
-                self.status_secs
+                self.do_gzip()
             )
             self.shards[shard] = {
                 'stop':   stop,

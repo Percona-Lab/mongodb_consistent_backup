@@ -7,6 +7,7 @@ from gzip import GzipFile
 class Logger:
     def __init__(self, config, backup_time):
         self.config      = config
+        self.backup_name = self.config.backup.name
         self.backup_time = backup_time
 
         self.log_level = logging.INFO
@@ -28,8 +29,8 @@ class Logger:
         try:
             logging.basicConfig(level=self.log_level, format=self.log_format)
             if self.do_file_log:
-                self.current_log_file = os.path.join(self.config.log_dir, "backup.log")
-                self.backup_log_file  = os.path.join(self.config.log_dir, "backup.%s.log" % self.backup_time)
+                self.current_log_file = os.path.join(self.config.log_dir, "backup.%s.log" % self.backup_name)
+                self.backup_log_file  = os.path.join(self.config.log_dir, "backup.%s.%s.log" % (self.backup_name, self.backup_time))
                 self.file_log = logging.FileHandler(self.backup_log_file)
                 self.file_log.setLevel(self.log_level)
                 self.file_log.setFormatter(logging.Formatter(self.log_format))
