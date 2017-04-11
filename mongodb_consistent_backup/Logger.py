@@ -34,8 +34,7 @@ class Logger:
                 self.file_log.setLevel(self.log_level)
                 self.file_log.setFormatter(logging.Formatter(self.log_format))
                 logging.getLogger('').addHandler(self.file_log)
-		print "update_symlink()"
-		self.update_symlink()
+                self.update_symlink()
         except OSError, e:
             logging.warning("Could not start file log handler, writing to stdout only")
             pass
