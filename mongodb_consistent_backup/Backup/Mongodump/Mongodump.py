@@ -26,11 +26,15 @@ class Mongodump(Task):
         self.replsets           = replsets
         self.sharding           = sharding
 
+        self.version        = 'unknown'
         self.threads_max    = 16
         self.config_replset = False
         self.dump_threads   = []
         self.states         = {}
         self._summary       = {}
+
+        if self.config.backup.mongodump.threads and self.config.backup.mongodump.threads > 0:
+            self.threads(self.config.backup.mongodump.threads)
 
         with hide('running', 'warnings'), settings(warn_only=True):
             self.version = local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary, capture=True)

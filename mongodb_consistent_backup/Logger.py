@@ -34,6 +34,7 @@ class Logger:
                 self.file_log.setLevel(self.log_level)
                 self.file_log.setFormatter(logging.Formatter(self.log_format))
                 logging.getLogger('').addHandler(self.file_log)
+                self.update_symlink()
         except OSError, e:
             logging.warning("Could not start file log handler, writing to stdout only")
             pass
@@ -42,11 +43,12 @@ class Logger:
         if self.file_log:
             self.file_log.close()
 
-    def compress_last(self):
+    def compress(self):
         gz_log = None
         try:
-            if not os.path.isfile(self.last_log):
+            if not os.path.isfile(self.last_log) or self.last_log == self.backup_log_file:
                 return
+            logging.info("Compressing previous log file")
             gz_file = "%s.gz" % self.last_log
             gz_log  = GzipFile(gz_file, "w+")
             with open(self.last_log) as f:
@@ -57,13 +59,13 @@ class Logger:
             if gz_log:
                 gz_log.close()
 
+    def update_symlink(self):
+        if os.path.islink(self.current_log_file):
+            self.last_log = os.readlink(self.current_log_file)
+            os.remove(self.current_log_file)
+        os.symlink(self.backup_log_file, self.current_log_file)
+
     def rotate(self):
-        if self.do_file_log:
-            if os.path.islink(self.current_log_file):
-                 logging.info("Rotating previous log file")
-                 self.last_log = os.readlink(self.current_log_file)
-                 if self.last_log == self.backup_log_file:
-                     return
-                 os.remove(self.current_log_file)
-                 self.compress_last()
-            os.symlink(self.backup_log_file, self.current_log_file)
+        if self.do_file_log and self.last_log:
+            logging.info("Running rotation of log files")
+            self.compress()

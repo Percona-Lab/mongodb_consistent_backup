@@ -24,7 +24,7 @@ pickle(MethodType, _reduce_method)
 class Tar(Task):
     def __init__(self, manager, config, timer, base_dir, backup_dir, **kwargs):
         super(Tar, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir, **kwargs)
-	self.compression_method = self.config.archive.tar.compression
+        self.compression_method = self.config.archive.tar.compression
         self.binary             = "tar"
 
         self._pool  = None

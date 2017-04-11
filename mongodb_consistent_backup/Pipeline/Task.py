@@ -23,9 +23,9 @@ class Task(object):
         self.completed = False
         self.exit_code = 255
 
+        self.thread_count       = None
         self.cpu_count          = cpu_count()
         self.compression_method = 'none'
-        self.thread_count       = 1
         self.timer_name         = self.__class__.__name__
 
         signal(SIGINT, SIG_IGN)

@@ -51,12 +51,6 @@ install -m 0644 %{SOURCE3} %{buildroot}/usr/share/%{name}/README.rst
 #0 0 * * *	%{run_user}	/usr/bin/mongodb-consistent-backup --config=/etc/mongodb-consistent-backup.yml >/dev/null 2>&1
 EOF
 
-# Change /etc config file to use rpm paths for logs and data
-sed -i \
-	-e s@log_dir:\ /tmp@log_dir:\ %{log_dir}@g \
-	-e s@location:\ /opt/mongodb/backup@location:\ %{data_dir}@g \
-	%{buildroot}%{_sysconfdir}/%{bin_name}.yml
-
 
 %pre
 /usr/bin/getent group %{run_group} >/dev/null 2>&1 || /usr/sbin/groupadd -r %{run_group}

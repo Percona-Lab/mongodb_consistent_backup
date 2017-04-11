@@ -14,14 +14,14 @@ from mongodb_consistent_backup.Pipeline import Task
 
 
 class Tailer(Task):
-    def __init__(self, manager, config, timer, base_dir, backup_dir, replsets, status_secs=15):
+    def __init__(self, manager, config, timer, base_dir, backup_dir, replsets):
         super(Tailer, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir)
         self.backup_name = self.config.name
         self.user        = self.config.username
         self.password    = self.config.password
         self.authdb      = self.config.authdb
+        self.status_secs = self.config.oplog.tailer.status_interval
         self.replsets    = replsets
-        self.status_secs = status_secs
 
         self.shards   = {}
         self._summary = {}

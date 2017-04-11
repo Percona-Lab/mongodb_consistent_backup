@@ -15,7 +15,7 @@ from mongodb_consistent_backup.Oplog import Oplog
 
 
 class TailThread(Process):
-    def __init__(self, do_stop, uri, config, timer, oplog_file, state, dump_gzip=False, status_secs=15):
+    def __init__(self, do_stop, uri, config, timer, oplog_file, state, dump_gzip=False, status_secs=30):
         Process.__init__(self)
         self.do_stop     = do_stop
         self.uri         = uri
