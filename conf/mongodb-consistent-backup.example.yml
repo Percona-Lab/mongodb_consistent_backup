@@ -1,47 +1,50 @@
 production:
   host: localhost
   port: 27017
-  #username: 
-  #password:
-  #authdb: admin
-  log_dir: /tmp
+  #username: [auth username] (default: none)
+  #password: [auth password] (default: none)
+  #authdb: [auth database]   (default: admin)
+  log_dir: /var/log/mongodb-consistent-backup
   backup:
     method: mongodump
     name: default
-    location: /opt/mongodb/backup
-    mongodump:
-      binary: /usr/bin/mongodump
-    #  compression: gzip (default: true - if supported)
-  replication:
-    max_lag_secs: 5
-    min_priority: 0
-    max_priority: 1000
-    hidden_only: false
-  sharding:
-    balancer:
-      wait_secs: 300
-      ping_secs: 3
-  oplog:
-    #compression: gzip
-    #resolver_threads: 4
+    location: /var/lib/mongodb-consistent-backup
+  #  mongodump:
+  #    binary: [path]           (default: /usr/bin/mongodump)
+  #    compression: [none|gzip] (default: true - if supported)
+  #    threads: [1-16]          (default: auto-generated - shards/cpu)
+  #replication:
+  #  max_lag_secs: [1+]        (default: 5)
+  #  min_priority: [0-999]     (default: 0)
+  #  max_priority: [2-1000]    (default: 1000)
+  #  hidden_only: [true|false] (default: false)
+  #sharding:
+  #  balancer:
+  #    wait_secs: [1+] (default: 300)
+  #    ping_secs: [1+] (default: 3)
+  #oplog:
+  #  compression: [none|gzip] (default: true - if used by backup stage)
+  #  resolver_threads: [1+]   (default: 2 per CPU)
+  #  tailer:
+  #    status_interval: 30
   archive:
     method: tar
-    #tar:
-    #  compression: gzip
-    #  threads: 2
+  #  tar:
+  #    compression: [none|gzip] (default: gzip, none if backup is compressed)
+  #    threads: [1+]            (default: 1 per CPU)
   notify:
     method: none
-    #nsca:
-    #  server: localhost:5667
-    #  password: secret
-    #  check_host: localhost
-    #  check_name: mongodb_consistent_backup
+  #  nsca:
+  #    server: [host:port] (default: localhost:5667)
+  #    password: [password]
+  #    check_host: [nagios host]
+  #    check_name: [nagios check name]
   upload:
     method: none
-    remove_uploaded: false
-    #s3:
-    #  access_key: <AWS S3 Access Key>
-    #  secret_key: <AWS S3 Secret Key>
-    #  bucket_name: <AWS S3 Bucket Name>
-    #  bucket_prefix: /
-    #  threads: 4
+  #  remove_uploaded: [true|false] (default: false)
+  #  s3:
+  #    access_key: [AWS S3 Access Key]
+  #    secret_key: [AWS S3 Secret Key]
+  #    bucket_name: [AWS S3 Bucket Name]
+  #    bucket_prefix: [prefix] (default: /)
+  #    threads: [1+]           (default: 1 per CPU)
