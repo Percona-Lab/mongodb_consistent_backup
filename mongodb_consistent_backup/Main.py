@@ -55,6 +55,7 @@ class MongodbConsistentBackup(object):
             self.setup_logger()
             self.setup_signal_handlers()
             self.get_lock()
+            self.logger.start_file_logger()
             self.init()
             self.set_backup_dirs()
             self.get_db_conn()
@@ -116,7 +117,7 @@ class MongodbConsistentBackup(object):
             self.lock = Lock(self.config.lock_file)
         except Exception:
             logging.fatal("Could not acquire lock: '%s'! Is another %s process running? Exiting" % (self.config.lock_file, self.program_name))
-            self.cleanup_and_exit(None, None)
+            sys.exit(1)
 
     def release_lock(self):
         if self.lock:
