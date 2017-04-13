@@ -7,6 +7,7 @@ from select import select
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from subprocess import Popen, PIPE
 
+from mongodb_consistent_backup.Common import is_datetime
 from mongodb_consistent_backup.Oplog import Oplog
 
 
@@ -52,6 +53,8 @@ class MongodumpThread(Process):
                 return None
             if "\t" in line:
                 (date, line) = line.split("\t")
+            elif is_datetime(line):
+                return None
             return "%s:\t%s" % (self.uri, line) 
         except:
             return None
