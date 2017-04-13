@@ -9,14 +9,14 @@ from mongodb_consistent_backup.Common import Lock
 
 
 class StateBase(object):
-    def __init__(self, base_dir, config, filename="meta.bson", state_version=1):
-        self.state_dir  = os.path.join(base_dir, "mongodb-consistent-backup_META")
-        self.state_lock = os.path.join(base_dir, "mongodb-consistent-backup_META.lock")
+    def __init__(self, base_dir, config, filename="meta.bson", state_version=1, meta_name="mongodb-consistent-backup_META"):
+        self.meta_name  = meta_name
+        self.state_dir  = os.path.join(base_dir, self.meta_name)
+        self.state_lock = os.path.join(base_dir, "%s.lock" % self.meta_name)
         self.state_file = os.path.join(self.state_dir, filename)
         self.state = {
             "name":          config.backup.name,
             "path":          base_dir,
-            "hostname":      platform.node(),
             "state_version": state_version
         }
         self.lock = Lock(self.state_lock, False)
@@ -129,10 +129,10 @@ class StateRoot(StateBase):
         if os.path.isdir(self.base_dir):
             for subdir in os.listdir(self.base_dir):
                 try:
-                    if subdir == "mongodb-consistent-backup_META" :
+                    if subdir == self.meta_name:
                         continue
                     bkp_path   = os.path.join(self.base_dir, subdir)
-                    state_path = os.path.join(bkp_path, "mongodb-consistent-backup_META")
+                    state_path = os.path.join(bkp_path, self.meta_name)
                     state_file = os.path.join(state_path, "meta.bson")
                     done_path  = os.path.join(state_path, "done.bson")
                     if os.path.isdir(state_path) and os.path.isfile(state_file) and os.path.isfile(done_path):
