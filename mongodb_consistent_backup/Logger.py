@@ -28,7 +28,13 @@ class Logger:
     def start(self):
         try:
             logging.basicConfig(level=self.log_level, format=self.log_format)
-            if self.do_file_log:
+        except Exception, e:
+            print("Could not start logger: %s" % e)
+            raise e
+
+    def start_file_logger(self):
+        if self.do_file_log:
+            try:
                 self.current_log_file = os.path.join(self.config.log_dir, "backup.%s.log" % self.backup_name)
                 self.backup_log_file  = os.path.join(self.config.log_dir, "backup.%s.%s.log" % (self.backup_name, self.backup_time))
                 self.file_log = logging.FileHandler(self.backup_log_file)
@@ -36,9 +42,9 @@ class Logger:
                 self.file_log.setFormatter(logging.Formatter(self.log_format))
                 logging.getLogger('').addHandler(self.file_log)
                 self.update_symlink()
-        except OSError, e:
-            logging.warning("Could not start file log handler, writing to stdout only")
-            pass
+            except OSError, e:
+                logging.warning("Could not start file log handler, writing to stdout only")
+                pass
 
     def close(self):
         if self.file_log:
@@ -61,6 +67,8 @@ class Logger:
                 gz_log.close()
 
     def update_symlink(self):
+        if not self.do_file_log:
+            return
         if os.path.islink(self.current_log_file):
             self.last_log = os.readlink(self.current_log_file)
             os.remove(self.current_log_file)
