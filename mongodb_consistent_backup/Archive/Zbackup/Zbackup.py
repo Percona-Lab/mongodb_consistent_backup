@@ -9,6 +9,7 @@ from mongodb_consistent_backup.Common import LocalCommand
 from mongodb_consistent_backup.Errors import OperationError
 
 
+# TODO: move to mongodb_consistent_backup.Pipeline.Task
 class Zbackup:
     def __init__(self, config, source_dir):
         self.config      = config
@@ -16,24 +17,28 @@ class Zbackup:
         self.backup_name = self.config.backup.name
 
         self.zbackup_binary      = config.archive.zbackup.binary
-        self.zbackup_backup_dir  = config.archive.zbackup.backup_dir
         self.zbackup_passwd_file = config.archive.zbackup.password_file
         self.zbackup_threads     = config.archive.zbackup.threads
 
-        self.zbackup_info        = os.path.join(self.backup_dir(), "info")
-        self.zbackup_bundles     = os.path.join(self.backup_dir(), "bundles")
-        self.zbackup_backup_path = os.path.join(self.backup_dir(), "backups", "%s.tar" % self.backup_name)
+        self.zbackup_dir         = os.path.join(self.config.backup.location, self.backup_name, "zbackup")
+        self.zbackup_backup_path = os.path.join(self.zbackup_dir, "backups", "%s.tar" % self.backup_name)
+        self.zbackup_bundles     = os.path.join(self.zbackup_dir, "bundles")
+        self.zbackup_info        = os.path.join(self.zbackup_dir, "info")
 
         self.encrypted          = False
         self.compression_method = None
-
-        self._command = None
-        self._version = None
+        self._command           = None
+        self._version           = None
 
         signal(SIGINT, self.close)
         signal(SIGTERM, self.close)
 
         self.init()
+
+    def is_zbackup_dir(self):
+        if os.path.isfile(self.zbackup_info) and os.path.isdir(self.zbackup_bundles):
+            return True
+        return False
 
     def compression(self, method=None):
         # only lzma supported
@@ -46,27 +51,22 @@ class Zbackup:
             self.config.archive.zbackup.threads = cpu_count()
         return int(self.config.archive.zbackup.threads)
 
-    def backup_dir(self, backup_dir=None):
-        if backup_dir:
-            self.config.archive.zbackup.backup_dir = backup_dir
-        return self.config.archive.zbackup.backup_dir
-
-    def init_storage_dir(self):
-        if os.path.isdir(self.backup_dir()):
-            if os.path.isfile(self.zbackup_info) and os.path.isdir(self.zbackup_bundles):
-                logging.info("Found existing ZBackup storage dir at: %s (encrypted: %s)" % (self.backup_dir(), self.encrypted))
+    def init(self):
+        if os.path.isdir(self.zbackup_dir):
+            if self.is_zbackup_dir():
+                logging.info("Found existing ZBackup storage dir at: %s (encrypted: %s)" % (self.zbackup_dir, self.encrypted))
             else:
-                raise OperationError("ZBackup dir: %s is not a zbackup storage directory!" % self.backup_dir())
+                raise OperationError("ZBackup dir: %s is not a zbackup storage directory!" % self.zbackup_dir)
         else:
             try:
                 cmd_line = [self.zbackup_binary]
                 if self.zbackup_passwd_file:
                     self.encrypted = True
-                    cmd_line.extend(["--password-file", self.zbackup_passwd_file, "init", self.backup_dir()])
-                    logging.info("Using ZBackup encryption")
+                    cmd_line.extend(["--password-file", self.zbackup_passwd_file, "init", self.zbackup_dir])
+                    logging.info("Using ZBackup AES encryption with password file: %s" % self.zbackup_passwd_file)
                 else:
-                    cmd_line.extend(["--non-encrypted", "init", self.backup_dir()])
-                logging.warning("Initializing new ZBackup storage directory at: %s (encrypted: %s)" % (self.backup_dir(), self.encrypted))
+                    cmd_line.extend(["--non-encrypted", "init", self.zbackup_dir])
+                logging.warning("Initializing new ZBackup storage directory at: %s (encrypted: %s)" % (self.zbackup_dir, self.encrypted))
                 logging.debug("Using ZBackup command: '%s'" % cmd_line)
                 cmd = Popen(cmd_line, stdout=PIPE)
                 stdout, stderr = cmd.communicate()
@@ -74,17 +74,6 @@ class Zbackup:
                     logging.info("Initialization complete, stdout:\n%s" % stdout)
             except Exception, e:
                 raise OperationError("Error creating ZBackup storage directory! Error: %s" % e)
-
-    def init(self):
-        if not self.backup_dir() and self.config.backup.location:
-            base_dir = os.path.join(self.config.backup.location, self.config.backup.name)
-            if not os.path.isdir(base_dir):
-                try:
-                    os.makedirs(base_dir)
-                except Exception, e:
-                    raise OperationError("Error making ZBackup base dir: %s" % e)
-            self.backup_dir(os.path.join(base_dir, 'zbackup'))
-        self.init_storage_dir()
 
     def version(self):
         if self._version:
@@ -121,7 +110,7 @@ class Zbackup:
 
     def run(self):
         if self.has_zbackup():
-            tar_cmd_line = ["tar", "c", self.source_dir]
+            tar_cmd_line = ["tar", "-c", self.source_dir]
             zbackup_cmd_line = [self.zbackup_binary]
             if self.encrypted:
                 zbackup_cmd_line.extend(["--password-file", self.zbackup_passwd_file, "backup", self.zbackup_backup_path])
