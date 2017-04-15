@@ -7,4 +7,7 @@ def config(parser):
     parser.add_argument("--backup.mongodump.compression", dest="backup.mongodump.compression",
                         help="Compression method to use on backup (default: gzip)", default="gzip",
                         choices=["none", "gzip"])
+    parser.add_argument("--backup.mongodump.threads", dest="backup.mongodump.threads",
+                        help="Number of threads to use for each mongodump process. There is 1 x mongodump per shard, be careful! (default: shards/CPUs)",
+                        default=0, type=int)
     return parser

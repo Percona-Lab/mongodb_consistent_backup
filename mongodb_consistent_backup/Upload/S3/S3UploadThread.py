@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from filechunkio import FileChunkIO
 from S3Session import S3Session
@@ -23,8 +24,8 @@ class S3UploadThread:
             self.s3_conn = S3Session(self.access_key, self.secret_key, self.s3_host, self.secure, self.retries)
             self.bucket  = self.s3_conn.get_bucket(self.bucket_name)
         except Exception, e:
-            logging.error("Could not get AWS S3 connection to bucket %s! Error: %s" % (self.bucket_name, e))
-            raise e
+            logging.fatal("Could not get AWS S3 connection to bucket %s! Error: %s" % (self.bucket_name, e))
+            sys.exit(1)
 
     def run(self):
         try:
@@ -36,5 +37,5 @@ class S3UploadThread:
                     logging.debug("Uploaded file: %s (part num: %s)" % (self.file_name, self.part_num))
                     break
         except Exception, e:
-            logging.error("AWS S3 multipart upload failed after %i retries! Error: %s" % (self.retries, e))
-            raise e
+            logging.fatal("AWS S3 multipart upload failed after %i retries! Error: %s" % (self.retries, e))
+            sys.exit(1)

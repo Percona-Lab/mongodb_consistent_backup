@@ -1,59 +1,85 @@
 import os
 import logging
+import sys
 
 from multiprocessing import Process
-from signal import signal, SIGINT, SIGTERM
+from select import select
+from signal import signal, SIGINT, SIGTERM, SIG_IGN
+from subprocess import Popen, PIPE
 
-from mongodb_consistent_backup.Common import LocalCommand, Timer
+from mongodb_consistent_backup.Common import is_datetime
 from mongodb_consistent_backup.Oplog import Oplog
 
 
 # noinspection PyStringFormat
 class MongodumpThread(Process):
-    def __init__(self, response_queue, backup_name, host_port, user, password, authdb, base_dir, binary,
+    def __init__(self, state, uri, timer, user, password, authdb, base_dir, binary,
                  threads=0, dump_gzip=False, verbose=False):
         Process.__init__(self)
-        self.host, port     = host_port.split(":")
-        self.host_port      = host_port
-        self.port           = int(port)
-        self.response_queue = response_queue
-        self.backup_name    = backup_name
-        self.user           = user
-        self.password       = password
-        self.authdb         = authdb
-        self.base_dir       = base_dir
-        self.binary         = binary
-        self.threads        = threads
-        self.dump_gzip      = dump_gzip
-        self.verbose        = verbose
+        self.state       = state
+        self.uri         = uri
+        self.timer       = timer
+        self.user        = user
+        self.password    = password
+        self.authdb      = authdb
+        self.base_dir    = base_dir
+        self.binary      = binary
+        self.threads     = threads
+        self.dump_gzip   = dump_gzip
+        self.verbose     = verbose
 
-        self.timer      = Timer()
+        self.timer_name = "%s-%s" % (self.__class__.__name__, self.uri.replset)
+        self.exit_code  = 1
         self._command   = None
-        self.completed  = False 
-        self.backup_dir = "%s/%s" % (self.base_dir, self.backup_name)
-        self.dump_dir   = "%s/dump" % self.backup_dir
-        self.oplog_file = "%s/oplog.bson" % self.dump_dir
+        self.backup_dir = os.path.join(self.base_dir, self.uri.replset)
+        self.dump_dir   = os.path.join(self.backup_dir, "dump")
+        self.oplog_file = os.path.join(self.dump_dir, "oplog.bson")
 
-        signal(SIGINT, self.close)
+        signal(SIGINT, SIG_IGN)
         signal(SIGTERM, self.close)
 
     def close(self, exit_code=None, frame=None):
         if self._command:
-            logging.debug("Killing running subprocess/command: %s" % self._command.command)
+            logging.debug("Stopping running subprocess/command: %s" % self._command.command)
             del exit_code
             del frame
             self._command.close()
+        sys.exit(self.exit_code)
 
-    def run(self):
-        logging.info("Starting mongodump (with oplog) backup of %s/%s:%i" % (
-            self.backup_name,
-            self.host,
-            self.port
-        ))
+    def parse_mongodump_line(self, line):
+        try:
+            line = line.rstrip()
+            if line == "":
+                return None
+            if "\t" in line:
+                (date, line) = line.split("\t")
+            elif is_datetime(line):
+                return None
+            return "%s:\t%s" % (self.uri, line) 
+        except:
+            return None
 
-        self.timer.start()
+    def wait(self):
+        try:
+            while self._process.stderr:
+                poll = select([self._process.stderr.fileno()], [], [])
+                if len(poll) >= 1:
+                    for fd in poll[0]:
+                        read = self._process.stderr.readline()
+                        line = self.parse_mongodump_line(read)
+                        if line:
+                            logging.info(line)
+                if self._process.poll() != None:
+                    break
+        except Exception, e:
+            logging.exception("Error reading mongodump output: %s" % e)
+        finally:
+            self._process.communicate()
 
-        mongodump_flags = ["-h", self.host_port, "--oplog", "-o", "%s/dump" % self.backup_dir]
+    def mongodump_cmd(self):
+        mongodump_uri   = self.uri.get()
+        mongodump_cmd   = [self.binary]
+        mongodump_flags = ["--host", mongodump_uri.host, "--port", str(mongodump_uri.port), "--oplog", "--out", "%s/dump" % self.backup_dir]
         if self.threads > 0:
             mongodump_flags.extend(["--numParallelCollections="+str(self.threads)])
         if self.dump_gzip:
@@ -63,35 +89,44 @@ class MongodumpThread(Process):
             mongodump_flags.extend(["--authenticationDatabase", self.authdb])
         if self.user and self.password:
             mongodump_flags.extend(["-u", self.user, "-p", self.password])
+        mongodump_cmd.extend(mongodump_flags)
+        return mongodump_cmd
+
+    def run(self):
+        logging.info("Starting mongodump backup of %s" % self.uri)
+
+        self.timer.start(self.timer_name)
+        self.state.set('running', True)
+        self.state.set('file', self.oplog_file)
+
+        mongodump_cmd = self.mongodump_cmd()
+        try:
+            if os.path.isdir(self.dump_dir):
+                os.removedirs(self.dump_dir)
+            os.makedirs(self.dump_dir)
+            logging.debug("Running mongodump cmd: %s" % mongodump_cmd)
+            self._process = Popen(mongodump_cmd, stderr=PIPE)
+            self.wait()
+            self.exit_code = self._process.returncode
+            if self.exit_code > 0:
+                sys.exit(self.exit_code)
+        except Exception, e:
+            logging.exception("Error performing mongodump: %s" % e)
 
         try:
-            commands = []
-            if os.path.isdir(self.dump_dir):
-                commands.append(["rm", ["-rf", self.dump_dir]])
-            commands.append(["mkdir", ["-p", self.dump_dir]])
-            commands.append([self.binary, mongodump_flags])
-
-            for (command, command_flags) in commands:
-                self._command = LocalCommand(command, command_flags, self.verbose)
-                self._command.run()
+            oplog = Oplog(self.oplog_file, self.dump_gzip)
+            oplog.load()
         except Exception, e:
-            logging.error("Error performing mongodump: %s" % e)
-            return None
+            logging.exception("Error loading oplog: %s" % e)
 
-        oplog = Oplog(self.oplog_file, self.dump_gzip)
-        self.completed = True
-        self.response_queue.put({
-            'host': self.host,
-            'port': self.port,
-            'file': self.oplog_file,
-            'count': oplog.count(),
-            'last_ts': oplog.last_ts(),
-            'first_ts': oplog.first_ts(),
-            'completed': self.completed
-        })
+        self.state.set('running', False)
+        self.state.set('completed', True)
+        self.state.set('count', oplog.count())
+        self.state.set('first_ts', oplog.first_ts())
+        self.state.set('last_ts', oplog.last_ts())
+        self.timer.stop(self.timer_name)
 
-        self.timer.stop()
-
-        logging.info("Backup for %s/%s:%s completed in %s sec with %i oplog changes captured to: %s" % (
-            self.backup_name, self.host, self.port, self.timer.duration(), oplog.count(), str(oplog.last_ts())
-        ))
+        log_msg_extra = "%i oplog changes" % oplog.count()
+        if oplog.last_ts():
+            log_msg_extra = "%s, end ts: %s" % (log_msg_extra, oplog.last_ts())
+        logging.info("Backup %s completed in %.2f seconds, %s" % (self.uri, self.timer.duration(self.timer_name), log_msg_extra))
