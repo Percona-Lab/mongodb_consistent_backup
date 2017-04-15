@@ -162,12 +162,14 @@ class Mongodump(Task):
         return self._summary
 
     def close(self):
-        logging.info("Stopping all mongodump threads")
-        if len(self.dump_threads) > 0:
-            for thread in self.dump_threads:
-                thread.terminate()
-        try:
-            self.timer.stop(self.timer_name)
-        except:
-            pass
-        logging.info("Stopped all mongodump threads")
+        if not self.stopped:
+            logging.info("Stopping all mongodump threads")
+            if len(self.dump_threads) > 0:
+                for thread in self.dump_threads:
+                    thread.terminate()
+            try:
+                self.timer.stop(self.timer_name)
+            except:
+                pass
+            logging.info("Stopped all mongodump threads")
+            self.stopped = True

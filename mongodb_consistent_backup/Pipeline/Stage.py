@@ -56,7 +56,7 @@ class Stage(object):
         return False
 
     def close(self):
-        if self.has_task():
+        if self.has_task() and not self._task.stopped:
             logging.debug("Calling close on backup stage %s with task %s" % (self.stage, self.task.capitalize()))
             self._task.close()
 
