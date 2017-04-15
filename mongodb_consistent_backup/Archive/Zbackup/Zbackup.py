@@ -6,6 +6,7 @@ from signal import signal, SIGINT, SIGTERM
 from subprocess import Popen, PIPE
 
 from mongodb_consistent_backup.Common import LocalCommand
+from mongodb_consistent_backup.Errors import OperationError
 
 
 class Zbackup:
@@ -19,12 +20,12 @@ class Zbackup:
         self.zbackup_passwd_file = config.archive.zbackup.password_file
         self.zbackup_threads     = config.archive.zbackup.threads
 
-        self.encrypted          = False
-        self.compression_method = None
-
         self.zbackup_info        = os.path.join(self.backup_dir(), "info")
         self.zbackup_bundles     = os.path.join(self.backup_dir(), "bundles")
         self.zbackup_backup_path = os.path.join(self.backup_dir(), "backups", "%s.tar" % self.backup_name)
+
+        self.encrypted          = False
+        self.compression_method = None
 
         self._command = None
         self._version = None
@@ -55,7 +56,7 @@ class Zbackup:
             if os.path.isfile(self.zbackup_info) and os.path.isdir(self.zbackup_bundles):
                 logging.info("Found existing ZBackup storage dir at: %s (encrypted: %s)" % (self.backup_dir(), self.encrypted))
             else:
-                raise Exception, "ZBackup dir: %s is not a zbackup storage directory!" % self.backup_dir(), None
+                raise OperationError("ZBackup dir: %s is not a zbackup storage directory!" % self.backup_dir())
         else:
             try:
                 cmd_line = [self.zbackup_binary]
@@ -72,8 +73,7 @@ class Zbackup:
                 if cmd.returncode == 0:
                     logging.info("Initialization complete, stdout:\n%s" % stdout)
             except Exception, e:
-                logging.error("Error creating ZBackup storage directory! Error: %s" % e)
-                raise e
+                raise OperationError("Error creating ZBackup storage directory! Error: %s" % e)
 
     def init(self):
         if not self.backup_dir() and self.config.backup.location:
@@ -82,7 +82,7 @@ class Zbackup:
                 try:
                     os.makedirs(base_dir)
                 except Exception, e:
-                    raise Exception, "Error making backup base dir: %s" % e, None
+                    raise OperationError("Error making ZBackup base dir: %s" % e)
             self.backup_dir(os.path.join(base_dir, 'zbackup'))
         self.init_storage_dir()
 
@@ -105,7 +105,7 @@ class Zbackup:
             except OSError, e:
                 return None
             except Exception, e:
-                raise e
+                raise OperationError("Could not gather ZBackup version: %s" % e)
     
     def has_zbackup(self):
         if self.version():
@@ -114,7 +114,7 @@ class Zbackup:
 
     def close(self, exit_code=None, frame=None):
         if self._command:
-            logging.debug("Killing running Zbackup command: %s" % self._command.command)
+            logging.debug("Stopping running Zbackup command: %s" % self._command.command)
             del exit_code
             del frame
             self._command.close()
@@ -132,5 +132,4 @@ class Zbackup:
             t_cmd = Popen(tar_cmd_line, stdout=z_cmd.stdin, stderr=PIPE)
             t_stdout, t_stderr = t_cmd.communicate()
         else:
-            logging.error("Cannot find Zbackup at %s!" % self.zbackup_binary)
-            raise Exception, "Cannot find Zbackup at %s!" % self.zbackup_binary, None
+            raise OperationError("Cannot find Zbackup at %s!" % self.zbackup_binary)
