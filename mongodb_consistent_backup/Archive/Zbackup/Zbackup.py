@@ -4,7 +4,6 @@ import logging
 from select import select
 from subprocess import Popen, PIPE, call
 
-from mongodb_consistent_backup.Common import LocalCommand
 from mongodb_consistent_backup.Errors import OperationError
 from mongodb_consistent_backup.Pipeline import Task
 
@@ -26,6 +25,7 @@ class Zbackup(Task):
         self.zbackup_backup_path = os.path.join(self.zbackup_backups, "%s.tar" % self.backup_time)
         self.zbackup_bundles     = os.path.join(self.zbackup_dir, "bundles")
         self.zbackup_info        = os.path.join(self.zbackup_dir, "info")
+        self.backup_meta_dir     = "mongodb-consistent-backup_META"
 
         self.encrypted          = False
         self._zbackup           = None
@@ -103,19 +103,22 @@ class Zbackup(Task):
                 self._tar.terminate()
             self.stopped = True
 
+    def poll(self, timeout=1):
+        try:
+            poll = select([self._zbackup.stderr.fileno()], [], [], timeout)
+        except ValueError:
+            return
+        if len(poll) >= 1:
+            for fd in poll[0]:
+                line = self._zbackup.stderr.readline()
+                if line:
+                    logging.info(line.rstrip())
+
     def wait(self):
         try:
             tar_done = False
             while self._zbackup.stderr and self._tar.stderr:
-                try:
-                    poll = select([self._zbackup.stderr.fileno()], [], [], 1)
-                except ValueError:
-                    break
-                if len(poll) >= 1:
-                    for fd in poll[0]:
-                        line = self._zbackup.stderr.readline()
-                        if line:
-                            logging.info(line.rstrip())
+                self.poll()
                 if tar_done:
                     self._zbackup.communicate()
                     if self._zbackup.poll() != None:
@@ -142,6 +145,18 @@ class Zbackup(Task):
             zbackup.extend(["--non-encrypted", "backup", zbackup_path])
         return tar, zbackup
 
+    def zbackup(self, sub_dir):
+        try:
+            logging.info("Running ZBackup of path: %s" % os.path.join(self.backup_dir, sub_dir))
+            tar_cmd, zbkp_cmd = self.get_commands(self.backup_dir, sub_dir)
+            logging.debug("Running ZBackup tar command: %s" % tar_cmd)
+            logging.debug("Running ZBackup command: %s" % zbkp_cmd)
+            self._zbackup = Popen(zbkp_cmd, stdin=PIPE, stderr=PIPE)
+            self._tar     = Popen(tar_cmd, stdout=self._zbackup.stdin, stderr=PIPE)
+            self.wait()
+        except Exception, e:
+            raise OperationError("Could not execute ZBackup: %s" % e)
+
     def run(self):
         if self.has_zbackup():
             try:
@@ -150,22 +165,13 @@ class Zbackup(Task):
                 )
                 self.running = True
                 for sub_dir in os.listdir(self.backup_dir):
-                    if sub_dir == "mongodb-consistent-backup_META":
+                    if sub_dir == self.backup_meta_dir:
                         continue
-                    logging.info("Running ZBackup of path: %s" % os.path.join(self.backup_dir, sub_dir))
-                    tar_cmd, zbkp_cmd = self.get_commands(self.backup_dir, sub_dir)
-                    logging.debug("Running ZBackup tar command: %s" % tar_cmd)
-                    logging.debug("Running ZBackup command: %s" % zbkp_cmd)
-                    self._zbackup = Popen(zbkp_cmd, stdin=PIPE, stderr=PIPE)
-                    self._tar     = Popen(tar_cmd, stdout=self._zbackup.stdin, stderr=PIPE)
-                    self.wait()
-                logging.info("Done all ZBackups")
+                    self.zbackup(sub_dir)
+                logging.info("Completed running all ZBackups")
                 self.completed = True
-            except Exception, e:
-                raise e #OperationError("Could not execute ZBackup: %s" % e)
             finally:
                 self.running = False
                 self.stopped = True
-            return 
         else:
             raise OperationError("Cannot find ZBackup at %s!" % self.zbackup_binary)
