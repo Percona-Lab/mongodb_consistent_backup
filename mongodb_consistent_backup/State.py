@@ -84,24 +84,27 @@ class StateOplog(StateBaseReplset):
 class StateBackup(StateBase):
     def __init__(self, base_dir, config, backup_time, seed_uri, argv=None):
         StateBase.__init__(self, base_dir, config)
-        self.base_dir                = base_dir
-        self.backup_name             = backup_time
-        self.state['backup']         = True
-        self.state['backup_name']    = backup_time
-        self.state['backup_path']    = os.path.join(base_dir, "dump")
-        self.state['cmdline']        = argv
-        self.state['hostname']       = platform.node()
-        self.state['python_build']   = platform.python_build()
-        self.state['python_version'] = platform.python_version()
-        self.state['uname']          = platform.uname()
-        self.state['config']         = config.dump()
-        self.state['version']        = config.version
-        self.state['git_commit']     = config.git_commit
-        self.state['seed']           = {
+        self.base_dir            = base_dir
+        self.state['backup']     = True
+        self.state['name']       = backup_time
+        self.state['method']     = config.backup.method
+        self.state['path']       = base_dir
+        self.state['cmdline']    = argv
+        self.state['config']     = config.dump()
+        self.state['version']    = config.version
+        self.state['git_commit'] = config.git_commit
+        self.state['host']     = {
+            'hostname': platform.node(),
+            'uname':    platform.uname(),
+            'python': {
+                'build':   platform.python_build(),
+                'version': platform.python_version()
+            }
+        }
+        self.state['seed']       = {
             'uri':     seed_uri.str(),
             'replset': seed_uri.replset
         }
-
         self.init()
 
     def init(self):

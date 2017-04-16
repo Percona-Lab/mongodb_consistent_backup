@@ -2,7 +2,7 @@ import os
 import logging
 
 from select import select
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, call
 
 from mongodb_consistent_backup.Common import LocalCommand
 from mongodb_consistent_backup.Errors import OperationError
@@ -21,7 +21,7 @@ class Zbackup(Task):
         if self.config.archive.zbackup.threads and self.config.archive.zbackup.threads > 0:
             self.threads(self.config.archive.zbackup.threads)
 
-        self.zbackup_dir         = os.path.join(self.config.backup.location, self.backup_name, "zbackup")
+        self.zbackup_dir         = os.path.join(self.config.backup.location, self.backup_name, "mongodb-consistent-backup_zbackup")
         self.zbackup_backups     = os.path.join(self.zbackup_dir, "backups")
         self.zbackup_backup_path = os.path.join(self.zbackup_backups, "%s.tar" % self.backup_time)
         self.zbackup_bundles     = os.path.join(self.zbackup_dir, "bundles")
@@ -52,17 +52,16 @@ class Zbackup(Task):
             try:
                 cmd_line = [self.zbackup_binary]
                 if self.zbackup_passwd_file:
-                    self.encrypted = True
                     cmd_line.extend(["--password-file", self.zbackup_passwd_file, "init", self.zbackup_dir])
                     logging.info("Using ZBackup AES encryption with password file: %s" % self.zbackup_passwd_file)
+                    self.encrypted = True
                 else:
                     cmd_line.extend(["--non-encrypted", "init", self.zbackup_dir])
                 logging.warning("Initializing new ZBackup storage directory at: %s (encrypted: %s)" % (self.zbackup_dir, self.encrypted))
                 logging.debug("Using ZBackup command: '%s'" % cmd_line)
-                cmd = Popen(cmd_line, stdout=PIPE)
-                stdout, stderr = cmd.communicate()
-                if cmd.returncode != 0:
-                    raise OperationError("ZBackup initialization failed! Error: %s" % stdout)
+                exit_code = call(cmd_line)
+                if exit_code != 0:
+                    raise OperationError("ZBackup initialization failed! Exit code: %i" % exit_code)
             except Exception, e:
                 raise OperationError("Error creating ZBackup storage directory! Error: %s" % e)
 
@@ -121,11 +120,8 @@ class Zbackup(Task):
                     self._zbackup.communicate()
                     if self._zbackup.poll() != None:
                         logging.info("ZBackup completed successfully with exit code: %i" % self._zbackup.returncode)
-                        self.running   = False
-                        self.stopped   = True
-                        self.exit_code = self._zbackup.returncode
-                        if self.exit_code == 0:
-                            self.completed = True
+                        if self._zbackup.returncode != 0:
+                            raise OperationError("ZBackup exited with code: %i!" % self._zbackup.returncode)
                         break
                 elif self._tar.poll() != None:
                     if self._tar.returncode == 0:
@@ -136,26 +132,40 @@ class Zbackup(Task):
         except Exception, e:
             raise OperationError("Error reading ZBackup output: %s" % e)
 
+    def get_commands(self, base_dir, sub_dir):
+        tar          = ["tar", "--remove-files", "-C", base_dir, "-c", sub_dir]
+        zbackup      = [self.zbackup_binary, "--cache-size", "%imb" % self.zbackup_cache_mb, "--compression", self.compression()]
+        zbackup_path = os.path.join(self.zbackup_backups, "%s.%s.tar" % (self.backup_time, sub_dir))
+        if self.encrypted:
+            zbackup.extend(["--password-file", self.zbackup_passwd_file, "backup", zbackup_path])
+        else:
+            zbackup.extend(["--non-encrypted", "backup", zbackup_path])
+        return tar, zbackup
+
     def run(self):
         if self.has_zbackup():
             try:
-                tar_cmd_line     = ["tar", "--exclude", "mongodb-consistent-backup_META", "-C", self.backup_dir, "-c", "."]
-                zbackup_cache_mb = str(self.zbackup_cache_mb) + "mb"
-                zbackup_cmd_line = [self.zbackup_binary, "--cache-size", zbackup_cache_mb, "--compression", self.compression()]
-                if self.encrypted:
-                    zbackup_cmd_line.extend(["--password-file", self.zbackup_passwd_file, "backup", self.zbackup_backup_path])
-                else:
-                    zbackup_cmd_line.extend(["--non-encrypted", "backup", self.zbackup_backup_path])
                 logging.info("Starting ZBackup version: %s (options: compression=%s, encryption=%s, threads=%i, cache_mb=%i)" %
                     (self.version(), self.compression(), self.encrypted, self.threads(), self.zbackup_cache_mb)
                 )
-                logging.debug("Running ZBackup tar command: %s" % tar_cmd_line)
-                logging.debug("Running ZBackup command: %s" % zbackup_cmd_line)
-                self._zbackup = Popen(zbackup_cmd_line, stdin=PIPE, stderr=PIPE)
-                self._tar     = Popen(tar_cmd_line, stdout=self._zbackup.stdin, stderr=PIPE)
-                self.running  = True
-                self.wait()
+                self.running = True
+                for sub_dir in os.listdir(self.backup_dir):
+                    if sub_dir == "mongodb-consistent-backup_META":
+                        continue
+                    logging.info("Running ZBackup of path: %s" % os.path.join(self.backup_dir, sub_dir))
+                    tar_cmd, zbkp_cmd = self.get_commands(self.backup_dir, sub_dir)
+                    logging.debug("Running ZBackup tar command: %s" % tar_cmd)
+                    logging.debug("Running ZBackup command: %s" % zbkp_cmd)
+                    self._zbackup = Popen(zbkp_cmd, stdin=PIPE, stderr=PIPE)
+                    self._tar     = Popen(tar_cmd, stdout=self._zbackup.stdin, stderr=PIPE)
+                    self.wait()
+                logging.info("Done all ZBackups")
+                self.completed = True
             except Exception, e:
                 raise e #OperationError("Could not execute ZBackup: %s" % e)
+            finally:
+                self.running = False
+                self.stopped = True
+            return 
         else:
             raise OperationError("Cannot find ZBackup at %s!" % self.zbackup_binary)
