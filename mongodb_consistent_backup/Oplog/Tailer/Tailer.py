@@ -23,8 +23,9 @@ class Tailer(Task):
         self.status_secs = self.config.oplog.tailer.status_interval
         self.replsets    = replsets
 
-        self.shards   = {}
-        self._summary = {}
+        self.compression_supported = ['none', 'gzip']
+        self.shards                = {}
+        self._summary              = {}
 
     def summary(self):
         return self._summary

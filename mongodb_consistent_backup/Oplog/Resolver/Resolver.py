@@ -30,8 +30,9 @@ class Resolver(Task):
         self.tailed_oplogs = tailed_oplogs
         self.backup_oplogs = backup_oplogs
 
-        self.resolver_summary = {}
-        self.resolver_state   = {}
+        self.compression_supported = ['none', 'gzip']
+        self.resolver_summary      = {}
+        self.resolver_state        = {}
 
         try:
             self._pool = Pool(processes=self.threads(None, 2))

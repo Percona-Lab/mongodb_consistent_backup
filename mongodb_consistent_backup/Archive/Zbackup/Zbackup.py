@@ -20,6 +20,10 @@ class Zbackup(Task):
         if self.config.archive.zbackup.threads and self.config.archive.zbackup.threads > 0:
             self.threads(self.config.archive.zbackup.threads)
 
+        # only lzma compression supported (for now)
+        self.compression_method    = 'lzma'
+        self.compression_supported = ['lzma']
+
         self.zbackup_dir         = os.path.join(self.config.backup.location, self.backup_name, "mongodb-consistent-backup_zbackup")
         self.zbackup_backups     = os.path.join(self.zbackup_dir, "backups")
         self.zbackup_backup_path = os.path.join(self.zbackup_backups, "%s.tar" % self.backup_time)
@@ -27,15 +31,12 @@ class Zbackup(Task):
         self.zbackup_info        = os.path.join(self.zbackup_dir, "info")
         self.backup_meta_dir     = "mongodb-consistent-backup_META"
 
-        self.encrypted          = False
-        self._zbackup           = None
-        self._tar               = None
-        self._version           = None
+        self.encrypted = False
+        self._zbackup  = None
+        self._tar      = None
+        self._version  = None
 
         self.init()
-
-    def compression(self, method=None):
-        return 'lzma'
 
     def is_zbackup_init(self):
         if os.path.isfile(self.zbackup_info) and os.path.isdir(self.zbackup_backups) and os.path.isdir(self.zbackup_bundles):

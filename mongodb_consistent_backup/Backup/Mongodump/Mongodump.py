@@ -26,12 +26,13 @@ class Mongodump(Task):
         self.replsets           = replsets
         self.sharding           = sharding
 
-        self.version        = 'unknown'
-        self.threads_max    = 16
-        self.config_replset = False
-        self.dump_threads   = []
-        self.states         = {}
-        self._summary       = {}
+        self.compression_supported = ['none', 'gzip']
+        self.version               = 'unknown'
+        self.threads_max           = 16
+        self.config_replset        = False
+        self.dump_threads          = []
+        self.states                = {}
+        self._summary              = {}
 
         if self.config.backup.mongodump.threads and self.config.backup.mongodump.threads > 0:
             self.threads(self.config.backup.mongodump.threads)

@@ -23,16 +23,17 @@ class Task(object):
         self.completed = False
         self.exit_code = 255
 
-        self.thread_count       = None
-        self.cpu_count          = cpu_count()
-        self.compression_method = 'none'
-        self.timer_name         = self.__class__.__name__
+        self.thread_count          = None
+        self.cpu_count             = cpu_count()
+        self.compression_method    = 'none'
+        self.compression_supported = ['none']
+        self.timer_name            = self.__class__.__name__
 
         signal(SIGINT, SIG_IGN)
         signal(SIGTERM, self.close)
 
     def compression(self, method=None):
-        if method:
+        if method and method in self.compression_supported:
             self.compression_method = parse_method(method)
             logging.info("Setting %s compression method: %s" % (self.task_name, self.compression_method))
         return parse_method(self.compression_method)
