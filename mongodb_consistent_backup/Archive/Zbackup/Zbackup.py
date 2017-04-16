@@ -13,16 +13,20 @@ class Zbackup(Task):
     def __init__(self, manager, config, timer, base_dir, backup_dir, **kwargs):
         super(Zbackup, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir, **kwargs)
         self.backup_name         = self.config.backup.name
+        self.backup_time         = os.path.basename(self.backup_dir)
         self.zbackup_binary      = self.config.archive.zbackup.binary
+        self.zbackup_cache_mb    = self.config.archive.zbackup.cache_mb
         self.zbackup_passwd_file = self.config.archive.zbackup.password_file
-        self.zbackup_threads     = self.config.archive.zbackup.threads
+
+        if self.config.archive.zbackup.threads and self.config.archive.zbackup.threads > 0:
+            self.threads(self.config.archive.zbackup.threads)
+
         self.zbackup_dir         = os.path.join(self.config.backup.location, self.backup_name, "zbackup")
         self.zbackup_backups     = os.path.join(self.zbackup_dir, "backups")
-        self.zbackup_backup_path = os.path.join(self.zbackup_backups, "%s.tar" % self.backup_name)
+        self.zbackup_backup_path = os.path.join(self.zbackup_backups, "%s.tar" % self.backup_time)
         self.zbackup_bundles     = os.path.join(self.zbackup_dir, "bundles")
         self.zbackup_info        = os.path.join(self.zbackup_dir, "info")
 
-        self.compression_method = 'lzma'
         self.encrypted          = False
         self._zbackup           = None
         self._tar               = None
@@ -30,14 +34,17 @@ class Zbackup(Task):
 
         self.init()
 
-    def is_zbackup_dir(self):
+    def compression(self, method=None):
+        return 'lzma'
+
+    def is_zbackup_init(self):
         if os.path.isfile(self.zbackup_info) and os.path.isdir(self.zbackup_backups) and os.path.isdir(self.zbackup_bundles):
             return True
         return False
 
     def init(self):
         if os.path.isdir(self.zbackup_dir):
-            if self.is_zbackup_dir():
+            if self.is_zbackup_init():
                 logging.info("Found existing ZBackup storage dir at: %s (encrypted: %s)" % (self.zbackup_dir, self.encrypted))
             else:
                 raise OperationError("ZBackup dir: %s is not a zbackup storage directory!" % self.zbackup_dir)
@@ -54,8 +61,8 @@ class Zbackup(Task):
                 logging.debug("Using ZBackup command: '%s'" % cmd_line)
                 cmd = Popen(cmd_line, stdout=PIPE)
                 stdout, stderr = cmd.communicate()
-                if cmd.returncode == 0:
-                    logging.info("Initialization complete, stdout:\n%s" % stdout)
+                if cmd.returncode != 0:
+                    raise OperationError("ZBackup initialization failed! Error: %s" % stdout)
             except Exception, e:
                 raise OperationError("Error creating ZBackup storage directory! Error: %s" % e)
 
@@ -89,44 +96,66 @@ class Zbackup(Task):
         del exit_code
         del frame
         if not self.stopped:
-            if self._zbackup and not self._zbackup.poll():
-                logging.debug("Stopping running Zbackup command")
+            if self._zbackup and self._zbackup.poll() == None:
+                logging.debug("Stopping running ZBackup command")
                 self._zbackup.terminate()
-            if self._tar and not self._tar.poll():
-                logging.debug("Stopping running Zbackup tar command")
+            if self._tar and self._tar.poll() == None:
+                logging.debug("Stopping running ZBackup tar command")
                 self._tar.terminate()
             self.stopped = True
 
     def wait(self):
         try:
-            while self._zbackup.stderr:
-                poll = select([self._zbackup.stderr.fileno()], [], [], 1)
+            tar_done = False
+            while self._zbackup.stderr and self._tar.stderr:
+                try:
+                    poll = select([self._zbackup.stderr.fileno()], [], [], 1)
+                except ValueError:
+                    break
                 if len(poll) >= 1:
                     for fd in poll[0]:
                         line = self._zbackup.stderr.readline()
                         if line:
                             logging.info(line.rstrip())
-		if self._zbackup.poll() != None and self._tar.poll() != None:
-                    break
+                if tar_done:
+                    self._zbackup.communicate()
+                    if self._zbackup.poll() != None:
+                        logging.info("ZBackup completed successfully with exit code: %i" % self._zbackup.returncode)
+                        self.running   = False
+                        self.stopped   = True
+                        self.exit_code = self._zbackup.returncode
+                        if self.exit_code == 0:
+                            self.completed = True
+                        break
+                elif self._tar.poll() != None:
+                    if self._tar.returncode == 0:
+                        logging.debug("ZBackup tar command completed successfully with exit code: %i" % self._tar.returncode)
+                        tar_done = True
+                    else:
+                        raise OperationError("ZBackup archiving failed on tar command with exit code: %i" % self._tar.returncode)
         except Exception, e:
-            logging.exception("Error reading ZBackup output: %s" % e)
-        finally:
-            self._zbackup.communicate()
+            raise OperationError("Error reading ZBackup output: %s" % e)
 
     def run(self):
         if self.has_zbackup():
-            zbackup_cmd_line = [self.zbackup_binary]
-            if self.encrypted:
-                zbackup_cmd_line.extend(["--password-file", self.zbackup_passwd_file, "backup", self.zbackup_backup_path])
-            else:
-                zbackup_cmd_line.extend(["--non-encrypted", "backup", self.zbackup_backup_path])
-            logging.info("Starting ZBackup version: %s" % self.version())
-            self._zbackup = Popen(zbackup_cmd_line, stdin=PIPE, stderr=PIPE)
-            self._tar     = Popen(["tar", "-c", self.backup_dir], stdout=self._zbackup.stdin, stderr=PIPE)
-            self._tar.communicate()
-            self.wait()
-            self.exit_code = self._zbackup.returncode
-            if self.exit_code == 0:
-                self.completed = True
+            try:
+                tar_cmd_line     = ["tar", "--exclude", "mongodb-consistent-backup_META", "-C", self.backup_dir, "-c", "."]
+                zbackup_cache_mb = str(self.zbackup_cache_mb) + "mb"
+                zbackup_cmd_line = [self.zbackup_binary, "--cache-size", zbackup_cache_mb, "--compression", self.compression()]
+                if self.encrypted:
+                    zbackup_cmd_line.extend(["--password-file", self.zbackup_passwd_file, "backup", self.zbackup_backup_path])
+                else:
+                    zbackup_cmd_line.extend(["--non-encrypted", "backup", self.zbackup_backup_path])
+                logging.info("Starting ZBackup version: %s (options: compression=%s, encryption=%s, threads=%i, cache_mb=%i)" %
+                    (self.version(), self.compression(), self.encrypted, self.threads(), self.zbackup_cache_mb)
+                )
+                logging.debug("Running ZBackup tar command: %s" % tar_cmd_line)
+                logging.debug("Running ZBackup command: %s" % zbackup_cmd_line)
+                self._zbackup = Popen(zbackup_cmd_line, stdin=PIPE, stderr=PIPE)
+                self._tar     = Popen(tar_cmd_line, stdout=self._zbackup.stdin, stderr=PIPE)
+                self.running  = True
+                self.wait()
+            except Exception, e:
+                raise e #OperationError("Could not execute ZBackup: %s" % e)
         else:
-            raise OperationError("Cannot find Zbackup at %s!" % self.zbackup_binary)
+            raise OperationError("Cannot find ZBackup at %s!" % self.zbackup_binary)
