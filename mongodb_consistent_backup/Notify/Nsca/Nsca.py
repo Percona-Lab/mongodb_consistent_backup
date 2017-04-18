@@ -29,7 +29,7 @@ class Nsca(Task):
         req_attrs = ['server', 'check_name', 'check_host']
         for attr in req_attrs:
             if not getattr(self, attr):
-                raise OperationError('NSCA module requires attribute: %s!' % attr)
+                raise OperationError('NSCA notifier module requires attribute: %s!' % attr)
 
         self.server_name = self.server
         self.server_port = 5667
