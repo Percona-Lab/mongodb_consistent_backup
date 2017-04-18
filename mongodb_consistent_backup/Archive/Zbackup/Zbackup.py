@@ -146,18 +146,6 @@ class Zbackup(Task):
             zbackup.extend(["--non-encrypted", "backup", zbackup_path])
         return tar, zbackup
 
-    def zbackup(self, sub_dir):
-        try:
-            logging.info("Running ZBackup of path: %s" % os.path.join(self.backup_dir, sub_dir))
-            tar_cmd, zbkp_cmd = self.get_commands(self.backup_dir, sub_dir)
-            logging.debug("Running ZBackup tar command: %s" % tar_cmd)
-            logging.debug("Running ZBackup command: %s" % zbkp_cmd)
-            self._zbackup = Popen(zbkp_cmd, stdin=PIPE, stderr=PIPE)
-            self._tar     = Popen(tar_cmd, stdout=self._zbackup.stdin, stderr=PIPE)
-            self.wait()
-        except Exception, e:
-            raise OperationError("Could not execute ZBackup: %s" % e)
-
     def run(self):
         if self.has_zbackup():
             try:
@@ -165,10 +153,19 @@ class Zbackup(Task):
                     (self.version(), self.compression(), self.encrypted, self.threads(), self.zbackup_cache_mb)
                 )
                 self.running = True
-                for sub_dir in os.listdir(self.backup_dir):
-                    if sub_dir == self.backup_meta_dir:
-                        continue
-                    self.zbackup(sub_dir)
+                try:
+                    for sub_dir in os.listdir(self.backup_dir):
+                        if sub_dir == self.backup_meta_dir:
+                            continue
+                        logging.info("Running ZBackup for path: %s" % os.path.join(self.backup_dir, sub_dir))
+                        tar_cmd, zbkp_cmd = self.get_commands(self.backup_dir, sub_dir)
+                        logging.debug("Running ZBackup tar command: %s" % tar_cmd)
+                        logging.debug("Running ZBackup command: %s" % zbkp_cmd)
+                        self._zbackup = Popen(zbkp_cmd, stdin=PIPE, stderr=PIPE)
+                        self._tar     = Popen(tar_cmd, stdout=self._zbackup.stdin, stderr=PIPE)
+                        self.wait()
+                except Exception, e:
+                    raise OperationError("Could not execute ZBackup: %s" % e)
                 logging.info("Completed running all ZBackups")
                 self.completed = True
             finally:
