@@ -19,7 +19,7 @@ class Nsca(Task):
         self.critical   = 2
         self.failed     = self.critical
         self.notifier   = None
-        
+
         self.mode_type  = ''
         self.encryption = 1
         if self.password:
