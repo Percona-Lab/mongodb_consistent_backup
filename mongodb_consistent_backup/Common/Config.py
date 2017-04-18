@@ -31,6 +31,20 @@ class PrintVersions(Action):
 
 
 class ConfigParser(BaseConfiguration):
+    def makeParserLoadSubmodules(self, parser):
+        for _, modname, ispkg in walk_packages(path=mongodb_consistent_backup.__path__, prefix=mongodb_consistent_backup.__name__+'.'):
+            if not ispkg:
+                continue
+            try:
+                components = modname.split('.')
+                mod = __import__(components[0])
+                for comp in components[1:]:
+                    mod = getattr(mod, comp)
+                parser = mod.config(parser)
+            except AttributeError, e:
+                continue
+        return parser
+
     def makeParser(self):
         parser = super(ConfigParser, self).makeParser()
         parser.add_argument("-V", "--version", dest="version", help="Print mongodb_consistent_backup version info and exit", action=PrintVersions)
@@ -47,14 +61,13 @@ class ConfigParser(BaseConfiguration):
         parser.add_argument("--lock-file", dest="lock_file", help="Location of lock file (default: /tmp/mongodb_consistent_backup.lock)", default='/tmp/mongodb_consistent_backup.lock', type=str)
         parser.add_argument("--sharding.balancer.wait_secs", dest="sharding.balancer.wait_secs", help="Maximum time to wait for balancer to stop, in seconds (default: 300)", default=300, type=int)
         parser.add_argument("--sharding.balancer.ping_secs", dest="sharding.balancer.ping_secs", help="Interval to check balancer state, in seconds (default: 3)", default=3, type=int)
-        return parser
+        return self.makeParserLoadSubmodules(parser)
 
 
 class Config(object):
     # noinspection PyUnusedLocal
     def __init__(self):
         self._config = ConfigParser()
-        self.parse_submodules()
         self.parse()
 
         self.version    = mongodb_consistent_backup.__version__
@@ -69,18 +82,6 @@ class Config(object):
         else:
             return data[keys]
 
-    def parse_submodules(self):
-        for _, modname, ispkg in walk_packages(path=mongodb_consistent_backup.__path__, prefix=mongodb_consistent_backup.__name__+'.'):
-            if ispkg:
-                try:
-                    components = modname.split('.')
-                    mod = __import__(components[0])
-                    for comp in components[1:]:
-                        mod = getattr(mod, comp)
-                    mod.config(self._config.parser)
-                except AttributeError, e:
-                    continue
-    
     def check_required(self):
         required = [
             'backup.name',

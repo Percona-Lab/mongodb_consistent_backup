@@ -20,13 +20,6 @@ class Nsca(Task):
         self.failed     = self.critical
         self.notifier   = None
 
-        split = self.server.split(":")
-        self.server_name = split[0]
-        self.server_port = 5667
-        if len(split) == 2:
-            self.server_port = int(split[1])
-        self.server = "%s:%i" % (self.server_name, self.server_port)
-
         self.mode_type  = ''
         self.encryption = 1
         if self.password:
@@ -36,7 +29,13 @@ class Nsca(Task):
         req_attrs = ['server', 'check_name', 'check_host']
         for attr in req_attrs:
             if not getattr(self, attr):
-                raise OperationError('NSCA module requires attribute: %s!' % attr)
+                raise OperationError('NSCA notifier module requires attribute: %s!' % attr)
+
+        self.server_name = self.server
+        self.server_port = 5667
+        if ':' in self.server:
+            self.server_name, self.server_port = self.server.split(":")
+        self.server = "%s:%i" % (self.server_name, self.server_port)
 
         try:
             self.notifier = NSCANotifier(
