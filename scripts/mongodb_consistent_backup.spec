@@ -38,17 +38,17 @@ Tool for getting consistent backups from MongoDB Clusters and ReplicaSet
 mkdir -p %{buildroot}%{_sysconfdir}/cron.d %{buildroot}%{prefix}/bin %{buildroot}/usr/share/%{name}
 
 install -m 0755 %{SOURCE0} %{buildroot}%{prefix}/bin/%{bin_name}
-install -m 0644 %{SOURCE1} %{buildroot}/usr/share/%{name}/%{bin_name}.example.yml
-install -m 0644 %{SOURCE1} %{buildroot}%{_sysconfdir}/%{bin_name}.yml
+install -m 0644 %{SOURCE1} %{buildroot}/usr/share/%{name}/%{bin_name}.example.conf
+install -m 0644 %{SOURCE1} %{buildroot}%{_sysconfdir}/%{bin_name}.conf
 install -m 0644 %{SOURCE2} %{buildroot}/usr/share/%{name}/LICENSE
 install -m 0644 %{SOURCE3} %{buildroot}/usr/share/%{name}/README.rst
 
 
 # Generate cron.d file:
-%{__cat} <<EOF >%{buildroot}%{_sysconfdir}/cron.d/%{name}
+%{__cat} <<EOF >%{buildroot}%{_sysconfdir}/cron.d/%{bin_name}
 ### Uncomment and adjust time to enable backups (default time below is 00:00 every day):
 #
-#0 0 * * *	%{run_user}	/usr/bin/mongodb-consistent-backup --config=/etc/mongodb-consistent-backup.yml >/dev/null 2>&1
+#0 0 * * *	%{run_user}	%{prefix}/bin/mongodb-consistent-backup --config=%{_sysconfdir}/%{bin_name}.conf >/dev/null 2>&1
 EOF
 
 
@@ -64,10 +64,10 @@ chown %{run_user}:%{run_group} %{data_dir} %{log_dir}
 
 
 %files
-%config(noreplace) %{_sysconfdir}/%{bin_name}.yml
-%config(noreplace) %{_sysconfdir}/cron.d/%{name}
+%config(noreplace) %{_sysconfdir}/%{bin_name}.conf
+%config(noreplace) %{_sysconfdir}/cron.d/%{bin_name}
 %{prefix}/bin/%{bin_name}
-%{prefix}/share/%{name}/%{bin_name}.example.yml
+%{prefix}/share/%{name}/%{bin_name}.example.conf
 %{prefix}/share/%{name}/LICENSE
 %{prefix}/share/%{name}/README.rst
 
