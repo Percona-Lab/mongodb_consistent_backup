@@ -60,6 +60,7 @@ class Nsca(Task):
                 self.check_name,
                 self.server
             ))
+            logging.debug('NSCA report message: "%s", return code: %i, check host/name: "%s/%s"' % (output, ret_code, self.check_host, self.check_name))
             # noinspection PyBroadException
             try:
                 self.notifier.svc_result(self.check_host, self.check_name, ret_code, str(output))
