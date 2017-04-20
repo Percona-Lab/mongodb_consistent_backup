@@ -443,10 +443,11 @@ class MongodbConsistentBackup(object):
 
         # send notifications of backup state
         try:
-            self.notify.notify("%s: backup '%s' succeeded in %s secs" % (
+            self.notify.notify("%s: '%s/%s' succeeded in %.2f secs" % (
                 self.program_name,
                 self.config.backup.name,
-                self.timer.duration(self.timer)
+                self.backup_time,
+                self.timer.duration(self.timer_name)
             ), True)
             self.notify.run()
             self.notify.close()
