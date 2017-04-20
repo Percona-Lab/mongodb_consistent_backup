@@ -460,5 +460,4 @@ class MongodbConsistentBackup(object):
         logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration(self.timer_name)))
 
         self.logger.rotate()
-        self.logger.close()
         self.release_lock()
