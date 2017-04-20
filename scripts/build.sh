@@ -94,13 +94,22 @@ if [ -d ${srcdir} ]; then
 		exit 1
 	fi
 
+	# Get git HEAD of yconf
+	if [ -d ${tmpdir}/yconf ]; then
+	    pushd ${tmpdir}/yconf
+	    git pull
+	    popd
+	else
+	    git clone https://github.com/kampka/yconf ${tmpdir}/yconf
+	fi
+
 	if [ ! -d ${pexdir} ]; then
 		mkdir -p ${pexdir}
 	else
 		rm -f ${pexdir}/build/mongodb_consistent_backup-*.whl 
 	fi
 	[ ! -d ${bindir} ] && mkdir -p ${bindir}
-	${venvdir}/bin/python2.7 ${venvdir}/bin/pex -o ${output_file} -m ${mod_name} -r ${require_file} --pex-root=${pexdir}  ${builddir}
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pex -o ${output_file} -m ${mod_name} -r ${require_file} --pex-root=${pexdir} ${builddir} ${tmpdir}/yconf
 	if [ $? -lt 1 ] && [ -x ${output_file} ]; then
 		echo "pex executable written to '$output_file'"
 	else
