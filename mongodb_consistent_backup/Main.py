@@ -44,7 +44,7 @@ class MongodbConsistentBackup(object):
         self.backup_summary           = {}
         self.manager                  = Manager()
         self.timer                    = Timer(self.manager)
-        self.timer_name               = "mongodb_consistent_backup.%s" % self.__class__.__name__
+        self.timer_name               = "%s.%s" % (self.program_name, self.__class__.__name__)
         self.backup_time              = datetime.now().strftime("%Y%m%d_%H%M")
         self.logger                   = None
         self.current_log_file         = None
@@ -443,10 +443,11 @@ class MongodbConsistentBackup(object):
 
         # send notifications of backup state
         try:
-            self.notify.notify("%s: backup '%s' succeeded in %s secs" % (
+            self.notify.notify("%s: '%s/%s' succeeded in %.2f secs" % (
                 self.program_name,
                 self.config.backup.name,
-                self.timer.duration(self.timer)
+                self.backup_time,
+                self.timer.duration(self.timer_name)
             ), True)
             self.notify.run()
             self.notify.close()
@@ -459,5 +460,4 @@ class MongodbConsistentBackup(object):
         logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration(self.timer_name)))
 
         self.logger.rotate()
-        self.logger.close()
         self.release_lock()

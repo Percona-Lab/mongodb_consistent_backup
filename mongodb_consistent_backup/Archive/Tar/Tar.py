@@ -2,7 +2,7 @@ import os
 import logging
 
 from copy_reg import pickle
-from multiprocessing import Pool
+from multiprocessing import Pool, TimeoutError
 from types import MethodType
 
 from TarThread import TarThread
@@ -27,7 +27,23 @@ class Tar(Task):
         self.compression_method = self.config.archive.tar.compression
         self.binary             = "tar"
 
-        self._pool  = None
+        self._pool   = None
+        self._pooled = []
+
+    def wait(self):
+        if len(self._pooled) > 0:
+            self._pool.close()
+            logging.debug("Waiting for tar threads to stop")
+            while len(self._pooled) > 0:
+                try:
+                    item = self._pooled[0]
+                    path, result = item
+                    result.get(1)
+		    logging.debug("Archiving completed for directory: %s" % path)
+                    self._pooled.remove(item)
+                except TimeoutError:
+                    continue
+            self.stopped = True
 
     def run(self):
         try:
@@ -48,18 +64,17 @@ class Tar(Task):
                     output_file = "%s.tar" % subdir_name
                     if self.do_gzip():
                         output_file  = "%s.tgz" % subdir_name
-                    self._pool.apply_async(TarThread(subdir_name, output_file, self.do_gzip(), self.verbose, self.binary).run)
+                    result = self._pool.apply_async(TarThread(subdir_name, output_file, self.do_gzip(), self.verbose, self.binary).run)
+                    self._pooled.append((subdir_name, result))
             except Exception, e:
                 self._pool.terminate()
                 logging.fatal("Could not create tar archiving thread! Error: %s" % e)
                 raise Error(e)
             finally:
-                self._pool.close()
-                self._pool.join()
-                self.stopped = True
+                self.wait()
             self.completed = True
 
-    def close(self):
+    def close(self, code=None, frame=None):
         logging.debug("Stopping tar archiving threads")
         if not self.stopped and self._pool is not None:
             self._pool.terminate()

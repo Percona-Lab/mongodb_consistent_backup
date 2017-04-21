@@ -27,7 +27,7 @@ class Notify(Stage):
                     state = self._task.failed
                     if success:
                         state = self._task.success
-                    self._task.run(success, message)
+                    self._task.run(state, message)
                 except:
                     continue
             self.timers.stop(self.stage)
