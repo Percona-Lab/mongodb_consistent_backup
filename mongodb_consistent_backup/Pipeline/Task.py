@@ -58,5 +58,5 @@ class Task(object):
     def run(self):
         raise Error("Must define a .run() method when using %s class!" % self.__class__.__name__)
 
-    def close(self):
+    def close(self, code=None, frame=None):
         raise Error("Must define a .close() method when using %s class!" % self.__class__.__name__)

@@ -1,7 +1,5 @@
 import logging
 import os
-import sys
-
 # Skip bson in requirements , pymongo provides
 # noinspection PyPackageRequirements
 from bson import decode_file_iter
@@ -25,7 +23,7 @@ class ResolverThread:
         if 'tailed' in self.oplogs:
             self.oplogs['tailed'].close()
             del self.oplogs['tailed']
-        if 'file' in self.tailed_opplog and os.path.isfile(self.tailed_oplog['file']):
+        if 'file' in self.tailed_oplog and os.path.isfile(self.tailed_oplog['file']):
             os.remove(self.tailed_oplog['file'])
 
     def run(self):
@@ -58,7 +56,6 @@ class ResolverThread:
 
         if self.exit_code == 0:
             logging.info("Applied %i oplog changes to %s oplog, end ts: %s" % (self.changes, self.uri, self.mongodump_oplog_h.last_ts()))
-        sys.exit(self.exit_code)
 
     def close(self):
         self.cleanup()

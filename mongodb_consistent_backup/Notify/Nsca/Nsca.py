@@ -34,7 +34,8 @@ class Nsca(Task):
         self.server_name = self.server
         self.server_port = 5667
         if ':' in self.server:
-            self.server_name, self.server_port = self.server.split(":")
+            self.server_name, port = self.server.split(":")
+            self.server_port = int(port)
         self.server = "%s:%i" % (self.server_name, self.server_port)
 
         try:
