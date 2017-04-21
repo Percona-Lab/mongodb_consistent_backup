@@ -2,7 +2,7 @@ import os
 import logging
 
 from copy_reg import pickle
-from multiprocessing import Pool
+from multiprocessing import Pool, TimeoutError
 from types import MethodType
 
 from TarThread import TarThread
