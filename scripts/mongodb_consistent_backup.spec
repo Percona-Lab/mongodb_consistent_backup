@@ -14,7 +14,7 @@ Group:		Software/Database
 License:	Apache License Version 2.0
 URL:		https://github.com/Percona-Lab/mongodb_consistent_backup
 Source0:	%{bin_name}
-Source1:	%{bin_name}.yml
+Source1:	%{bin_name}.conf
 Source2:	LICENSE
 Source3:	README.rst
 Prefix:		/usr

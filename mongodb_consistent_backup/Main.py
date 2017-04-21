@@ -44,7 +44,7 @@ class MongodbConsistentBackup(object):
         self.backup_summary           = {}
         self.manager                  = Manager()
         self.timer                    = Timer(self.manager)
-        self.timer_name               = "mongodb_consistent_backup.%s" % self.__class__.__name__
+        self.timer_name               = "%s.%s" % (self.program_name, self.__class__.__name__)
         self.backup_time              = datetime.now().strftime("%Y%m%d_%H%M")
         self.logger                   = None
         self.current_log_file         = None

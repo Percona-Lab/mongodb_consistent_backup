@@ -18,7 +18,7 @@ install: bin/mongodb-consistent-backup
 	rm -rf bin build 2>/dev/null
 	mkdir -p $(BINDIR) $(SHAREDIR)/$(NAME) || true
 	install -m 0755 bin/mongodb-consistent-backup $(BINDIR)/mongodb-consistent-backup
-	install -m 0644 conf/mongodb-consistent-backup.example.yml $(SHAREDIR)/$(NAME)/example.yml
+	install -m 0644 conf/mongodb-consistent-backup.example.conf $(SHAREDIR)/$(NAME)/example.conf
 	install -m 0644 LICENSE $(SHAREDIR)/$(NAME)/LICENSE
 	install -m 0644 README.rst $(SHAREDIR)/$(NAME)/README.rst
 
@@ -31,7 +31,7 @@ rpm: bin/mongodb-consistent-backup
 	mkdir -p build/rpm/SOURCES
 	cp -f $(PWD)/{LICENSE,README.rst} build/rpm/SOURCES
 	cp -f $(PWD)/bin/mongodb-consistent-backup build/rpm/SOURCES/mongodb-consistent-backup
-	cp -f $(PWD)/conf/mongodb-consistent-backup.example.yml build/rpm/SOURCES/mongodb-consistent-backup.yml
+	cp -f $(PWD)/conf/mongodb-consistent-backup.example.conf build/rpm/SOURCES/mongodb-consistent-backup.conf
 	rpmbuild -D "_topdir $(PWD)/build/rpm" -D "version $(VERSION)" -bb scripts/$(NAME).spec
 
 docker:
