@@ -6,3 +6,4 @@ PyYAML==3.12
 boto==2.45.0
 filechunkio==1.8
 python-dateutil==2.2
+yconf==0.3.4
