@@ -94,26 +94,13 @@ if [ -d ${srcdir} ]; then
 		exit 1
 	fi
 
-	# Get git commit 229a8280c43eaad71085361e5a5e13a20a3d37ea of yconf until 0.3.4 is released
-	# When is 0.3.4 is released, delete this block and add 'yconf==0.3.4' to requirements.txt,
-	# also remove yconf path from pex command at line 116.
-	yconf_github=https://github.com/kampka/yconf
-	yconf_commit=229a8280c43eaad71085361e5a5e13a20a3d37ea
-	if [ ! -d ${tmpdir}/yconf ]; then
-		git clone ${yconf_github} ${tmpdir}/yconf
-	fi
-	pushd ${tmpdir}/yconf
-	git reset --hard ${yconf_commit}
-	popd
-	# End of yconf block
-
 	if [ ! -d ${pexdir} ]; then
 		mkdir -p ${pexdir}
 	else
 		rm -f ${pexdir}/build/mongodb_consistent_backup-*.whl 
 	fi
 	[ ! -d ${bindir} ] && mkdir -p ${bindir}
-	${venvdir}/bin/python2.7 ${venvdir}/bin/pex -o ${output_file} -m ${mod_name} -r ${require_file} --pex-root=${pexdir} ${builddir} ${tmpdir}/yconf
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pex -o ${output_file} -m ${mod_name} -r ${require_file} --pex-root=${pexdir} ${builddir}
 	if [ $? -lt 1 ] && [ -x ${output_file} ]; then
 		echo "pex executable written to '$output_file'"
 	else
