@@ -39,7 +39,7 @@ class Tar(Task):
                     item = self._pooled[0]
                     path, result = item
                     result.get(1)
-		    logging.debug("Archiving completed for directory: %s" % path)
+                    logging.debug("Archiving completed for directory: %s" % path)
                     self._pooled.remove(item)
                 except TimeoutError:
                     continue
