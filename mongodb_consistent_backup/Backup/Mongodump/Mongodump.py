@@ -26,12 +26,13 @@ class Mongodump(Task):
         self.replsets           = replsets
         self.sharding           = sharding
 
-        self.version        = 'unknown'
-        self.threads_max    = 16
-        self.config_replset = False
-        self.dump_threads   = []
-        self.states         = {}
-        self._summary       = {}
+        self.compression_supported = ['none', 'gzip']
+        self.version               = 'unknown'
+        self.threads_max           = 16
+        self.config_replset        = False
+        self.dump_threads          = []
+        self.states                = {}
+        self._summary              = {}
 
         if self.config.backup.mongodump.threads and self.config.backup.mongodump.threads > 0:
             self.threads(self.config.backup.mongodump.threads)
@@ -162,12 +163,14 @@ class Mongodump(Task):
         return self._summary
 
     def close(self):
-        logging.info("Stopping all mongodump threads")
-        if len(self.dump_threads) > 0:
-            for thread in self.dump_threads:
-                thread.terminate()
-        try:
-            self.timer.stop(self.timer_name)
-        except:
-            pass
-        logging.info("Stopped all mongodump threads")
+        if not self.stopped:
+            logging.info("Stopping all mongodump threads")
+            if len(self.dump_threads) > 0:
+                for thread in self.dump_threads:
+                    thread.terminate()
+            try:
+                self.timer.stop(self.timer_name)
+            except:
+                pass
+            logging.info("Stopped all mongodump threads")
+            self.stopped = True

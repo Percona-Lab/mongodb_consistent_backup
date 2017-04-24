@@ -1,4 +1,5 @@
 from mongodb_consistent_backup.Archive.Tar import Tar
+from mongodb_consistent_backup.Archive.Zbackup import Zbackup
 from mongodb_consistent_backup.Pipeline import Stage
 
 

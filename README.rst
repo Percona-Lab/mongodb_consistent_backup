@@ -15,13 +15,15 @@ Features
 -  Auto-discovers healthy members for backup by considering replication
    lag, replication 'priority' and by preferring 'hidden' members.
 -  Creates cluster-consistent backups across many separate shards
--  Archives and compresses backups (*inline compression with mongodump
-   3.2+*)
 -  Transparent restore process (*just add --oplogReplay flag to your
    mongorestore command*)
+-  Archiving and compression of backups
+-  Block de-duplication and optional AES encryption at rest via `ZBackup <http://zbackup.org/>`__
+   archiving method
 -  AWS S3 Secure/HTTPS Multipart backup uploads (*optional*)
 -  `Nagios NSCA <https://sourceforge.net/p/nagios/nsca>`__ push
    notification support (*optional*)
+-  Modular backup, archiving, upload and notification components
 -  Multi-threaded, single executable
 
 Current Limitations
@@ -137,6 +139,36 @@ Run as Docker Container (Experimental)
     $ make docker
     $ docker run -t mongodb_consistent_backup <mongodb_consistent_backup-flags>
 
+
+ZBackup Archiving (Optional)
+~~~~~~~
+
+`ZBackup <http://zbackup.org/>`__ *(with LZMA compression)* is an optional archive method for mongodb_consistent_backup. This archive method significantly reduces disk usage for backups via deduplication and compression. 
+
+ZBackup offers block de-duplication and compression of backups and optionally supports AES-128 encryption at rest. The ZBackup archive method causes backups to be stored via ZBackup at archive time.
+
+To enable, ZBackup must be installed on your system and the 'archive.method' config file variable *(or --archive.method flag=)* must be set to 'zbackup'. Backups get stored in a repository directory named *mongodb_consistent_backup-zbackup* and must be restored using a 'zbackup restore' command.
+
+**Install on CentOS/RHEL**
+
+::
+
+    $ yum install zbackup
+
+**Install on Debian/Ubuntu**
+
+::
+
+    $ apt-get install zbackup
+
+ZBackup data is stored in a repository directory named *mongodb_consistent_backup-zbackup* and must be restored using a 'zbackup restore ...' command.
+
+**Get Backup from ZBackup Repo**
+
+::
+
+    $ zbackup restore --password-file /etc/zbackup.passwd /mnt/backup/default/mongodb_consistent_backup-zbackup/backups/20170424_0000.tar
+    
 Roadmap
 ~~~~~~~
 
