@@ -15,13 +15,15 @@ Features
 -  Auto-discovers healthy members for backup by considering replication
    lag, replication 'priority' and by preferring 'hidden' members.
 -  Creates cluster-consistent backups across many separate shards
--  Archives and compresses backups (*inline compression with mongodump
-   3.2+*)
 -  Transparent restore process (*just add --oplogReplay flag to your
    mongorestore command*)
+-  Archiving and compression of backups
+-  Block deduplication and optional AES encryption at-rest via '`ZBackup <http://zbackup.org/>`__'
+   archiving method
 -  AWS S3 Secure/HTTPS Multipart backup uploads (*optional*)
 -  `Nagios NSCA <https://sourceforge.net/p/nagios/nsca>`__ push
    notification support (*optional*)
+-  Modular backup, archiving, upload and notification components
 -  Multi-threaded, single executable
 
 Current Limitations
@@ -137,6 +139,24 @@ Run as Docker Container (Experimental)
     $ make docker
     $ docker run -t mongodb_consistent_backup <mongodb_consistent_backup-flags>
 
+
+ZBackup Archive Method
+~~~~~~~
+
+ZBackup offers block de-duplication and compression of backups and optionally supports AES-128 encryption at rest. ZBackup can be used as the archive method for mongodb_consistent_backup. This causes the backup to be fed into ZBackup (*in parallel*) at the archive stage.
+
+ZBackup must be installed on your system and the 'archive.method' config file variable *(or --archive.method flag)* must be set to 'zbackup'.
+
+**Install on CentOS/RHEL**
+
+::
+    $ yum install zbackup
+
+**Install on Debian/Ubuntu**
+
+::
+    $ apt-get install zbackup
+    
 Roadmap
 ~~~~~~~
 
