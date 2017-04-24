@@ -17,9 +17,9 @@ Features
 -  Creates cluster-consistent backups across many separate shards
 -  Transparent restore process (*just add --oplogReplay flag to your
    mongorestore command*)
--  Archiving and compression of backups
+-  Archiving and compression of backups (*optional*)
 -  Block de-duplication and optional AES encryption at rest via `ZBackup <http://zbackup.org/>`__
-   archiving method
+   archiving method (*optional*)
 -  AWS S3 Secure/HTTPS Multipart backup uploads (*optional*)
 -  `Nagios NSCA <https://sourceforge.net/p/nagios/nsca>`__ push
    notification support (*optional*)
@@ -161,13 +161,13 @@ To enable, ZBackup must be installed on your system and the 'archive.method' con
 
     $ apt-get install zbackup
 
-ZBackup data is stored in a repository directory named *mongodb_consistent_backup-zbackup* and must be restored using a 'zbackup restore ...' command.
+ZBackup data is stored in a repository directory named *'mongodb_consistent_backup-zbackup'* and must be restored using a 'zbackup restore ...' command.
 
-**Get Backup from ZBackup Repo**
+**Get Backup from ZBackup**
 
 ::
 
-    $ zbackup restore --password-file /etc/zbackup.passwd /mnt/backup/default/mongodb_consistent_backup-zbackup/backups/20170424_0000.tar
+    $ zbackup restore --password-file /etc/zbackup.passwd /mnt/backup/default/mongodb_consistent_backup-zbackup/backups/20170424_0000.tar | tar -xf
     
 Roadmap
 ~~~~~~~
