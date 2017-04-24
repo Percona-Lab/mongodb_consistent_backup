@@ -147,7 +147,7 @@ ZBackup Archiving (Optional)
 
 ZBackup offers block de-duplication and compression of backups and optionally supports AES-128 encryption at rest. The ZBackup archive method causes backups to be stored via ZBackup at archive time.
 
-To enable, ZBackup must be installed on your system and the 'archive.method' config file variable *(or --archive.method flag=)* must be set to 'zbackup'. Backups get stored in a repository directory named *mongodb_consistent_backup-zbackup* and must be restored using a 'zbackup restore' command.
+To enable, ZBackup must be installed on your system and the 'archive.method' config file variable *(or --archive.method flag=)* must be set to 'zbackup'.
 
 **Install on CentOS/RHEL**
 
