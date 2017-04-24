@@ -161,7 +161,9 @@ To enable, ZBackup must be installed on your system and the 'archive.method' con
 
     $ apt-get install zbackup
 
-**Get Backup from ZBackup**
+ZBackup data is stored in a repository directory named *mongodb_consistent_backup-zbackup* and must be restored using a 'zbackup restore ...' command.
+
+**Get Backup from ZBackup Repo**
 
 ::
 
