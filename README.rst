@@ -140,7 +140,7 @@ Run as Docker Container (Experimental)
     $ docker run -t mongodb_consistent_backup <mongodb_consistent_backup-flags>
 
 
-ZBackup Archive Method
+ZBackup Archiving (Optional)
 ~~~~~~~
 
 ZBackup offers block de-duplication and compression of backups and optionally supports AES-128 encryption at rest. ZBackup can be used as the archive method for mongodb_consistent_backup. This causes the backup to be fed into ZBackup (*in parallel*) at the archive stage.
