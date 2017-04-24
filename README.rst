@@ -143,9 +143,9 @@ Run as Docker Container (Experimental)
 ZBackup Archiving (Optional)
 ~~~~~~~
 
-`ZBackup <http://zbackup.org/>`__ offers block de-duplication and compression of backups and optionally supports AES-128 encryption at rest.
+`ZBackup <http://zbackup.org/>`__ with LZMA compression is an optional archive method for mongodb_consistent_backup. 
 
-ZBackup with LZMA compression is an optional archive method for mongodb_consistent_backup. This method causes the backup to be fed into ZBackup in parallel at the archive stage.
+ZBackup offers block de-duplication and compression of backups and optionally supports AES-128 encryption at rest. The ZBackup archive method causes backups to be stored via ZBackup at archvive time.
 
 ZBackup must be installed on your system and the 'archive.method' config file variable *(or --archive.method flagi=)* must be set to 'zbackup'.
 
