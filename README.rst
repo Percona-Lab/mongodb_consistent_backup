@@ -94,6 +94,8 @@ Run a Backup
 
 **Using Command-Line Flags**
 
+*Note: username+password is visible in process lists when set using the command-line flags. Use a config file (below) to hide credentials!*
+
 ::
 
     $ mongodb-consistent-backup -H mongos1.example.com -P 27018 -u mongodb-consistent-backup -p s3cr3t -n prodwebsite -l /opt/mongobackups
@@ -149,11 +151,15 @@ Run as Docker Container (Experimental)
 ZBackup Archiving (Optional)
 ~~~~~~~
 
+*Note: the ZBackup archive method is not yet compatible with the 'Upload' phase. Disable uploading by setting 'upload.method' to 'none' in the meantime.*
+
 `ZBackup <http://zbackup.org/>`__ *(with LZMA compression)* is an optional archive method for mongodb_consistent_backup. This archive method significantly reduces disk usage for backups via deduplication and compression. 
 
 ZBackup offers block de-duplication and compression of backups and optionally supports AES-128 encryption at rest. The ZBackup archive method causes backups to be stored via ZBackup at archive time.
 
-To enable, ZBackup must be installed on your system and the 'archive.method' config file variable *(or --archive.method flag=)* must be set to 'zbackup'. ZBackup's compression works best if compression is disabled in the backup phase, to do this set 'backup.<method>.compression' to 'none'.
+To enable, ZBackup must be installed on your system and the 'archive.method' config file variable *(or --archive.method flag=)* must be set to 'zbackup'.
+
+ZBackup's compression is most efficient when compression is disabled in the backup phase, to do this set 'backup.<method>.compression' to 'none'.
 
 **Install on CentOS/RHEL**
 
@@ -178,7 +184,7 @@ ZBackup data is stored in a storage directory named *'mongodb_consistent_backup-
 
 **Delete Backup from ZBackup**
 
-To remove a backup, first delete the .tar file in 'backups' subdir of the ZBackup storage directory. After run a 'zbackup gc full' to remove unused data.
+To remove a backup, first delete the .tar file in 'backups' subdir of the ZBackup storage directory. After, run a 'zbackup gc full' garbage collection to remove unused data.
 
 ::
 
@@ -189,6 +195,7 @@ Roadmap
 ~~~~~~~
 
 -  "Distributed Mode" for running backup on remote hosts *(vs. only on one host)*
+-  Upload compatibility for ZBackup archive phase *(upload unsupported today)*
 -  Backup retention/rotation *(eg: delete old backups)*
 -  Support more notification methods *(Prometheus, PagerDuty, etc)*
 -  Support more upload methods *(Google Cloud Storage, Rsync, etc)*
