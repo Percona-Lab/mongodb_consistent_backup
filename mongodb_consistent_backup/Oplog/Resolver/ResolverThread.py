@@ -5,24 +5,26 @@ import os
 from bson import decode_file_iter
 
 from mongodb_consistent_backup.Oplog import Oplog
+from mongodb_consistent_backup.Pipeline import PoolThread
 
 
-class ResolverThread:
-    def __init__(self, state, uri, tailed_oplog, mongodump_oplog, max_end_ts, dump_gzip=False):
-        self.state           = state
-        self.uri             = uri
-        self.tailed_oplog    = tailed_oplog
-        self.mongodump_oplog = mongodump_oplog
-        self.max_end_ts      = max_end_ts
-        self.dump_gzip       = dump_gzip
+class ResolverThread(PoolThread):
+    def __init__(self, state, uri, tailed_oplog, mongodump_oplog, max_end_ts, compression='none'):
+        super(ResolverThread, self).__init__(self.__class__.__name__, compression)
+        self.state              = state
+        self.uri                = uri
+        self.tailed_oplog       = tailed_oplog
+        self.mongodump_oplog    = mongodump_oplog
+        self.max_end_ts         = max_end_ts
+        self.compression_method = compression
 
         self.oplogs  = {}
         self.changes = 0
         self.stopped = True
 
     def run(self):
-        self.oplogs['backup'] = Oplog(self.mongodump_oplog['file'], self.dump_gzip, 'a+')
-        self.oplogs['tailed'] = Oplog(self.tailed_oplog['file'], self.dump_gzip)
+        self.oplogs['backup'] = Oplog(self.mongodump_oplog['file'], self.do_gzip(), 'a+')
+        self.oplogs['tailed'] = Oplog(self.tailed_oplog['file'], self.do_gzip())
 
         logging.info("Resolving oplog for %s to max ts: %s" % (self.uri, self.max_end_ts))
         try:
