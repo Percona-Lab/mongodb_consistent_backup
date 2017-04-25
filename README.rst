@@ -4,27 +4,28 @@ MongoDB Consistent Backup Tool - mongodb-consistent-backup
 About
 ~~~~~
 
-Creates cluster-consistent point-in-time backups of MongoDB via wrapping
-'mongodump'. Backups are remotely-pulled and outputted onto the host
-running the tool.
+Creates cluster-consistent point-in-time backups of MongoDB with optional
+archiving, compression/de-duplication, encryption and upload functionality
 
 Features
 ~~~~~~~~
 
 -  Works on a single replset (2+ members) or a sharded cluster
 -  Auto-discovers healthy members for backup by considering replication
-   lag, replication 'priority' and by preferring 'hidden' members.
+   lag, replication 'priority' and by preferring 'hidden' members
 -  Creates cluster-consistent backups across many separate shards
+-  'mongodump' is the default *(and currently only)* backup method. Other methods coming soon!
 -  Transparent restore process (*just add --oplogReplay flag to your
    mongorestore command*)
 -  Archiving and compression of backups (*optional*)
 -  Block de-duplication and optional AES encryption at rest via `ZBackup <http://zbackup.org/>`__
    archiving method (*optional*)
--  AWS S3 Secure/HTTPS Multipart backup uploads (*optional*)
+-  `AWS S3 <https://aws.amazon.com/s3/>`__ Secure Multipart backup uploads (*optional*)
 -  `Nagios NSCA <https://sourceforge.net/p/nagios/nsca>`__ push
    notification support (*optional*)
 -  Modular backup, archiving, upload and notification components
 -  Multi-threaded, single executable
+-  Auto-scales to number of available CPUs by default
 
 Current Limitations
 ~~~~~~~~~~~~~~~~~~~
@@ -162,7 +163,7 @@ ZBackup Archiving (Optional)
 
 *Note: the ZBackup archive method is not yet compatible with the 'Upload' phase. Disable uploading by setting 'upload.method' to 'none' in the meantime.*
 
-`ZBackup <http://zbackup.org/>`__ *(with LZMA compression)* is an optional archive method for mongodb_consistent_backup. This archive method significantly reduces disk usage for backups via deduplication and compression. 
+`ZBackup <http://zbackup.org/>`__ *(with LZMA compression)* is an optional archive method for mongodb_consistent_backup. This archive method significantly reduces disk usage for backups via de-duplication and compression. 
 
 ZBackup offers block de-duplication and compression of backups and optionally supports AES-128 encryption at rest. The ZBackup archive method causes backups to be stored via ZBackup at archive time.
 
