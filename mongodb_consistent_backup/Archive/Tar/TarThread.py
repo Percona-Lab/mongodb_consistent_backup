@@ -50,3 +50,4 @@ class TarThread:
             else:
                 logging.fatal("Output file: %s already exists!" % self.output_file)
                 sys.exit(1)
+            return self.backup_dir

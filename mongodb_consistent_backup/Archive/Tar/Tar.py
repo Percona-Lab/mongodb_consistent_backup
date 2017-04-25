@@ -3,6 +3,7 @@ import logging
 
 from copy_reg import pickle
 from multiprocessing import Pool, TimeoutError
+from time import sleep
 from types import MethodType
 
 from TarThread import TarThread
@@ -30,20 +31,23 @@ class Tar(Task):
         self._pool   = None
         self._pooled = []
 
+    def done(self, done_dir):
+        if done_dir in self._pooled:
+            logging.debug("Archiving completed for: %s" % done_dir)
+            self._pooled.remove(done_dir)
+        else:
+            raise OperationError("Unexpected response from tar thread: %s" % done_dir)
+
     def wait(self):
         if len(self._pooled) > 0:
             self._pool.close()
-            logging.debug("Waiting for tar threads to stop")
-            while len(self._pooled) > 0:
-                try:
-                    item = self._pooled[0]
-                    path, result = item
-                    result.get(1)
-                    logging.debug("Archiving completed for directory: %s" % path)
-                    self._pooled.remove(item)
-                except TimeoutError:
-                    continue
+            while len(self._pooled):
+                logging.debug("Waiting for %i tar thread(s) to stop" % len(self._pooled))
+                sleep(2)
+            self._pool.terminate()
+            logging.debug("Stopped all tar threads")
             self.stopped = True
+            self.running = False
 
     def run(self):
         try:
@@ -64,20 +68,18 @@ class Tar(Task):
                     output_file = "%s.tar" % subdir_name
                     if self.do_gzip():
                         output_file  = "%s.tgz" % subdir_name
-                    result = self._pool.apply_async(TarThread(subdir_name, output_file, self.do_gzip(), self.verbose, self.binary).run)
-                    self._pooled.append((subdir_name, result))
+                    self._pool.apply_async(TarThread(subdir_name, output_file, self.do_gzip(), self.verbose, self.binary).run, callback=self.done)
+                    self._pooled.append(subdir_name)
             except Exception, e:
                 self._pool.terminate()
                 logging.fatal("Could not create tar archiving thread! Error: %s" % e)
                 raise Error(e)
-            finally:
-                self.wait()
+            self.wait()
             self.completed = True
 
     def close(self, code=None, frame=None):
-        logging.debug("Stopping tar archiving threads")
         if not self.stopped and self._pool is not None:
+            logging.debug("Stopping tar archiving threads")
             self._pool.terminate()
-            self._pool.join()
             logging.info("Stopped all tar archiving threads")
             self.stopped = True
