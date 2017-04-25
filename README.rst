@@ -50,7 +50,7 @@ Requirements:
 Releases
 ~~~~~~~~
 
-Prebuilt release binaries and packages are available on our `GitHub Releases Page <releases>`__. We recommend most users deploy mongodb_consistent_backup using these packages.
+Prebuilt release binaries and packages are available on our `GitHub Releases Page <https://github.com/Percona-Lab/mongodb_consistent_backup/releases>`__. We recommend most users deploy mongodb_consistent_backup using these packages.
 
 Build/Install
 ~~~~~~~~~~~~~
