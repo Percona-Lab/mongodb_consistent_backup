@@ -55,8 +55,7 @@ Prebuilt release binaries and packages are available on our `GitHub Releases Pag
 Build/Install
 ~~~~~~~~~~~~~
 
-To build on CentOS/RedHat, you will need the following packages (see
-command):
+To build on CentOS/RedHat, you will need the following packages installed:
 
 ::
 
@@ -69,7 +68,7 @@ To build an CentOS/RedHat RPM of the tool *(recommended)*:
     $ cd /path/to/mongodb_consistent_backup
     $ make rpm
 
-To install from source to default '*/usr/local/bin/mongodb-consistent-backup*\ ':
+To build and install from source *(to default '/usr/local/bin/mongodb-consistent-backup')*:
 
 ::
 
@@ -77,9 +76,7 @@ To install from source to default '*/usr/local/bin/mongodb-consistent-backup*\ '
     $ make
     $ make install
 
-Use the PREFIX= variable to change the installation path (*default:
-/usr/local*), ie: ``make PREFIX=/usr install`` to install to:
-'*/usr/bin/mongodb-consistent-backup*\ '.
+Use the PREFIX= variable to change the installation path (*default: /usr/local*), ie: ``make PREFIX=/usr install`` to install to: '*/usr/bin/mongodb-consistent-backup*'.
 
 MongoDB Authorization
 ~~~~~~~~~~~~~~~~~~~~~
@@ -124,8 +121,6 @@ The tool supports a YAML-based config file for settings. The config file is load
 
     $ mongodb-consistent-backup --config /etc/mongodb-consistent-backup.yml
     ...
-
-Restore a Backup
 
 An example *(with comments)* of the YAML-based config file is here: `conf/mongodb-consistent-backup.example.conf <conf/mongodb-consistent-backup.example.conf>`__.
 
