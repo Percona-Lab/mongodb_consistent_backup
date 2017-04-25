@@ -44,14 +44,14 @@ Requirements:
    syncs time
 -  Must have 'mongodump' installed and specified if not at default:
    */usr/bin/mongodump*. Even if you do not run MongoDB 3.2+, it is
-   strongly recommended to use MongoDB 3.2+ binaries due to inline
-   compression, parallelism, etc
+   strongly recommended to use MongoDB 3.2+ mongodump binaries due
+   to inline compression and parallelism features
 -  Must have Python 2.7 installed
 
 Releases
 ~~~~~~~~
 
-Prebuilt release binaries and packages are available on our `GitHub Releases Page <https://github.com/Percona-Lab/mongodb_consistent_backup/releases>`__. We recommend most users deploy mongodb_consistent_backup using these packages.
+Pre-built release binaries and packages are available on our `GitHub Releases Page <https://github.com/Percona-Lab/mongodb_consistent_backup/releases>`__. We recommend most users deploy mongodb_consistent_backup using these packages.
 
 Build/Install
 ~~~~~~~~~~~~~
@@ -165,7 +165,7 @@ ZBackup Archiving (Optional)
 
 `ZBackup <http://zbackup.org/>`__ *(with LZMA compression)* is an optional archive method for mongodb_consistent_backup. This archive method significantly reduces disk usage for backups via de-duplication and compression. 
 
-ZBackup offers block de-duplication and compression of backups and optionally supports AES-128 encryption at rest. The ZBackup archive method causes backups to be stored via ZBackup at archive time.
+ZBackup offers block de-duplication and compression of backups and optionally supports AES-128 *(CBC mode with PKCS#7 padding)* encryption at rest. The ZBackup archive method causes backups to be stored via ZBackup at archive time.
 
 To enable, ZBackup must be installed on your system and the 'archive.method' config file variable *(or --archive.method flag=)* must be set to 'zbackup'.
 
