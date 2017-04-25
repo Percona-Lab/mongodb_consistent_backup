@@ -38,7 +38,7 @@ Requirements:
 ~~~~~~~~~~~~~
 
 -  Backup consistency depends on consistent server time across all
-   hosts. Server time **must be synchronized on all nodes** using ntpd
+   hosts! Server time **must be synchronized on all nodes** using ntpd
    and a consistent time source or virtualization guest agent that 
    syncs time
 -  Must have 'mongodump' installed and specified if not at default:
@@ -81,13 +81,13 @@ Use the PREFIX= variable to change the installation path (*default: /usr/local*)
 MongoDB Authorization
 ~~~~~~~~~~~~~~~~~~~~~
 
-If your replset/cluster uses `Authentication <https://docs.mongodb.com/manual/core/authentication>`__, you must add a user with the "backup" and "clusterMonitor" built-in auth roles.
+If your replset/cluster uses `Authentication <https://docs.mongodb.com/manual/core/authentication>`__, you must add a user with the `"backup" <https://docs.mongodb.com/manual/reference/built-in-roles/#backup>`__ and `"clusterMonitor" <https://docs.mongodb.com/manual/reference/built-in-roles/#clusterMonitor>`__ built-in auth roles.
 
 To create a user, execute the following **replace the 'pwd' field with a secure password!**:
 
 ::
 
-    db.createUser({
+    db.getSiblingDB("admin").createUser({
             user: "mongodb_consistent_backup",
             pwd: "PASSWORD-HERE",
             roles: [
@@ -203,12 +203,14 @@ To remove a backup, first delete the .tar file in 'backups' subdir of the ZBacku
 Roadmap
 ~~~~~~~
 
+-  More testing: this project has many flows that probably need more in-depth testing. Please submit and bugs and/or bugfixes!
 -  "Distributed Mode" for running backup on remote hosts *(vs. only on one host)*
 -  Upload compatibility for ZBackup archive phase *(upload unsupported today)*
 -  Backup retention/rotation *(eg: delete old backups)*
 -  Support more notification methods *(Prometheus, PagerDuty, etc)*
 -  Support more upload methods *(Google Cloud Storage, Rsync, etc)*
 -  Support SSL MongoDB connections
+-  Documentation for running under Docker with persistent volumes
 -  Python unit tests
 
 Contact
