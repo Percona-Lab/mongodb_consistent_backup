@@ -9,9 +9,9 @@ class PoolThread(object):
         self.compression_method = compression_method
 
         self.timer_name = self.__class__.__name__
-	self.stopped    = False
-	self.running    = False
-	self.completed  = False
+        self.stopped    = False
+        self.running    = False
+        self.completed  = False
         self.exit_code  = 255
 
     def compression(self, method=None):
