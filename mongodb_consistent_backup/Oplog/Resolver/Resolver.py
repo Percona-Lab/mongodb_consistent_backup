@@ -106,7 +106,7 @@ class Resolver(Task):
                             tailed_oplog.copy(),
                             backup_oplog.copy(),
                             self.get_consistent_end_ts(),
-                            self.do_gzip()
+                            self.compression()
                         ).run, callback=self.done)
                         self._pooled.append(uri.str())
                     except Exception, e:
