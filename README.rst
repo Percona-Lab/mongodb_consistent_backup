@@ -104,9 +104,11 @@ Run a Backup
 
 **Using a Config File**
 
-The tool supports a YAML-based config file for settings. The config file is loaded first and any additional command-line arguments override the file based config values.
+The tool supports a YAML-based config file for settings. The config file is loaded first and any additional command-line arguments override the file based config settings.
 
-An example *(with comments)* of the YAML-based config file is here: `conf/mongodb-consistent-backup.example.conf <conf/mongodb-consistent-backup.example.conf>`__. All available config values are also listed by passing the '--help' fag to the tool.
+An example *(with comments)* of the YAML-based config file is here: `conf/mongodb-consistent-backup.example.conf <conf/mongodb-consistent-backup.example.conf>`__.
+
+A description of all available config settings can also be listed by passing the '--help' flag to the tool.
 
 ::
 
