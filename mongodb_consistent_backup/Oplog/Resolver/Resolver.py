@@ -4,7 +4,7 @@ import logging
 # noinspection PyPackageRequirements
 from bson.timestamp import Timestamp
 from copy_reg import pickle
-from multiprocessing import Pool, TimeoutError
+from multiprocessing import Pool
 from time import sleep
 from types import MethodType
 
