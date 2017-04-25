@@ -269,8 +269,9 @@ class MongodbConsistentBackup(object):
                     self.db
                 )
                 replset_name = self.replset.get_rs_name()
+                replset_dir  = os.path.join(self.backup_directory, replset_name)
                 self.replsets[replset_name] = self.replset
-                state = StateBackupReplset(self.backup_directory, self.config, self.backup_time, replset_name)
+                state = StateBackupReplset(replset_dir, self.config, self.backup_time, replset_name)
                 state.load_state(self.replset.summary())
                 state.write()
             except Exception, e:
@@ -392,7 +393,8 @@ class MongodbConsistentBackup(object):
             try:
                 rs_sharded_summary = self.replset_sharded.summary()
                 for shard in rs_sharded_summary:
-                    state = StateBackupReplset(self.backup_directory, self.config, self.backup_time, shard)
+                    shard_dir = os.path.join(self.backup_directory, shard)
+                    state = StateBackupReplset(shard_dir, self.config, self.backup_time, shard)
                     state.load_state(rs_sharded_summary[shard])
                     state.write()
                 self.replset_sharded.close()
@@ -417,7 +419,8 @@ class MongodbConsistentBackup(object):
                 self.resolver.compression(self.oplogtailer.compression())
                 resolver_summary = self.resolver.run()
                 for shard in resolver_summary:
-                    state = StateOplog(self.backup_directory, self.config, self.backup_time, shard)
+                    shard_dir = os.path.join(self.backup_directory, shard)
+                    state = StateOplog(shard_dir, self.config, self.backup_time, shard)
                     state.load_state(resolver_summary[shard])
                     state.write()
                 self.resolver.close()

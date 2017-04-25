@@ -73,12 +73,12 @@ class StateBaseReplset(StateBase):
 
 class StateBackupReplset(StateBaseReplset):
     def __init__(self, base_dir, config, backup_time, set_name):
-        StateBaseReplset.__init__(self, base_dir, config, backup_time, set_name, "set.%s.bson" % set_name)
+        StateBaseReplset.__init__(self, base_dir, config, backup_time, set_name, "replset.bson")
 
 
 class StateOplog(StateBaseReplset):
     def __init__(self, base_dir, config, backup_time, set_name):
-        StateBaseReplset.__init__(self, base_dir, config, backup_time, set_name, "oplog.%s.bson" % set_name)
+        StateBaseReplset.__init__(self, base_dir, config, backup_time, set_name, "oplog.bson")
 
 
 class StateBackup(StateBase):

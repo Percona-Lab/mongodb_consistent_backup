@@ -22,7 +22,7 @@ class TarThread(PoolThread):
             del exit_code
             del frame
             self._command.close()
-            self.stopped = False
+            self.stopped = True
 
     def run(self):
         if os.path.isdir(self.backup_dir):
