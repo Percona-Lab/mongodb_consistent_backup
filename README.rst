@@ -108,14 +108,16 @@ Run a Backup
 
 The tool supports a YAML-based config file for settings. The config file is loaded first and any additional command-line arguments override the file based config settings.
 
-An example *(with comments)* of the YAML-based config file is here: `conf/mongodb-consistent-backup.example.conf <conf/mongodb-consistent-backup.example.conf>`__.
-
-A description of all available config settings can also be listed by passing the '--help' flag to the tool.
-
 ::
 
     $ mongodb-consistent-backup --config /etc/mongodb-consistent-backup.yml
     ...
+
+Restore a Backup
+
+An example *(with comments)* of the YAML-based config file is here: `conf/mongodb-consistent-backup.example.conf <conf/mongodb-consistent-backup.example.conf>`__.
+
+A description of all available config settings can also be listed by passing the '--help' flag to the tool.
 
 Restore a Backup
 ~~~~~~~~~~~~~~~~
