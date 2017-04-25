@@ -18,13 +18,7 @@ class ResolverThread:
 
         self.oplogs  = {}
         self.changes = 0
-
-    def cleanup(self):
-        if 'tailed' in self.oplogs:
-            self.oplogs['tailed'].close()
-            del self.oplogs['tailed']
-        if 'file' in self.tailed_oplog and os.path.isfile(self.tailed_oplog['file']):
-            os.remove(self.tailed_oplog['file'])
+        self.stopped = True
 
     def run(self):
         self.oplogs['backup'] = Oplog(self.mongodump_oplog['file'], self.dump_gzip, 'a+')
@@ -55,12 +49,16 @@ class ResolverThread:
             self.close()
 
         if self.exit_code == 0:
-            logging.info("Applied %i oplog changes to %s oplog, end ts: %s" % (self.changes, self.uri, self.mongodump_oplog_h.last_ts()))
+            logging.info("Applied %i oplog changes to %s oplog, end ts: %s" % (self.changes, self.uri, self.last_ts))
+            return self.uri.str()
 
     def close(self):
-        self.cleanup()
-        if len(self.oplogs) > 0:
+        if len(self.oplogs) > 0 and not self.stopped:
+            logging.debug("Closing oplog file handles")
             for oplog in self.oplogs:
                 self.oplogs[oplog].flush()
                 self.oplogs[oplog].close()
-                del self.oplogs[oplog]
+            self.stopped = True
+        if 'file' in self.tailed_oplog and os.path.isfile(self.tailed_oplog['file']):
+            logging.debug("Removing temporary/tailed oplog file: %s" % self.tailed_oplog['file'])
+            os.remove(self.tailed_oplog['file'])

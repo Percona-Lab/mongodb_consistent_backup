@@ -58,6 +58,6 @@ class LocalCommand:
         # return exit code from mongodump
         return self._process.returncode
 
-    def close(self):
+    def close(self, frame=None, code=None):
         if self._process:
             self._process.terminate()

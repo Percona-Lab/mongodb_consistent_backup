@@ -5,6 +5,7 @@ import logging
 from bson.timestamp import Timestamp
 from copy_reg import pickle
 from multiprocessing import Pool
+from time import sleep
 from types import MethodType
 
 from ResolverThread import ResolverThread
@@ -34,16 +35,23 @@ class Resolver(Task):
         self.resolver_summary      = {}
         self.resolver_state        = {}
 
+        self.running   = False
+        self.stopped   = False
+        self.completed = False
+        self._pool     = None
+        self._pooled   = []
         try:
             self._pool = Pool(processes=self.threads(None, 2))
         except Exception, e:
             logging.fatal("Could not start oplog resolver pool! Error: %s" % e)
             raise Error(e)
 
-    def close(self):
-       if self._pool:
+    def close(self, code=None, frame=None):
+       if self._pool and not self.stopped:
+           logging.debug("Stopping all oplog resolver threads")
            self._pool.terminate()
-           self._pool.join()
+           logging.info("Stopped all oplog resolver threads")
+           self.stopped = True
 
     def get_consistent_end_ts(self):
         ts = None
@@ -54,9 +62,28 @@ class Resolver(Task):
                     ts = Timestamp(instance['last_ts'].time, 0)
         return ts
 
+    def done(self, done_uri):
+        if done_uri in self._pooled:
+            logging.debug("Resolving completed for: %s" % done_uri)
+            self._pooled.remove(done_uri)
+        else:
+            raise OperationError("Unexpected response from resolver thread: %s" % done_uri)
+
+    def wait(self):
+        if len(self._pooled) > 0:
+            self._pool.close()
+            while len(self._pooled):
+                logging.debug("Waiting for %i oplog resolver thread(s) to stop" % len(self._pooled))
+                sleep(2)
+            self._pool.terminate()
+            logging.debug("Stopped all oplog resolve threads")
+            self.stopped = True
+            self.running = False
+
     def run(self):
-        logging.info("Resolving oplogs (options: threads=%s,compression=%s)" % (self.threads(), self.compression()))
+        logging.info("Resolving oplogs (options: threads=%s, compression=%s)" % (self.threads(), self.compression()))
         self.timer.start(self.timer_name)
+        self.running = True
 
         for shard in self.backup_oplogs:
             backup_oplog = self.backup_oplogs[shard]
@@ -80,14 +107,17 @@ class Resolver(Task):
                             backup_oplog.copy(),
                             self.get_consistent_end_ts(),
                             self.do_gzip()
-                        ).run)
+                        ).run, callback=self.done)
+                        self._pooled.append(uri.str())
                     except Exception, e:
                         logging.fatal("Resolve failed for %s! Error: %s" % (uri, e))
                         raise Error(e)
             else:
                 logging.info("No tailed oplog for host %s" % uri)
-        self._pool.close()
-        self._pool.join()
+        self.wait()
+        self.running   = False
+        self.stopped   = True
+        self.completed = True
 
         self.timer.stop(self.timer_name)
         logging.info("Oplog resolving completed in %.2f seconds" % self.timer.duration(self.timer_name))
