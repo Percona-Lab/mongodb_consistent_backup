@@ -35,8 +35,11 @@ class Resolver(Task):
         self.resolver_summary      = {}
         self.resolver_state        = {}
 
-        self._pool   = None
-        self._pooled = []
+        self.running   = False
+        self.stopped   = False
+        self.completed = False
+        self._pool     = None
+        self._pooled   = []
         try:
             self._pool = Pool(processes=self.threads(None, 2))
         except Exception, e:
@@ -80,6 +83,7 @@ class Resolver(Task):
     def run(self):
         logging.info("Resolving oplogs (options: threads=%s, compression=%s)" % (self.threads(), self.compression()))
         self.timer.start(self.timer_name)
+        self.running = True
 
         for shard in self.backup_oplogs:
             backup_oplog = self.backup_oplogs[shard]
@@ -111,6 +115,8 @@ class Resolver(Task):
             else:
                 logging.info("No tailed oplog for host %s" % uri)
         self.wait()
+        self.running   = False
+        self.stopped   = True
         self.completed = True
 
         self.timer.stop(self.timer_name)
