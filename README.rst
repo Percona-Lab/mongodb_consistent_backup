@@ -47,23 +47,35 @@ Requirements:
    compression, parallelism, etc
 -  Must have Python 2.7 installed
 
+Releases
+~~~~~~~~
+
+Prebuilt release binaries and packages are available on our `GitHub Releases Page <releases>`__. We recommend most users deploy mongodb_consistent_backup using these packages.
+
 Build/Install
 ~~~~~~~~~~~~~
 
-To build on CentOS/RedHat, you wil need the following packages (see
+To build on CentOS/RedHat, you will need the following packages (see
 command):
 
 ::
 
-    yum install python python-devel python-virtualenv gcc git make libffi-devel openssl-devel
+    $ yum install python python-devel python-virtualenv gcc git make libffi-devel openssl-devel
 
-To install to default '*/usr/local/bin/mongodb-consistent-backup*\ ':
+To build an CentOS/RedHat RPM of the tool *(recommended)*:
 
 ::
 
-    cd path/to/mongo_backup 
-    make
-    make install
+    $ cd /path/to/mongodb_consistent_backup
+    $ make rpm
+
+To install from source to default '*/usr/local/bin/mongodb-consistent-backup*\ ':
+
+::
+
+    $ cd /path/to/mongodb_consistent_backup
+    $ make
+    $ make install
 
 Use the PREFIX= variable to change the installation path (*default:
 /usr/local*), ie: ``make PREFIX=/usr install`` to install to:
@@ -98,7 +110,7 @@ Run a Backup
 
 ::
 
-    $ mongodb-consistent-backup -H mongos1.example.com -P 27018 -u mongodb-consistent-backup -p s3cr3t -n prodwebsite -l /opt/mongobackups
+    $ mongodb-consistent-backup -H mongos1.example.com -P 27018 -u mongodb-consistent-backup -p s3cr3t -n prodwebsite -l /var/lib/mongodb-consistent-backup
     ...
     ...
     $ ls /opt/mongobackups
@@ -122,13 +134,13 @@ A description of all available config settings can also be listed by passing the
 Restore a Backup
 ~~~~~~~~~~~~~~~~
 
-The backups are mongorestore compatible. The *--oplogReplay* flag **MUST** be present to replay the oplogs to ensure consistency.
+The backups are mongorestore compatible and stored in a directory per backup. The *--oplogReplay* flag **MUST** be present to replay the oplogs to ensure consistency.
 
 ::
 
     $ tar xfvz <shardname>.tar.gz
     ...
-    $ mongorestore --host mongod12.example.com --port 27017 -u admin -p 123456 --oplogReplay --dir /path/to/backup/dump
+    $ mongorestore --host mongod12.example.com --port 27017 -u admin -p 123456 --oplogReplay --dir /var/lib/mongodb-consistent-backup/default/20170424_0000/rs0/dump
 
 Run as Docker Container (Experimental)
 ~~~~~~~~~~~~~~~~~~~~~~~
