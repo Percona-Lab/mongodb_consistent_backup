@@ -74,8 +74,9 @@ class Tar(Task):
                 self._pool.terminate()
                 logging.fatal("Could not create tar archiving thread! Error: %s" % e)
                 raise Error(e)
-            self.wait()
-            self.completed = True
+            finally:
+                self.wait()
+                self.completed = True
 
     def close(self, code=None, frame=None):
         if not self.stopped and self._pool is not None:

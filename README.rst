@@ -123,7 +123,7 @@ The backups are mongorestore compatible. The *--oplogReplay* flag **MUST** be pr
 Run as Docker Container (Experimental)
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-*Note: you need to use persistent volumes to store backups long-term on disk when using Docker. Data in Docker containers is destroyed when the container is deleted.*
+*Note: you need to use persistent volumes to store backups and/or config files long-term when using Docker. Data in Docker containers is destroyed when the container is deleted.*
 
 **Via Docker Hub**
 
@@ -147,7 +147,7 @@ ZBackup Archiving (Optional)
 
 ZBackup offers block de-duplication and compression of backups and optionally supports AES-128 encryption at rest. The ZBackup archive method causes backups to be stored via ZBackup at archive time.
 
-To enable, ZBackup must be installed on your system and the 'archive.method' config file variable *(or --archive.method flag=)* must be set to 'zbackup'.
+To enable, ZBackup must be installed on your system and the 'archive.method' config file variable *(or --archive.method flag=)* must be set to 'zbackup'. ZBackup's compression works best if compression is disabled in the backup phase, to do this set 'backup.<method>.compression' to 'none'.
 
 **Install on CentOS/RHEL**
 
@@ -161,21 +161,33 @@ To enable, ZBackup must be installed on your system and the 'archive.method' con
 
     $ apt-get install zbackup
 
-ZBackup data is stored in a repository directory named *'mongodb_consistent_backup-zbackup'* and must be restored using a 'zbackup restore ...' command.
 
 **Get Backup from ZBackup**
+
+ZBackup data is stored in a storage directory named *'mongodb_consistent_backup-zbackup'* and must be restored using a 'zbackup restore ...' command.
 
 ::
 
     $ zbackup restore --password-file /etc/zbackup.passwd /mnt/backup/default/mongodb_consistent_backup-zbackup/backups/20170424_0000.tar | tar -xf
+
+**Delete Backup from ZBackup**
+
+To remove a backup, first delete the .tar file in 'backups' subdir of the ZBackup storage directory. After run a 'zbackup gc full' to remove unused data.
+
+::
+
+    $ rm -f /mnt/backup/default/mongodb_consistent_backup-zbackup/backups/20170424_0000.tar
+    $ zbackup gc full --password-file /etc/zbackup.passwd /mnt/backup/default/mongodb_consistent_backup-zbackup 
     
 Roadmap
 ~~~~~~~
 
 -  "Distributed Mode" for running backup on remote hosts *(vs. only on one host)*
--  Support more notification methods *(Prometheus, PagerDuty, etc)* and upload methods *(Google Cloud Storage, Rsync, etc)*
+-  Backup retention/rotation *(eg: delete old backups)*
+-  Support more notification methods *(Prometheus, PagerDuty, etc)*
+-  Support more upload methods *(Google Cloud Storage, Rsync, etc)*
 -  Support SSL MongoDB connections
--  Unit tests
+-  Python unit tests
 
 Contact
 ~~~~~~~
