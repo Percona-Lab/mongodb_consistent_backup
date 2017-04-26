@@ -19,7 +19,7 @@ Features
 -  Creates cluster-consistent backups across many separate shards
 -  `'mongodump' <https://docs.mongodb.com/manual/reference/program/mongodump/>`__ is the default *(and currently only)* backup method. Other methods coming soon!
 -  Transparent restore process (*just add --oplogReplay flag to your
-   `mongorestore <https://docs.mongodb.com/manual/reference/program/mongorestore/>`__ command*)
+   mongorestore command*)
 -  Archiving and compression of backups (*optional*)
 -  Block de-duplication and optional AES encryption at rest via `ZBackup <http://zbackup.org/>`__
    archiving method (*optional*)
@@ -45,7 +45,7 @@ Requirements:
    hosts! Server time **must be synchronized on all nodes** using ntpd
    and a consistent time source or virtualization guest agent that 
    syncs time
--  Must have 'mongodump' installed and specified if not at default:
+-  Must have `'mongodump' <https://docs.mongodb.com/manual/reference/program/mongodump/>`__ installed and specified if not at default:
    */usr/bin/mongodump*. Even if you do not run MongoDB 3.2+, it is
    strongly recommended to use MongoDB 3.2+ mongodump binaries due
    to inline compression and parallelism features
