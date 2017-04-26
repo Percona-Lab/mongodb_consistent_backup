@@ -7,6 +7,9 @@ About
 Creates cluster-consistent point-in-time backups of MongoDB with optional
 archiving, compression/de-duplication, encryption and upload functionality
 
+The motivation for this tool in explained in this Percona blog post *(more posts coming soon)*:
+`"MongoDB Consistent Backups" <https://www.percona.com/blog/2016/07/25/mongodb-consistent-backups/>`__
+
 Features
 ~~~~~~~~
 
@@ -213,6 +216,12 @@ Roadmap
 -  Support SSL MongoDB connections
 -  Documentation for running under Docker with persistent volumes
 -  Python unit tests
+
+Links
+~~~~~
+
+- https://www.percona.com/blog/2016/07/25/mongodb-consistent-backups/
+- https://www.percona.com/blog/2017/01/09/mongodb-pit-backups-part-2/
 
 Contact
 ~~~~~~~
