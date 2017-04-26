@@ -207,7 +207,7 @@ To remove a backup, first delete the .tar file in 'backups' subdir of the ZBacku
 Roadmap
 ~~~~~~~
 
--  More testing: this project has many flows that probably need more in-depth testing. Please submit and bugs and/or bugfixes!
+-  More testing: this project has many flows that probably need more in-depth testing. Please submit any bugs and/or bugfixes!
 -  "Distributed Mode" for running backup on remote hosts *(vs. only on one host)*
 -  Upload compatibility for ZBackup archive phase *(upload unsupported today)*
 -  Backup retention/rotation *(eg: delete old backups)*
