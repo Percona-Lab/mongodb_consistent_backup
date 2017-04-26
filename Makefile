@@ -1,29 +1,41 @@
 # To install to a different prefix use "make PREFIX=/your/path install, default = /usr/local"
 # 
+
+NAME=mongodb_consistent_backup
+VERSION=$(shell cat VERSION | cut -d- -f1)
 PREFIX?=/usr/local
-BASEDIR=$(DESTDIR)$(PREFIX)
-BINDIR=$(BASEDIR)/bin
-VERSION=$(shell cat VERSION)
+BASEDIR?=$(DESTDIR)$(PREFIX)
+BINDIR?=$(BASEDIR)/bin
+SHAREDIR?=$(BASEDIR)/share
+
 
 all: bin/mongodb-consistent-backup
 
-bin/mongodb-consistent-backup: setup.py requirements.txt VERSION scripts/build.sh MongoBackup/*.py MongoBackup/Common/*.py MongoBackup/Methods/*.py MongoBackup/Notify/*.py MongoBackup/Oplog/*.py MongoBackup/Upload/*.py
+bin/mongodb-consistent-backup: setup.py requirements.txt README.rst VERSION scripts/build.sh $(NAME)/*.py $(NAME)/*/*.py $(NAME)/*/*/*.py
 	PYTHON_BIN=$(PYTHON_BIN) VIRTUALENV_BIN=$(VIRTUALENV_BIN) bash scripts/build.sh
 
 install: bin/mongodb-consistent-backup
-	mkdir -p $(BINDIR) || true
+	rm -rf bin build 2>/dev/null
+	mkdir -p $(BINDIR) $(SHAREDIR)/$(NAME) || true
 	install -m 0755 bin/mongodb-consistent-backup $(BINDIR)/mongodb-consistent-backup
+	install -m 0644 conf/mongodb-consistent-backup.example.conf $(SHAREDIR)/$(NAME)/example.conf
+	install -m 0644 LICENSE $(SHAREDIR)/$(NAME)/LICENSE
+	install -m 0644 README.rst $(SHAREDIR)/$(NAME)/README.rst
 
 uninstall:
 	rm -f $(BINDIR)/mongodb-consistent-backup
+	rm -rf $(SHAREDIR)/$(NAME)
 
-rpm:
-	rm -rf rpmbuild
-	mkdir -p rpmbuild/{SPECS,SOURCES/mongodb_consistent_backup}
-	cp -dpR MongoBackup conf Makefile setup.py scripts requirements.txt LICENSE README.md VERSION rpmbuild/SOURCES/mongodb_consistent_backup
-	cp -dp scripts/mongodb_consistent_backup.spec rpmbuild/SPECS/mongodb_consistent_backup.spec
-	tar --remove-files -C rpmbuild/SOURCES -czf rpmbuild/SOURCES/mongodb_consistent_backup.tar.gz mongodb_consistent_backup
-	rpmbuild -D "_topdir $(PWD)/rpmbuild" -D "version $(VERSION)" -bb rpmbuild/SPECS/mongodb_consistent_backup.spec
+rpm: bin/mongodb-consistent-backup
+	rm -rf build/rpm 2>/dev/null || true
+	mkdir -p build/rpm/SOURCES
+	cp -f $(PWD)/{LICENSE,README.rst} build/rpm/SOURCES
+	cp -f $(PWD)/bin/mongodb-consistent-backup build/rpm/SOURCES/mongodb-consistent-backup
+	cp -f $(PWD)/conf/mongodb-consistent-backup.example.conf build/rpm/SOURCES/mongodb-consistent-backup.conf
+	rpmbuild -D "_topdir $(PWD)/build/rpm" -D "version $(VERSION)" -bb scripts/$(NAME).spec
+
+docker:
+	docker build --no-cache -t mongodb_consistent_backup .
 
 clean:
-	rm -rf bin build rpmbuild
+	rm -rf bin build $(NAME).egg-info tmp 2>/dev/null

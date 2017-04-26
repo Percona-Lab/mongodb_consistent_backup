@@ -3,12 +3,14 @@
 set -x
 
 name=mongodb-consistent-backup
-mod_name=MongoBackup
-py_entry_point=${mod_name}:run
+mod_name=mongodb_consistent_backup
 rootdir=$(readlink -f $(dirname $0)/..)
 srcdir=${rootdir}/${mod_name}
 bindir=${rootdir}/bin
 builddir=${rootdir}/build
+tmpdir=${rootdir}/tmp
+pexdir=${tmpdir}/pex
+pipdir=${tmpdir}/pip
 venvdir=${builddir}/venv
 output_file=${bindir}/${name}
 require_file=${builddir}/requirements.txt
@@ -53,10 +55,10 @@ if [ -d ${srcdir} ]; then
 	[ -e ${builddir} ] && rm -rf ${builddir}
 	mkdir -p ${builddir}
 	cp -dpR ${rootdir}/${mod_name} ${builddir}/${mod_name}
-	cp -dp ${rootdir}/{setup.py,requirements.txt,VERSION} ${builddir}
+	cp -dp ${rootdir}/{setup.py,requirements.txt,README.rst,VERSION} ${builddir}
 	find ${builddir} -type f -name "*.pyc" -delete
 
-	# Replace version number in setup.py and MongoBackup/__init__.py with number in VERSION:
+	# Replace version number in setup.py and mongodb_consistent_backup/__init__.py with number in VERSION:
 	if [ -f "$version_file" ]; then
 		version=$(cat ${version_file})
 		if [ -z "$version" ]; then
@@ -84,18 +86,23 @@ if [ -d ${srcdir} ]; then
 		exit 1
 	fi
 	source ${venvdir}/bin/activate
-		
-	${venvdir}/bin/python2.7 ${venvdir}/bin/pip install pex requests
+
+	[ ! -d ${pipdir} ] && mkdir -p ${pipdir}
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pip install --download-cache=${pipdir} pex requests
 	if [ $? -gt 0 ]; then
 		echo "Failed to install pex utility for building!"
 		exit 1
 	fi
 
+	if [ ! -d ${pexdir} ]; then
+		mkdir -p ${pexdir}
+	else
+		rm -f ${pexdir}/build/mongodb_consistent_backup-*.whl 
+	fi
 	[ ! -d ${bindir} ] && mkdir -p ${bindir}
-	${venvdir}/bin/python2.7 ${venvdir}/bin/pex --disable-cache -o ${output_file} -m ${py_entry_point} -r ${require_file} ${builddir}
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pex -o ${output_file} -m ${mod_name} -r ${require_file} --pex-root=${pexdir} ${builddir}
 	if [ $? -lt 1 ] && [ -x ${output_file} ]; then
 		echo "pex executable written to '$output_file'"
-		rm -rf ${builddir}
 	else
 		echo "Failed to build project using pex!"
 		exit 1
