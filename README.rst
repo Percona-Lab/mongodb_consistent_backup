@@ -19,7 +19,7 @@ Features
 -  Creates cluster-consistent backups across many separate shards
 -  `'mongodump' <https://docs.mongodb.com/manual/reference/program/mongodump/>`__ is the default *(and currently only)* backup method. Other methods coming soon!
 -  Transparent restore process (*just add --oplogReplay flag to your
-   mongorestore command*)
+   `mongorestore <https://docs.mongodb.com/manual/reference/program/mongorestore/>`__ command*)
 -  Archiving and compression of backups (*optional*)
 -  Block de-duplication and optional AES encryption at rest via `ZBackup <http://zbackup.org/>`__
    archiving method (*optional*)
@@ -223,6 +223,7 @@ Links
 - https://www.percona.com/blog/2016/07/25/mongodb-consistent-backups/
 - https://www.percona.com/blog/2017/01/09/mongodb-pit-backups-part-2/
 - https://docs.mongodb.com/manual/reference/program/mongodump/
+- https://docs.mongodb.com/manual/reference/program/mongorestore/
 - http://zbackup.org
 
 Contact
