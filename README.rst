@@ -17,7 +17,7 @@ Features
 -  Auto-discovers healthy members for backup by considering replication
    lag, replication 'priority' and by preferring 'hidden' members
 -  Creates cluster-consistent backups across many separate shards
--  'mongodump' is the default *(and currently only)* backup method. Other methods coming soon!
+-  `'mongodump' <https://docs.mongodb.com/manual/reference/program/mongodump/>`__ is the default *(and currently only)* backup method. Other methods coming soon!
 -  Transparent restore process (*just add --oplogReplay flag to your
    mongorestore command*)
 -  Archiving and compression of backups (*optional*)
@@ -133,7 +133,7 @@ A description of all available config settings can also be listed by passing the
 Restore a Backup
 ~~~~~~~~~~~~~~~~
 
-The backups are mongorestore compatible and stored in a directory per backup. The *--oplogReplay* flag **MUST** be present to replay the oplogs to ensure consistency.
+The backups are `mongorestore <https://docs.mongodb.com/manual/reference/program/mongorestore/>`__ compatible and stored in a directory per backup. The *--oplogReplay* flag **MUST** be present to replay the oplogs to ensure consistency.
 
 ::
 
@@ -222,6 +222,8 @@ Links
 
 - https://www.percona.com/blog/2016/07/25/mongodb-consistent-backups/
 - https://www.percona.com/blog/2017/01/09/mongodb-pit-backups-part-2/
+- https://docs.mongodb.com/manual/reference/program/mongodump/
+- http://zbackup.org
 
 Contact
 ~~~~~~~
