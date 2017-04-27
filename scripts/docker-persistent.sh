@@ -15,7 +15,7 @@ BACKUP_DIR=/mongodb_consistent_backup
 BACKUP_CNF=$BACKUP_DIR/mongodb-consistent-backup.conf
 BACKUP_IMAGE=mongodb_consistent_backup
 BACKUP_DATA_IMAGE=mongodb_consistent_backup-data
-MCB_FLAGS="--config $BACKUP_CNF"
+MCB_FLAGS="-c $BACKUP_CNF -L $BACKUP_DIR/logs -l $BACKUP_DIR/data"
 DOCKER_IMAGE=timvaillancourt/mongodb_consistent_backup:latest
 
 if [ "$ACTION" = "backup" ]; then
