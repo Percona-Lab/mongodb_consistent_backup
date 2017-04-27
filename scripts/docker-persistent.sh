@@ -58,7 +58,7 @@ if [ "$ACTION" = "backup" ]; then
   fi
 elif [ "$ACTION" = "list" ]; then
   echo "# Listing backups in $BACKUP_DATA_IMAGE"
-  docker run -it --rm --volumes-from $BACKUP_DATA_IMAGE --entrypoint /bin/find $DOCKER_IMAGE $BACKUP_DIR/data -maxdepth 2 -type d -name "[0-9]*_*"
+  docker run -it --name $BACKUP_IMAGE --rm --volumes-from $BACKUP_DATA_IMAGE --entrypoint /bin/find $DOCKER_IMAGE $BACKUP_DIR/data -maxdepth 2 -type d -name "[0-9]*_*"
 elif [ "$ACTION" = "get" ]; then
   DIR=$2
   [ -z $DIR ] && echo "Usage: $0 get [backup path]" && exit 1
