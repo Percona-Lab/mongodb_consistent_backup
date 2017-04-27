@@ -2,6 +2,11 @@
 #
 # Script for running mongodb_consistent_backup under Docker
 # with persistent data container for data, config and logs.
+#
+# See: scripts/docker-persistent.example.conf for an example
+# config to pass to this script during backup. Make sure
+# 'log_dir' and 'backup.location' are not changed!
+
 
 ACTION=$1
 [ -z $1 ] && echo "Usage: $0 [backup|list|get] [action flags]" && exit 1
