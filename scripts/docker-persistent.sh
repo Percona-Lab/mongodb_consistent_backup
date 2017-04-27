@@ -4,9 +4,27 @@
 # with persistent data container for data, config and logs.
 #
 # See: scripts/docker-persistent.example.conf for an example
-# config to pass to this script during backup. Make sure
-# 'log_dir' and 'backup.location' are not changed!
-
+# config to pass to this script during backup. 'log_dir' and
+# 'backup.location' variables are auto-set by this script.
+#
+# Run backup:
+#     $ scripts/docker-persistent.sh backup scripts/docker-persistent.example.conf
+#     # Loading config file scripts/docker-persistent.example.conf into container
+#     # Running Docker image: timvaillancourt/mongodb_consistent_backup:latest
+#     [2017-04-27 11:22:04,255] [INFO] [MainProcess] [Main:init:127] Starting mongodb-consistent-backup version 1.0.0 (git commit: d780ad545b603d3a2f807e1813f1de407e81f1ba)
+#     ...
+#     ...
+#
+# List backups (in persistent Docker volume):
+#     $ scripts/docker-persistent.sh list
+#     /mongodb_consistent_backup/data/default/20170427_1122
+#     /mongodb_consistent_backup/data/default/20170427_1123
+#
+# Get a backup:
+#     $ scripts/docker-persistent.sh get /mongodb_consistent_backup/data/default/20170427_1122
+#     $ ls -ald ./20170427_112
+#     drwxr-xr-x. 3 root root 59 Apr 27 13:22 ./20170427_1122
+#
 
 ACTION=$1
 [ -z $1 ] && echo "Usage: $0 [backup|list|get] [action flags]" && exit 1
