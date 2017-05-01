@@ -132,9 +132,9 @@ class StateRoot(StateBase):
         if os.path.isdir(self.base_dir):
             for subdir in os.listdir(self.base_dir):
                 try:
-                    if subdir == self.meta_name:
+                    bkp_path = os.path.join(self.base_dir, subdir)
+                    if subdir == self.meta_name or os.path.islink(bkp_path):
                         continue
-                    bkp_path   = os.path.join(self.base_dir, subdir)
                     state_path = os.path.join(bkp_path, self.meta_name)
                     state_file = os.path.join(state_path, "meta.bson")
                     done_path  = os.path.join(state_path, "done.bson")
