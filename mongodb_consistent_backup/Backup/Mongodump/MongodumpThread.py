@@ -4,6 +4,7 @@ import sys
 
 from multiprocessing import Process
 from select import select
+from shutil import rmtree
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from subprocess import Popen, PIPE
 
@@ -102,7 +103,7 @@ class MongodumpThread(Process):
         mongodump_cmd = self.mongodump_cmd()
         try:
             if os.path.isdir(self.dump_dir):
-                os.removedirs(self.dump_dir)
+                rmtree(self.dump_dir)
             os.makedirs(self.dump_dir)
             logging.debug("Running mongodump cmd: %s" % mongodump_cmd)
             self._process = Popen(mongodump_cmd, stderr=PIPE)
