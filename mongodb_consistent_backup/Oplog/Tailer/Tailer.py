@@ -64,6 +64,8 @@ class Tailer(Task):
             }
             self.shards[shard]['thread'].start()
             while not oplog_state.get('running'):
+                if self.shards[shard]['thread'].exitcode:
+                    raise OperationError("Oplog tailer for %s failed with exit code %i!" % (mongo_uri, self.shards[shard]['thread'].exitcode))
                 sleep(0.5)
 
     def stop(self, kill=False, sleep_secs=0.5):
