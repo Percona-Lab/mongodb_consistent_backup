@@ -141,7 +141,7 @@ The backups are mongorestore compatible and stored in a directory per backup. Th
 Run as Docker Container (Experimental)
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-*Note: you need to use persistent volumes to store backups and/or config files long-term when using Docker. Data in Docker containers is destroyed when the container is deleted.*
+Note: you need to use persistent volumes to store backups and/or config files long-term when using Docker. Data in Docker containers is destroyed when the container is deleted. See `scripts/docker-persistent.sh <scripts/docker-persistent.sh>`__ and `scripts/docker-persistent.example.conf <scripts/docker-persistent.example.conf>`__ as an example/demo of how to implement persistence.
 
 **Via Docker Hub**
 
