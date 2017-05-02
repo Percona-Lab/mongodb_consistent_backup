@@ -4,6 +4,7 @@ import logging
 from select import select
 from subprocess import Popen, PIPE, call
 
+from mongodb_consistent_backup.Common import Lock
 from mongodb_consistent_backup.Errors import OperationError
 from mongodb_consistent_backup.Pipeline import Task
 
@@ -24,7 +25,9 @@ class Zbackup(Task):
         self.compression_method    = 'lzma'
         self.compression_supported = ['lzma']
 
-        self.zbackup_dir         = os.path.join(self.config.backup.location, self.backup_name, "mongodb-consistent-backup_zbackup")
+        self.base_dir            = os.path.join(self.config.backup.location, self.backup_name)
+        self.zbackup_dir         = os.path.join(self.base_dir, "mongodb-consistent-backup_zbackup")
+        self.zbackup_lock        = os.path.join(self.base_dir, "mongodb-consistent-backup_zbackup.lock")
         self.zbackup_backups     = os.path.join(self.zbackup_dir, "backups")
         self.zbackup_backup_path = os.path.join(self.zbackup_backups, "%s.tar" % self.backup_time)
         self.zbackup_bundles     = os.path.join(self.zbackup_dir, "bundles")
@@ -50,6 +53,10 @@ class Zbackup(Task):
             else:
                 raise OperationError("ZBackup dir: %s is not a zbackup storage directory!" % self.zbackup_dir)
         else:
+            if not os.path.isdir(self.base_dir):
+                os.makedirs(self.base_dir)
+            lock = Lock(self.zbackup_lock)
+            lock.acquire()
             try:
                 cmd_line = [self.zbackup_binary]
                 if self.zbackup_passwd_file:
@@ -65,6 +72,8 @@ class Zbackup(Task):
                     raise OperationError("ZBackup initialization failed! Exit code: %i" % exit_code)
             except Exception, e:
                 raise OperationError("Error creating ZBackup storage directory! Error: %s" % e)
+            finally:
+                lock.release()
 
     def version(self):
         if self._version:
@@ -148,6 +157,8 @@ class Zbackup(Task):
 
     def run(self):
         if self.has_zbackup():
+            lock = Lock(self.zbackup_lock)
+            lock.acquire()
             try:
                 logging.info("Starting ZBackup version: %s (options: compression=%s, encryption=%s, threads=%i, cache_mb=%i)" %
                     (self.version(), self.compression(), self.encrypted, self.threads(), self.zbackup_cache_mb)
@@ -171,5 +182,6 @@ class Zbackup(Task):
             finally:
                 self.running = False
                 self.stopped = True
+                lock.release()
         else:
             raise OperationError("Cannot find ZBackup at %s!" % self.zbackup_binary)
