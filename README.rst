@@ -7,6 +7,9 @@ About
 Creates cluster-consistent point-in-time backups of MongoDB with optional
 archiving, compression/de-duplication, encryption and upload functionality
 
+The motivation for this tool in explained in this Percona blog post *(more posts coming soon)*:
+`"MongoDB Consistent Backups" <https://www.percona.com/blog/2016/07/25/mongodb-consistent-backups/>`__
+
 Features
 ~~~~~~~~
 
@@ -14,7 +17,7 @@ Features
 -  Auto-discovers healthy members for backup by considering replication
    lag, replication 'priority' and by preferring 'hidden' members
 -  Creates cluster-consistent backups across many separate shards
--  'mongodump' is the default *(and currently only)* backup method. Other methods coming soon!
+-  `'mongodump' <https://docs.mongodb.com/manual/reference/program/mongodump/>`__ is the default *(and currently only)* backup method. Other methods coming soon!
 -  Transparent restore process (*just add --oplogReplay flag to your
    mongorestore command*)
 -  Archiving and compression of backups (*optional*)
@@ -42,7 +45,7 @@ Requirements:
    hosts! Server time **must be synchronized on all nodes** using ntpd
    and a consistent time source or virtualization guest agent that 
    syncs time
--  Must have 'mongodump' installed and specified if not at default:
+-  Must have `'mongodump' <https://docs.mongodb.com/manual/reference/program/mongodump/>`__ installed and specified if not at default:
    */usr/bin/mongodump*. Even if you do not run MongoDB 3.2+, it is
    strongly recommended to use MongoDB 3.2+ mongodump binaries due
    to inline compression and parallelism features
@@ -130,7 +133,7 @@ A description of all available config settings can also be listed by passing the
 Restore a Backup
 ~~~~~~~~~~~~~~~~
 
-The backups are mongorestore compatible and stored in a directory per backup. The *--oplogReplay* flag **MUST** be present to replay the oplogs to ensure consistency.
+The backups are `mongorestore <https://docs.mongodb.com/manual/reference/program/mongorestore/>`__ compatible and stored in a directory per backup. The *--oplogReplay* flag **MUST** be present to replay the oplogs to ensure consistency.
 
 ::
 
@@ -204,7 +207,7 @@ To remove a backup, first delete the .tar file in 'backups' subdir of the ZBacku
 Roadmap
 ~~~~~~~
 
--  More testing: this project has many flows that probably need more in-depth testing. Please submit and bugs and/or bugfixes!
+-  More testing: this project has many flows that probably need more in-depth testing. Please submit any bugs and/or bugfixes!
 -  "Distributed Mode" for running backup on remote hosts *(vs. only on one host)*
 -  Upload compatibility for ZBackup archive phase *(upload unsupported today)*
 -  Backup retention/rotation *(eg: delete old backups)*
@@ -213,6 +216,15 @@ Roadmap
 -  Support SSL MongoDB connections
 -  Documentation for running under Docker with persistent volumes
 -  Python unit tests
+
+Links
+~~~~~
+
+- https://www.percona.com/blog/2016/07/25/mongodb-consistent-backups/
+- https://www.percona.com/blog/2017/01/09/mongodb-pit-backups-part-2/
+- https://docs.mongodb.com/manual/reference/program/mongodump/
+- https://docs.mongodb.com/manual/reference/program/mongorestore/
+- http://zbackup.org
 
 Contact
 ~~~~~~~
