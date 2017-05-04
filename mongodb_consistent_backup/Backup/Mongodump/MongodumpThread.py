@@ -14,20 +14,21 @@ from mongodb_consistent_backup.Oplog import Oplog
 
 # noinspection PyStringFormat
 class MongodumpThread(Process):
-    def __init__(self, state, uri, timer, user, password, authdb, base_dir, binary,
+    def __init__(self, state, uri, timer, user, password, authdb, base_dir, binary, version,
                  threads=0, dump_gzip=False, verbose=False):
         Process.__init__(self)
-        self.state       = state
-        self.uri         = uri
-        self.timer       = timer
-        self.user        = user
-        self.password    = password
-        self.authdb      = authdb
-        self.base_dir    = base_dir
-        self.binary      = binary
-        self.threads     = threads
-        self.dump_gzip   = dump_gzip
-        self.verbose     = verbose
+        self.state     = state
+        self.uri       = uri
+        self.timer     = timer
+        self.user      = user
+        self.password  = password
+        self.authdb    = authdb
+        self.base_dir  = base_dir
+        self.binary    = binary
+        self.version   = version
+        self.threads   = threads
+        self.dump_gzip = dump_gzip
+        self.verbose   = verbose
 
         self.timer_name = "%s-%s" % (self.__class__.__name__, self.uri.replset)
         self.exit_code  = 1
@@ -85,6 +86,8 @@ class MongodumpThread(Process):
             mongodump_flags.extend(["--numParallelCollections="+str(self.threads)])
         if self.dump_gzip:
             mongodump_flags.extend(["--gzip"])
+        if tuple("3.4.0".split(".")) <= tuple(self.version.split(".")):
+            mongodump_flags.extend(["--readPreference=secondary"])
         if self.authdb and self.authdb != "admin":
             logging.debug("Using database %s for authentication" % self.authdb)
             mongodump_flags.extend(["--authenticationDatabase", self.authdb])
