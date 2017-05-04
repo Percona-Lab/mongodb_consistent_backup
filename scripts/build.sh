@@ -88,7 +88,7 @@ if [ -d ${srcdir} ]; then
 	source ${venvdir}/bin/activate
 
 	[ ! -d ${pipdir} ] && mkdir -p ${pipdir}
-	${venvdir}/bin/python2.7 ${venvdir}/bin/pip install --download-cache=${pipdir} pex requests
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pip install --cache-dir=${pipdir} pex requests
 	if [ $? -gt 0 ]; then
 		echo "Failed to install pex utility for building!"
 		exit 1
