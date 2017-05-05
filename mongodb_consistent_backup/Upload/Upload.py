@@ -1,3 +1,4 @@
+from mongodb_consistent_backup.Upload.GS import GS
 from mongodb_consistent_backup.Upload.S3 import S3
 from mongodb_consistent_backup.Pipeline import Stage
 
