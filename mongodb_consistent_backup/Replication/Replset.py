@@ -151,6 +151,7 @@ class Replset:
         if self.secondary and not force:
             return self.secondary
 
+        secondary_count = 0
         for member in rs_status['members']:
             member_uri = MongoUri(member['name'], 27017, rs_name)
             if member['state'] == 7:
@@ -186,12 +187,12 @@ class Replset:
                     if self.secondary is None or score > self.secondary['score']:
                         self.secondary = {
                             'replSet': rs_name,
-                            'count': 1 if self.secondary is None else self.secondary['count'] + 1,
                             'uri': member_uri,
                             'optime': optime_ts,
                             'score': score
                         }
                     log_msg = "Found SECONDARY %s" % member_uri
+                    secondary_count += 1
                 else:
                     log_msg = "Found SECONDARY %s with too high replication lag! Skipping" % member_uri
 
@@ -203,8 +204,7 @@ class Replset:
                 log_data['score']  = int(score)
                 logging.info("%s: %s" % (log_msg, str(log_data)))
                 self.replset_summary['secondary'] = { "member": member, "uri": member_uri.str(), "data": log_data }
-        if self.secondary is None or (self.secondary['count'] + 1) < quorum:
-            secondary_count = self.secondary['count'] + 1 if self.secondary else 0
+        if self.secondary is None or secondary_count < quorum:
             logging.error("Not enough valid secondaries in replset %s to take backup! Num replset members: %i, required quorum: %i" % (
                 rs_name,
                 secondary_count,
