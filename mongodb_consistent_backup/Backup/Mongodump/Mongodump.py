@@ -47,7 +47,7 @@ class Mongodump(Task):
             if self.compression() == 'auto':
                 logging.info("Mongodump binary supports gzip compression, auto-enabling gzip compression")
                 self.compression('gzip')
-	elif self.compression() == 'gzip':
+        elif self.compression() == 'gzip':
             raise OperationError("mongodump gzip compression requested on binary that does not support gzip!")
 
     def can_gzip(self):
