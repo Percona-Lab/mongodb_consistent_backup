@@ -40,10 +40,7 @@ class Mongodump(Task):
         with hide('running', 'warnings'), settings(warn_only=True):
             self.version = local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary, capture=True)
 
-        if self.can_gzip():
-            if self.compression() == 'none':
-                self.compression('gzip')
-        elif self.compression() == 'gzip':
+        if not self.can_gzip() and self.compression() == 'gzip':
             logging.warning("mongodump gzip compression requested on binary that does not support gzip!")
 
     def can_gzip(self):
