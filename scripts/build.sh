@@ -100,7 +100,7 @@ if [ -d ${srcdir} ]; then
 	if [ ! -d ${pexdir} ]; then
 		mkdir -p ${pexdir}
 	else
-		find ${pexdir} -type f -name "${mod_name}-*.whl" -print -delete
+		find ${pexdir} -type f -name "${mod_name}-*.whl" -delete
 	fi
 	[ ! -d ${bindir} ] && mkdir -p ${bindir}
 	${venvdir}/bin/python2.7 ${venvdir}/bin/pex -o ${output_file} -m ${mod_name} -r ${require_file} --pex-root=${pexdir} ${builddir}
