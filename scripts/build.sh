@@ -88,7 +88,10 @@ if [ -d ${srcdir} ]; then
 	source ${venvdir}/bin/activate
 
 	[ ! -d ${pipdir} ] && mkdir -p ${pipdir}
-	${venvdir}/bin/python2.7 ${venvdir}/bin/pip install --cache-dir=${pipdir} pex requests
+	pip_flags="--download-cache=${pipdir}"
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pip --help | grep -q '\-\-cache\-dir'
+	[ $? = 0 ] && pip_flags="--cache-dir=${pipdir}"
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pip install ${pip_flags} pex requests
 	if [ $? -gt 0 ]; then
 		echo "Failed to install pex utility for building!"
 		exit 1
@@ -97,7 +100,7 @@ if [ -d ${srcdir} ]; then
 	if [ ! -d ${pexdir} ]; then
 		mkdir -p ${pexdir}
 	else
-		rm -f ${pexdir}/build/mongodb_consistent_backup-*.whl 
+		rm -f ${pexdir}/${mod_name}-*.whl 
 	fi
 	[ ! -d ${bindir} ] && mkdir -p ${bindir}
 	${venvdir}/bin/python2.7 ${venvdir}/bin/pex -o ${output_file} -m ${mod_name} -r ${require_file} --pex-root=${pexdir} ${builddir}
