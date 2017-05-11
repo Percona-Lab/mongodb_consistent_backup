@@ -7,7 +7,6 @@ from select import select
 from shutil import rmtree
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from subprocess import Popen, PIPE
-from time import sleep
 
 from mongodb_consistent_backup.Common import is_datetime
 from mongodb_consistent_backup.Oplog import Oplog
@@ -135,11 +134,6 @@ class MongodumpThread(Process):
             os.makedirs(self.dump_dir)
             logging.debug("Running mongodump cmd: %s" % mongodump_cmd)
             self._process = Popen(mongodump_cmd, stdin=PIPE, stderr=PIPE)
-            #if self.do_stdin_passwd:
-            #    sleep(5)
-            #    logging.debug("Writing password to stdin")
-            #    self._process.stdin.write(self.password)
-            #    self._process.stdin.flush()
             self.wait()
             self.exit_code = self._process.returncode
             if self.exit_code > 0:
