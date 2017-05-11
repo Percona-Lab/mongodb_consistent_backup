@@ -7,6 +7,7 @@ from select import select
 from shutil import rmtree
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from subprocess import Popen, PIPE
+from time import sleep
 
 from mongodb_consistent_backup.Common import is_datetime
 from mongodb_consistent_backup.Oplog import Oplog
@@ -30,9 +31,12 @@ class MongodumpThread(Process):
         self.dump_gzip = dump_gzip
         self.verbose   = verbose
 
-        self.timer_name = "%s-%s" % (self.__class__.__name__, self.uri.replset)
-        self.exit_code  = 1
-        self._command   = None
+        self.timer_name        = "%s-%s" % (self.__class__.__name__, self.uri.replset)
+        self.exit_code         = 1
+        self._command          = None
+        self.do_stdin_passwd   = False
+        self.stdin_passwd_sent = False
+
         self.backup_dir = os.path.join(self.base_dir, self.uri.replset)
         self.dump_dir   = os.path.join(self.backup_dir, "dump")
         self.oplog_file = os.path.join(self.dump_dir, "oplog.bson")
@@ -61,6 +65,18 @@ class MongodumpThread(Process):
         except:
             return None
 
+    def is_password_prompt(self, line):
+        if self.do_stdin_passwd and ("Enter Password:" in line or "reading password from standard input" in line):
+            return True
+        return False
+
+    def handle_password_prompt(self):
+        if self.do_stdin_passwd and not self.stdin_passwd_sent:
+            logging.debug("Received password prompt from mongodump, writing password to stdin")
+            self._process.stdin.write(self.password + "\n")
+            self._process.stdin.flush()
+            self.stdin_passwd_sent = True
+
     def wait(self):
         try:
             while self._process.stderr:
@@ -69,7 +85,11 @@ class MongodumpThread(Process):
                     for fd in poll[0]:
                         read = self._process.stderr.readline()
                         line = self.parse_mongodump_line(read)
-                        if line:
+                        if not line:
+                            continue
+                        elif self.is_password_prompt(read):
+                            self.handle_password_prompt()
+                        else:
                             logging.info(line)
                 if self._process.poll() != None:
                     break
@@ -92,7 +112,12 @@ class MongodumpThread(Process):
             logging.debug("Using database %s for authentication" % self.authdb)
             mongodump_flags.extend(["--authenticationDatabase", self.authdb])
         if self.user and self.password:
-            mongodump_flags.extend(["-u", self.user, "-p", self.password])
+            # >= 3.0.2 supports password input via stdin to mask from ps
+            if tuple("3.0.2".split(".")) <= tuple(self.version.split(".")):
+                mongodump_flags.extend(["-u", self.user, "-p", '""'])
+                self.do_stdin_passwd = True
+            else:
+                mongodump_flags.extend(["-u", self.user, "-p", self.password])
         mongodump_cmd.extend(mongodump_flags)
         return mongodump_cmd
 
@@ -109,7 +134,12 @@ class MongodumpThread(Process):
                 rmtree(self.dump_dir)
             os.makedirs(self.dump_dir)
             logging.debug("Running mongodump cmd: %s" % mongodump_cmd)
-            self._process = Popen(mongodump_cmd, stderr=PIPE)
+            self._process = Popen(mongodump_cmd, stdin=PIPE, stderr=PIPE)
+            #if self.do_stdin_passwd:
+            #    sleep(5)
+            #    logging.debug("Writing password to stdin")
+            #    self._process.stdin.write(self.password)
+            #    self._process.stdin.flush()
             self.wait()
             self.exit_code = self._process.returncode
             if self.exit_code > 0:
