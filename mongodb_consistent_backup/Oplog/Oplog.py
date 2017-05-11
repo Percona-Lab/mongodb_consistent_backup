@@ -3,6 +3,7 @@ import logging
 
 from gzip import GzipFile
 from bson import BSON, decode_file_iter
+from bson.codec_options import CodecOptions
 
 from mongodb_consistent_backup.Errors import OperationError
 
@@ -44,7 +45,7 @@ class Oplog:
         try:
             oplog = self.open()
             logging.debug("Reading oplog file %s" % self.oplog_file)
-            for change in decode_file_iter(oplog):
+            for change in decode_file_iter(oplog, CodecOptions(unicode_decode_error_handler="ignore")):
                 if 'ts' in change:
                     self._last_ts = change['ts']
                 if self._first_ts is None and self._last_ts is not None:
