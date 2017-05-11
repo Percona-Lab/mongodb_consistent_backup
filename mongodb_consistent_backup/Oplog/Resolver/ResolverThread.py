@@ -4,6 +4,7 @@ import os
 # noinspection PyPackageRequirements
 from bson import decode_file_iter
 
+from mongodb_consistent_backup.Errors import Error
 from mongodb_consistent_backup.Oplog import Oplog
 from mongodb_consistent_backup.Pipeline import PoolThread
 
@@ -46,7 +47,7 @@ class ResolverThread(PoolThread):
             self.state.set('running', False)
             self.exit_code = 0
         except Exception, e:
-            logging.exception("Resolving of oplogs failed! Error: %s" % e)
+            raise Error("Resolving of oplogs failed! Error: %s" % e)
         finally:
             self.close()
 

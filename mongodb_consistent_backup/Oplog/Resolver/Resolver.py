@@ -40,6 +40,7 @@ class Resolver(Task):
         self.completed = False
         self._pool     = None
         self._pooled   = []
+        self._results  = {}
         try:
             self._pool = Pool(processes=self.threads(None, 2))
         except Exception, e:
@@ -74,7 +75,13 @@ class Resolver(Task):
             self._pool.close()
             while len(self._pooled):
                 logging.debug("Waiting for %i oplog resolver thread(s) to stop" % len(self._pooled))
-                sleep(2)
+                try:
+                    for thread_name in self._pooled:
+                        thread = self._results[thread_name]
+                        thread.get(1)
+                        sleep(2)
+                except Exception, e:
+                    raise e
             self._pool.terminate()
             logging.debug("Stopped all oplog resolve threads")
             self.stopped = True
@@ -100,7 +107,8 @@ class Resolver(Task):
                     raise OperationError("Backup oplog is newer than the tailed oplog!")
                 else:
                     try:
-                        self._pool.apply_async(ResolverThread(
+                        thread_name = uri.str()
+                        self._results[thread_name] = self._pool.apply_async(ResolverThread(
                             self.resolver_state[shard],
                             uri,
                             tailed_oplog.copy(),
@@ -108,7 +116,7 @@ class Resolver(Task):
                             self.get_consistent_end_ts(),
                             self.compression()
                         ).run, callback=self.done)
-                        self._pooled.append(uri.str())
+                        self._pooled.append(thread_name)
                     except Exception, e:
                         logging.fatal("Resolve failed for %s! Error: %s" % (uri, e))
                         raise Error(e)
