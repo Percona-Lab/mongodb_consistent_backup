@@ -21,7 +21,7 @@ class ResolverThread(PoolThread):
 
         self.oplogs  = {}
         self.changes = 0
-        self.stopped = True
+        self.stopped = False
 
     def run(self):
         self.oplogs['backup'] = Oplog(self.mongodump_oplog['file'], self.do_gzip(), 'a+')
