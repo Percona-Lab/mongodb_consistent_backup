@@ -45,7 +45,7 @@ class DB:
                 conn['admin'].command({"ping":1})
         except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
             logging.error("Unable to connect to %s! Error: %s" % (self.uri, e))
-            raise OperationError(e)
+            raise DBConnectionError(e)
         if conn is not None:
             self._conn = conn
         return self._conn

@@ -1,5 +1,6 @@
 import logging
 
+from pymongo import DESCENDING
 from time import sleep
 
 from mongodb_consistent_backup.Common import DB, MongoUri, validate_hostname
@@ -18,6 +19,7 @@ class Sharding:
         self.timer_name            = self.__class__.__name__
         self.config_server         = None
         self.config_db             = None
+        self.mongos_db             = None
         self._balancer_state_start = None
         self.restored              = False
 
@@ -36,10 +38,30 @@ class Sharding:
     def close(self):
         if self.config_db:
             self.config_db.close()
+        if self.mongos_db:
+            self.mongos_db.close()
         return self.restore_balancer_state()
 
     def is_gte_34(self):
         return self.db.server_version() >= tuple("3.4.0".split("."))
+
+    def get_mongos(self, force=False):
+        if not force and self.mongos_db:
+            return self.mongos_db
+        elif self.db.is_mongos():
+            return self.db
+        else:
+            db = self.connection['config']
+            for doc in db.mongos.find().sort('ping', DESCENDING):
+                try:
+                    mongos_uri = MongoUri(doc['_id'])
+                    logging.debug("Found cluster mongos: %s" % mongos_uri)
+                    self.mongos_db = DB(mongos_uri, self.config, False, 'nearest')
+                    logging.info("Connected to cluster mongos: %s" % mongos_uri)
+                    return self.mongos_db
+                except DBConnectionFailure, e:
+                    logging.debug("Failed to connect to mongos: %s, trying next available mongos" % mongos_uri)
+            raise OperationError('Could not connect to any mongos!')
 
     def get_start_state(self):
         self._balancer_state_start = self.get_balancer_state()
@@ -48,19 +70,20 @@ class Sharding:
 
     def shards(self):
         try:
-            if self.is_gte_34():
+            if self.db.is_configsvr() or not self.is_gte_34():
+                return self.connection['config'].shards.find()
+            elif self.is_gte_34():
                 listShards = self.db.admin_command("listShards")
                 if 'shards' in listShards:
                     return listShards['shards']
-            elif self.db.is_configsvr():
-                return self.connection['config'].shards.find()
         except Exception, e:
             raise DBOperationError(e)
 
     def check_balancer_running(self):
         try:
             if self.is_gte_34():
-                balancerState = self.db.admin_command("balancerStatus")
+                # 3.4+ configsvrs dont have balancerStatus, use self.get_mongos() to get a mongos connection for now
+                balancerState = self.get_mongos().admin_command("balancerStatus")
                 if 'inBalancerRound' in balancerState:
                     return balancerState['inBalancerRound']
             else:
@@ -75,7 +98,8 @@ class Sharding:
     def get_balancer_state(self):
         try:
             if self.is_gte_34():
-                balancerState = self.db.admin_command("balancerStatus")
+                # 3.4+ configsvrs dont have balancerStatus, use self.get_mongos() to get a mongos connection for now
+                balancerState = self.get_mongos().admin_command("balancerStatus")
                 if 'mode' in balancerState and balancerState['mode'] == 'off':
                     return False
                 return True
@@ -93,10 +117,11 @@ class Sharding:
     def set_balancer(self, value):
         try:
             if self.is_gte_34():
+                # 3.4+ configsvrs dont have balancerStart/Stop, even though they're the balancer! Use self.get_mongos() to get a mongos connection for now
                 if value is True:
-                    self.db.admin_command("balancerStart")
+                    self.get_mongos().admin_command("balancerStart")
                 else:
-                    self.db.admin_command("balancerStop")
+                    self.get_mongos().admin_command("balancerStop")
             else:
                 if value is True:
                     set_value = False
