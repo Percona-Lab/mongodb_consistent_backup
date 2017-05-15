@@ -38,6 +38,9 @@ class Sharding:
             self.config_db.close()
         return self.restore_balancer_state()
 
+    def is_gte_34(self):
+        return self.db.server_version() >= tuple("3.4.0".split("."))
+
     def get_start_state(self):
         self._balancer_state_start = self.get_balancer_state()
         logging.info("Began with balancer state running: %s" % str(self._balancer_state_start))
@@ -45,49 +48,64 @@ class Sharding:
 
     def shards(self):
         try:
-            if self.db.is_configsvr() and self.db.server_version() < tuple("3.4.0".split(".")):
-                return self.connection['config'].shards.find()
-            else:
+            if self.is_gte_34():
                 listShards = self.db.admin_command("listShards")
                 if 'shards' in listShards:
                     return listShards['shards']
+            elif self.db.is_configsvr():
+                return self.connection['config'].shards.find()
         except Exception, e:
             raise DBOperationError(e)
 
     def check_balancer_running(self):
         try:
-            config = self.connection['config']
-            lock   = config['locks'].find_one({'_id': 'balancer'})
-            if 'state' in lock and int(lock['state']) == 0:
-                return False
+            if self.is_gte_34():
+                balancerState = self.db.admin_command("balancerStatus")
+                if 'inBalancerRound' in balancerState:
+                    return balancerState['inBalancerRound']
+            else:
+                config = self.connection['config']
+                lock = config['locks'].find_one({'_id': 'balancer'})
+                if 'state' in lock and int(lock['state']) == 0:
+                    return False
             return True
         except Exception, e:
             raise DBOperationError(e)
 
     def get_balancer_state(self):
         try:
-            config = self.connection['config']
-            state  = config['settings'].find_one({'_id': 'balancer'})
-
-            if not state:
-               return True
-            elif 'stopped' in state and state.get('stopped') is True:
-               return False
+            if self.is_gte_34():
+                balancerState = self.db.admin_command("balancerStatus")
+                if 'mode' in balancerState and balancerState['mode'] == 'off':
+                    return False
+                return True
             else:
-               return True
+                config = self.connection['config']
+                state  = config['settings'].find_one({'_id': 'balancer'})
+                if not state:
+                   return True
+                elif 'stopped' in state and state.get('stopped') is True:
+                   return False
+                return True
         except Exception, e:
             raise DBOperationError(e)
 
     def set_balancer(self, value):
         try:
-            if value is True:
-                set_value = False
-            elif value is False:
-                set_value = True
+            if self.is_gte_34():
+                if value is True:
+                    self.db.admin_command("balancerStart")
+                else:
+                    self.db.admin_command("balancerStop")
             else:
-                set_value = True
-            config = self.connection['config']
-            config['settings'].update_one({'_id': 'balancer'}, {'$set': {'stopped': set_value}})
+                if value is True:
+                    set_value = False
+                elif value is False:
+                    set_value = True
+                else:
+                    set_value = True
+                config = self.connection['config']
+                config['settings'].update_one({'_id': 'balancer'}, {'$set': {'stopped': set_value}})
         except Exception, e:
             logging.fatal("Failed to set balancer state! Error: %s" % e)
             raise DBOperationError(e)
