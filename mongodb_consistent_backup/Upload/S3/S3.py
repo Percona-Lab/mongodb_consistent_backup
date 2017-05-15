@@ -24,9 +24,9 @@ pickle(MethodType, _reduce_method)
 
 class S3(Task):
     def __init__(self, manager, config, timer, base_dir, backup_dir, **kwargs):
-        super(Nsca, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir, **kwargs)
+        super(S3, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir, **kwargs)
         self.remove_uploaded = self.config.upload.remove_uploaded
-        self.s3_host         = self.config.upload.s3.host
+        self.region          = self.config.upload.s3.region
         self.bucket_name     = self.config.upload.s3.bucket_name
         self.bucket_prefix   = self.config.upload.s3.bucket_prefix
         self.access_key      = self.config.upload.s3.access_key
@@ -34,18 +34,21 @@ class S3(Task):
         self.thread_count    = self.config.upload.s3.threads
         self.chunk_size_mb   = self.config.upload.s3.chunk_size_mb
         self.chunk_size      = self.chunk_size_mb * 1024 * 1024
+        self.secure          = self.config.upload.s3.secure
+        self.retries         = self.config.upload.s3.retries
+        self.s3_acl          = self.config.upload.s3.acl
 
-        self.key_prefix = None
+        self.key_prefix = base_dir
         if 'key_prefix' in self.args:
             self.key_prefix = key_prefix
 
         self._pool        = None
         self._multipart   = None
         self._upload_done = False
-        if None in (self.access_key, self.secret_key,self.s3_host):
-            raise "Invalid S3 security key or host detected!"
+        if None in (self.access_key, self.secret_key, self.region):
+            raise "Invalid S3 security key or region detected!"
         try:
-            self.s3_conn = S3Session(self.access_key, self.secret_key, self.s3_host)
+            self.s3_conn = S3Session(self.region, self.access_key, self.secret_key, self.bucket_name)
             self.bucket  = self.s3_conn.get_bucket(self.bucket_name)
         except Exception, e:
             raise OperationError(e)
@@ -57,14 +60,17 @@ class S3(Task):
         try:
             self.timer.start(self.timer_name)
             for file_name in os.listdir(self.backup_dir):
+                file_path = os.path.join(self.backup_dir, file_name)
+                # skip mongodb-consistent-backup_META dir
+                if os.path.isdir(file_path):
+                    continue
+                file_size = os.stat(file_path).st_size
+                chunk_count = int(ceil(file_size / float(self.chunk_size)))
+
                 if self.bucket_prefix == "/":
                     key_name = "/%s/%s" % (self.key_prefix, file_name)
                 else:
                     key_name = "%s/%s/%s" % (self.bucket_prefix, self.key_prefix, file_name)
-
-                file_path = os.path.join(self.backup_dir, file_name)
-                file_size = os.stat(file_path).st_size
-                chunk_count = int(ceil(file_size / float(self.chunk_size)))
 
                 logging.info("Starting multipart AWS S3 upload to key: %s%s using %i threads, %imb chunks, %i retries" % (
                     self.bucket_name,
@@ -82,9 +88,9 @@ class S3(Task):
                     part_num = i + 1
                     self._pool.apply_async(S3UploadThread(
                         self.bucket_name,
+                        self.region,
                         self.access_key,
                         self.secret_key,
-                        self.s3_host,
                         self._multipart.id,
                         part_num,
                         file_path,
@@ -99,7 +105,8 @@ class S3(Task):
                 if len(self._multipart.get_all_parts()) == chunk_count:
                     self._multipart.complete_upload()
                     key = self.bucket.get_key(key_name)
-                    key.set_acl(self.s3_acl)
+                    if self.s3_acl:
+                        key.set_acl(self.s3_acl)
                     self._upload_done = True
 
                     if self.remove_uploaded:

@@ -6,12 +6,12 @@ from S3Session import S3Session
 
 
 class S3UploadThread:
-    def __init__(self, bucket_name, access_key, secret_key, s3_host, multipart_id, part_num, file_name, offset,
+    def __init__(self, bucket_name, region, access_key, secret_key, multipart_id, part_num, file_name, offset,
                  byte_count, retries=5, secure=True):
         self.bucket_name  = bucket_name
+        self.region       = region
         self.access_key   = access_key
         self.secret_key   = secret_key
-        self.s3_host      = s3_host
         self.multipart_id = multipart_id
         self.part_num     = part_num
         self.file_name    = file_name
@@ -21,7 +21,7 @@ class S3UploadThread:
         self.secure       = secure
 
         try:
-            self.s3_conn = S3Session(self.access_key, self.secret_key, self.s3_host, self.secure, self.retries)
+            self.s3_conn = S3Session(self.region, self.access_key, self.secret_key, self.bucket_name, self.secure, self.retries)
             self.bucket  = self.s3_conn.get_bucket(self.bucket_name)
         except Exception, e:
             logging.fatal("Could not get AWS S3 connection to bucket %s! Error: %s" % (self.bucket_name, e))
