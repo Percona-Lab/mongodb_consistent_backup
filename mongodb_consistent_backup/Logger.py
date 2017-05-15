@@ -35,6 +35,8 @@ class Logger:
     def start_file_logger(self):
         if self.do_file_log:
             try:
+                if os.path.isdir(self.config.log_dir):
+                    os.mkdir(self.config.log_dir)
                 self.current_log_file = os.path.join(self.config.log_dir, "backup.%s.log" % self.backup_name)
                 self.backup_log_file  = os.path.join(self.config.log_dir, "backup.%s.%s.log" % (self.backup_name, self.backup_time))
                 self.file_log = logging.FileHandler(self.backup_log_file)
