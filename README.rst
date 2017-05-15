@@ -222,6 +222,7 @@ Links
 
 - https://www.percona.com/blog/2016/07/25/mongodb-consistent-backups/
 - https://www.percona.com/blog/2017/01/09/mongodb-pit-backups-part-2/
+- https://www.percona.com/blog/2017/05/10/percona-lab-mongodb_consistent_backup-1-0-release-explained/
 - https://docs.mongodb.com/manual/reference/program/mongodump/
 - https://docs.mongodb.com/manual/reference/program/mongorestore/
 - http://zbackup.org
