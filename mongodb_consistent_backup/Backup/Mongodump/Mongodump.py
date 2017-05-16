@@ -26,7 +26,7 @@ class Mongodump(Task):
         self.replsets           = replsets
         self.sharding           = sharding
 
-        self.compression_supported = ['none', 'gzip']
+        self.compression_supported = ['auto', 'none', 'gzip']
         self.version               = 'unknown'
         self.threads_max           = 16
         self.config_replset        = False
@@ -40,11 +40,15 @@ class Mongodump(Task):
         with hide('running', 'warnings'), settings(warn_only=True):
             self.version = local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary, capture=True)
 
+        self.choose_compression()
+
+    def choose_compression(self):
         if self.can_gzip():
-            if self.compression() == 'none':
+            if self.compression() == 'auto':
+                logging.info("Mongodump binary supports gzip compression, auto-enabling gzip compression")
                 self.compression('gzip')
         elif self.compression() == 'gzip':
-            logging.warning("mongodump gzip compression requested on binary that does not support gzip!")
+            raise OperationError("mongodump gzip compression requested on binary that does not support gzip!")
 
     def can_gzip(self):
         if os.path.isfile(self.binary) and os.access(self.binary, os.X_OK):
@@ -121,8 +125,9 @@ class Mongodump(Task):
                 self.authdb,
                 self.backup_dir,
                 self.binary,
+                self.version,
                 self.threads(),
-                self.do_gzip,
+                self.do_gzip(),
                 self.verbose
             )
             self.dump_threads.append(thread)
@@ -152,8 +157,9 @@ class Mongodump(Task):
                     self.authdb,
                     self.backup_dir,
                     self.binary,
+                    self.version,
                     self.threads(),
-                    self.do_gzip,
+                    self.do_gzip(),
                     self.verbose
                 )]
                 self.dump_threads[0].start()

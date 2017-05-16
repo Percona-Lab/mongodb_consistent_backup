@@ -16,10 +16,10 @@ class Logger:
 
         self.do_file_log = False
         if self.config.log_dir is not '':
-            if os.path.isdir(self.config.log_dir):
-                self.do_file_log = True
-            else:
-                print("ERROR: Log directory: %s does not exist! Skipping file-based logging" % self.config.log_dir)
+            self.do_file_log = True
+            if not os.path.isdir(self.config.log_dir):
+                print "WARNING: Creating logging directory: %s" % self.config.log_dir
+                os.mkdir(self.config.log_dir)
 
         self.log_format = '[%(asctime)s] [%(levelname)s] [%(processName)s] [%(module)s:%(funcName)s:%(lineno)d] %(message)s'
         self.file_log   = None
@@ -41,7 +41,6 @@ class Logger:
                 self.file_log.setLevel(self.log_level)
                 self.file_log.setFormatter(logging.Formatter(self.log_format))
                 logging.getLogger('').addHandler(self.file_log)
-                self.update_symlink()
             except OSError, e:
                 logging.warning("Could not start file log handler, writing to stdout only")
                 pass
@@ -50,18 +49,21 @@ class Logger:
         if self.file_log:
             self.file_log.close()
 
-    def compress(self):
+    def compress(self, current=False):
         gz_log = None
         try:
-            if not os.path.isfile(self.last_log) or self.last_log == self.backup_log_file:
-                return
-            logging.info("Compressing previous log file")
-            gz_file = "%s.gz" % self.last_log
+            compress_file = self.backup_log_file
+            if not current:
+                compress_file = self.last_log
+                if not os.path.isfile(self.last_log) or self.last_log == self.backup_log_file:
+                    return
+            logging.info("Compressing log file: %s" % compress_file)
+            gz_file = "%s.gz" % compress_file
             gz_log  = GzipFile(gz_file, "w+")
-            with open(self.last_log) as f:
+            with open(compress_file) as f:
                 for line in f:
                     gz_log.write(line)
-            os.remove(self.last_log)
+            os.remove(compress_file)
         finally:
             if gz_log:
                 gz_log.close()
