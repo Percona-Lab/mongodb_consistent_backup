@@ -18,6 +18,7 @@ class Logger:
         if self.config.log_dir is not '':
             self.do_file_log = True
             if not os.path.isdir(self.config.log_dir):
+                print "WARNING: Creating logging directory: %s" % self.config.log_dir
                 os.mkdir(self.config.log_dir)
 
         self.log_format = '[%(asctime)s] [%(levelname)s] [%(processName)s] [%(module)s:%(funcName)s:%(lineno)d] %(message)s'
