@@ -70,7 +70,7 @@ class Resolver(Task):
         else:
             raise OperationError("Unexpected response from resolver thread: %s" % done_uri)
 
-    def wait(self, max_wait_secs=6*3600):
+    def wait(self, max_wait_secs=6*3600, poll_secs=2):
         if len(self._pooled) > 0:
             waited_secs = 0
             self._pool.close()
@@ -79,11 +79,10 @@ class Resolver(Task):
                 try:
                     for thread_name in self._pooled:
                         thread = self._results[thread_name]
-                        thread.get(2)
+                        thread.get(poll_secs)
                 except TimeoutError:
                     if waited_secs < max_wait_secs:
-                        waited_secs += 2
-                        continue
+                        waited_secs += poll_secs
                     else:
                         raise OperationError("Waited more than %i seconds for Oplog resolver! I will assume there is a problem and exit") 
             self._pool.terminate()
