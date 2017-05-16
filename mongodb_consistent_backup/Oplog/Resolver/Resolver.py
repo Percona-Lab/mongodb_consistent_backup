@@ -4,7 +4,7 @@ import logging
 # noinspection PyPackageRequirements
 from bson.timestamp import Timestamp
 from copy_reg import pickle
-from multiprocessing import Pool
+from multiprocessing import Pool, TimeoutError
 from time import sleep
 from types import MethodType
 
@@ -70,20 +70,24 @@ class Resolver(Task):
         else:
             raise OperationError("Unexpected response from resolver thread: %s" % done_uri)
 
-    def wait(self):
+    def wait(self, max_wait_secs=6*3600):
         if len(self._pooled) > 0:
+            waited_secs = 0
             self._pool.close()
             while len(self._pooled):
                 logging.debug("Waiting for %i oplog resolver thread(s) to stop" % len(self._pooled))
                 try:
                     for thread_name in self._pooled:
                         thread = self._results[thread_name]
-                        thread.get(1)
-                        sleep(2)
-                except Exception, e:
-                    raise e
+                        thread.get(2)
+                except TimeoutError:
+                    if waited_secs < max_wait_secs:
+                        waited_secs += 2
+                        continue
+                    else:
+                        raise OperationError("Waited more than %i seconds for Oplog resolver! I will assume there is a problem and exit") 
             self._pool.terminate()
-            logging.debug("Stopped all oplog resolve threads")
+            logging.debug("Stopped all oplog resolver threads")
             self.stopped = True
             self.running = False
 
