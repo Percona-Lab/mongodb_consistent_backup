@@ -57,6 +57,7 @@ class MongodbConsistentBackup(object):
             self.get_lock()
             self.logger.update_symlink()
             self.init()
+            self.setup_notifier()
             self.set_backup_dirs()
             self.get_db_conn()
             self.setup_state()
@@ -97,6 +98,18 @@ class MongodbConsistentBackup(object):
         StateRoot(self.backup_root_directory, self.config).write(True)
         self.state = StateBackup(self.backup_directory, self.config, self.backup_time, self.uri, sys.argv)
         self.state.write()
+
+    def setup_notifier(self):
+        try:
+            self.notify = Notify(
+                self.manager,
+                self.config,
+                self.timer,
+                self.backup_root_subdirectory,
+                self.backup_directory
+            )
+        except Exception, e:
+            self.exception("Problem starting notifier! Error: %s" % e, e)
 
     def get_db_conn(self):
         self.uri = MongoUri(self.config.host, self.config.port)
@@ -236,18 +249,6 @@ class MongodbConsistentBackup(object):
             )
         except Exception, e:
             self.exception("Problem starting archiver! Error: %s" % e, e)
-
-        # Setup the notifier
-        try:
-            self.notify = Notify(
-                self.manager,
-                self.config,
-                self.timer,
-                self.backup_root_subdirectory,
-                self.backup_directory
-            )
-        except Exception, e:
-            self.exception("Problem starting notifier! Error: %s" % e, e)
 
         # Setup the uploader
         try:
