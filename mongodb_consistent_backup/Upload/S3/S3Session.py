@@ -2,17 +2,25 @@ import logging
 
 import boto
 import boto.s3
+from boto.s3.connection import OrdinaryCallingFormat, SubdomainCallingFormat
 
 from mongodb_consistent_backup.Errors import OperationError
 
 class S3Session:
-    def __init__(self, access_key, secret_key, s3_host='s3.amazonaws.com', secure=True, num_retries=5, socket_timeout=15):
+    def __init__(self, region, access_key, secret_key, bucket_name, secure=True, num_retries=5, socket_timeout=15):
+        self.region         = region
         self.access_key     = access_key
         self.secret_key     = secret_key
-        self.s3_host        = s3_host
         self.secure         = secure
         self.num_retries    = num_retries
         self.socket_timeout = socket_timeout
+
+        # monkey patch for bucket_name with dots
+        # https://github.com/boto/boto/issues/2836
+        if self.secure and '.' in bucket_name:
+            self.calling_format = OrdinaryCallingFormat()
+        else:
+            self.calling_format = SubdomainCallingFormat()
 
         for section in boto.config.sections():
             boto.config.remove_section(section)
@@ -33,11 +41,12 @@ class S3Session:
         if not self._conn:
             try:
                 logging.debug("Connecting to AWS S3 with Access Key: %s" % self.access_key)
-                self._conn = boto.s3.S3Connection(
-                    self.access_key,
-                    self.secret_key,
-                    host=self.s3_host,
-                    is_secure=self.secure
+                self._conn = boto.s3.connect_to_region(
+                    self.region,
+                    aws_access_key_id=self.access_key,
+                    aws_secret_access_key=self.secret_key,
+                    is_secure=self.secure,
+                    calling_format=self.calling_format
                 )
                 logging.debug("Successfully connected to AWS S3 with Access Key: %s" % self.access_key)
             except Exception, e:
