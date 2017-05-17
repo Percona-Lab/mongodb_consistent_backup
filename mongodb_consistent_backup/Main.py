@@ -49,6 +49,7 @@ class MongodbConsistentBackup(object):
         self.logger                   = None
         self.current_log_file         = None
         self.backup_log_file          = None
+        self.last_error_msg           = None
 
         try:
             self.setup_config()
@@ -184,23 +185,23 @@ class MongodbConsistentBackup(object):
 
         if self.manager:
             self.manager.shutdown()
-
-        if self.notify:
-            try:
-                self.notify.notify("%s: backup '%s' failed!" % (
-                    self.config,
-                    self.program_name
-                ), False)
-                self.notify.run()
-                self.notify.close()
-            except:
-                pass
-
         if self.db:
             self.db.close()
 
-        logging.info("Cleanup complete, exiting")
+        if self.notify:
+            try:
+                self.notify.notify("%s: backup '%s/%s' failed! Error: '%s'" % (
+                    self.program_name,
+                    self.config.backup.name,
+                    self.backup_time,
+                    self.last_error_msg
+                ))
+                self.notify.run()
+                self.notify.close()
+            except Exception, e:
+                logging.error("Error from notifier: %s" % e)
 
+        logging.info("Cleanup complete, exiting")
         if self.logger:
             self.logger.rotate()
             self.logger.close()
@@ -209,6 +210,7 @@ class MongodbConsistentBackup(object):
         sys.exit(1)
 
     def exception(self, error_message, error):
+        self.last_error_msg = error_message
         if isinstance(error, NotifyError):
             logging.error(error_message)
         else:
