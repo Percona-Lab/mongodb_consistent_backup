@@ -49,7 +49,7 @@ class MongodbConsistentBackup(object):
         self.logger                   = None
         self.current_log_file         = None
         self.backup_log_file          = None
-        self.last_error_msg           = None
+        self.last_error_msg           = ''
 
         try:
             self.setup_config()
