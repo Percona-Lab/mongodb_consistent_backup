@@ -23,12 +23,12 @@ class StateBase(object):
         self.lock = Lock(self.state_lock, False)
 
         if not os.path.isdir(self.state_dir):
-            # try recursive first, fallback to regular mkdir
+            # try normal mkdir first, fallback to recursive mkdir if there is an exception
             try:
-                os.makedirs(self.state_dir)
+                os.mkdir(self.state_dir)
             except:
                 try:
-                    os.mkdir(self.state_dir)
+                    os.makedirs(self.state_dir)
                 except Exception, e:
                     raise OperationError(e)
 
