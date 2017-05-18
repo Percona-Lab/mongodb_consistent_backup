@@ -6,6 +6,7 @@ from bson import BSON, decode_all
 from time import time
 
 from mongodb_consistent_backup.Common import Lock
+from mongodb_consistent_backup.Errors import OperationError
 
 
 class StateBase(object):
@@ -22,7 +23,14 @@ class StateBase(object):
         self.lock = Lock(self.state_lock, False)
 
         if not os.path.isdir(self.state_dir):
-            os.makedirs(self.state_dir)
+            # try recursive first, fallback to regular mkdir
+            try:
+                os.makedirs(self.state_dir)
+            except:
+                try:
+                    os.mkdir(self.state_dir)
+                except Exception, e:
+                    raise OperationError(e)
 
     def merge(self, new, old):
         merged = old.copy()
