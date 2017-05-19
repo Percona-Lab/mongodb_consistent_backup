@@ -3,6 +3,7 @@ import os
 # Skip bson in requirements , pymongo provides
 # noinspection PyPackageRequirements
 from bson import decode_file_iter
+from bson.codec_options import CodecOptions
 
 from mongodb_consistent_backup.Errors import Error
 from mongodb_consistent_backup.Oplog import Oplog
@@ -33,7 +34,7 @@ class ResolverThread(PoolThread):
             self.state.set('first_ts', self.mongodump_oplog['first_ts'])
             if not self.state.get('first_ts'):
                 self.state.set('first_ts', self.tailed_oplog['first_ts'])
-            for change in decode_file_iter(self.oplogs['tailed']):
+            for change in decode_file_iter(self.oplogs['tailed'], CodecOptions(unicode_decode_error_handler="ignore")):
                 self.last_ts = change['ts']
                 if not self.mongodump_oplog['last_ts'] or self.last_ts > self.mongodump_oplog['last_ts']:
                     if self.last_ts < self.max_end_ts:
