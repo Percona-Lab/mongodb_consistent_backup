@@ -16,7 +16,6 @@ bin/mongodb-consistent-backup: setup.py requirements.txt README.rst VERSION scri
 	PYTHON_BIN=$(PYTHON_BIN) VIRTUALENV_BIN=$(VIRTUALENV_BIN) bash scripts/build.sh
 
 install: bin/mongodb-consistent-backup
-	rm -rf bin build 2>/dev/null
 	mkdir -p $(BINDIR) $(SHAREDIR)/$(NAME) || true
 	install -m 0755 bin/mongodb-consistent-backup $(BINDIR)/mongodb-consistent-backup
 	install -m 0644 conf/mongodb-consistent-backup.example.conf $(SHAREDIR)/$(NAME)/example.conf
