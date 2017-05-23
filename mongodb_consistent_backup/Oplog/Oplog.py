@@ -4,12 +4,14 @@ import logging
 from gzip import GzipFile
 from bson import BSON, decode_file_iter
 from bson.codec_options import CodecOptions
+from time import time
 
 from mongodb_consistent_backup.Errors import OperationError
 
 
 class Oplog:
-    def __init__(self, oplog_file, do_gzip=False, file_mode="r"):
+    def __init__(self, config, oplog_file, do_gzip=False, file_mode="r"):
+        self.config     = config
         self.oplog_file = oplog_file
         self.do_gzip    = do_gzip
         self.file_mode  = file_mode
@@ -18,6 +20,11 @@ class Oplog:
         self._first_ts = None
         self._last_ts  = None
         self._oplog    = None
+
+        self.flush_secs           = self.config.oplog.tailer.flush_interval
+        self.flush_max_writes     = self.config.oplog.tailer.flush_max_writes
+        self._last_flush_unixtime = int(time())
+        self._writes_since_flush  = 0
 
         self.open()
 
@@ -56,23 +63,41 @@ class Oplog:
             logging.fatal("Error reading oplog file %s! Error: %s" % (self.oplog_file, e))
             raise OperationError(e)
 
-    def add(self, doc):
+    def add(self, doc, auto_flush=True):
         try:
             self._oplog.write(BSON.encode(doc))
-            self._count += 1
+            self._writes_since_flush += 1
+            self._count              += 1
             if not self._first_ts:
                 self._first_ts = doc['ts']
             self._last_ts = doc['ts']
+            #if auto_flush and self.do_flush():
+            #    self.flush()
         except Exception, e:
             logging.fatal("Cannot write to oplog file %s! Error: %s" % (self.oplog_file, e))
             raise OperationError(e)
 
+    def secs_since_flush(self):
+        return int(time()) - self._last_flush_unixtime
+
+    def do_flush(self):
+        if self._writes_since_flush > self.flush_max_writes:
+            return True
+        elif self.secs_since_flush() > self.flush_secs:
+            return True
+        return False
+
     def flush(self):
         if self._oplog:
-            return self._oplog.flush()
+            logging.debug("Flushing oplog file: %s (seconds_since=%i, writes_since=%i)" % (self.oplog_file, self.secs_since_flush(), self._writes_since_flush))
+            self._oplog.flush()
+            self._last_flush_unixtime = int(time())
+            self._writes_since_flush  = 0
+            return True
 
     def close(self):
         if self._oplog:
+            self.flush()
             return self._oplog.close()
 
     def count(self):

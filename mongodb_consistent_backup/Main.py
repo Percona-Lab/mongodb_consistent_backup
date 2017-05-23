@@ -465,7 +465,7 @@ class MongodbConsistentBackup(object):
 
         StateDoneStamp(self.backup_directory, self.config).write()
         self.update_symlinks()
-        logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration(self.timer_name)))
 
         self.logger.rotate()
+        logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration(self.timer_name)))
         self.release_lock()

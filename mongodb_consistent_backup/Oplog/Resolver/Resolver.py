@@ -114,6 +114,7 @@ class Resolver(Task):
                         self._results[thread_name] = self._pool.apply_async(ResolverThread(
                             self.resolver_state[shard],
                             uri,
+                            self.config,
                             tailed_oplog.copy(),
                             backup_oplog.copy(),
                             self.get_consistent_end_ts(),

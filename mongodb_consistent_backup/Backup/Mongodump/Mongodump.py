@@ -120,15 +120,11 @@ class Mongodump(Task):
                 self.states[shard],
                 mongo_uri,
                 self.timer,
-                self.user,
-                self.password,
-                self.authdb,
+                self.config,
                 self.backup_dir,
-                self.binary,
                 self.version,
                 self.threads(),
-                self.do_gzip(),
-                self.verbose
+                self.do_gzip()
             )
             self.dump_threads.append(thread)
 
@@ -152,15 +148,11 @@ class Mongodump(Task):
                     self.states['configsvr'],
                     mongo_uri,
                     self.timer,
-                    self.user,
-                    self.password,
-                    self.authdb,
+                    self.config,
                     self.backup_dir,
-                    self.binary,
                     self.version,
                     self.threads(),
-                    self.do_gzip(),
-                    self.verbose
+                    self.do_gzip()
                 )]
                 self.dump_threads[0].start()
                 self.dump_threads[0].join()

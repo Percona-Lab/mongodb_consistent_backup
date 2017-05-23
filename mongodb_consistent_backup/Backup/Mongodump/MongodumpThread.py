@@ -14,21 +14,21 @@ from mongodb_consistent_backup.Oplog import Oplog
 
 # noinspection PyStringFormat
 class MongodumpThread(Process):
-    def __init__(self, state, uri, timer, user, password, authdb, base_dir, binary, version,
-                 threads=0, dump_gzip=False, verbose=False):
+    def __init__(self, state, uri, timer, config, base_dir, version, threads=0, dump_gzip=False):
         Process.__init__(self)
         self.state     = state
         self.uri       = uri
         self.timer     = timer
-        self.user      = user
-        self.password  = password
-        self.authdb    = authdb
+        self.config    = config
         self.base_dir  = base_dir
-        self.binary    = binary
         self.version   = version
         self.threads   = threads
         self.dump_gzip = dump_gzip
-        self.verbose   = verbose
+
+        self.user     = self.config.username
+        self.password = self.config.password
+        self.authdb   = self.config.authdb
+        self.binary   = self.config.backup.mongodump.binary
 
         self.timer_name        = "%s-%s" % (self.__class__.__name__, self.uri.replset)
         self.exit_code         = 1
@@ -143,7 +143,7 @@ class MongodumpThread(Process):
             logging.exception("Error performing mongodump: %s" % e)
 
         try:
-            oplog = Oplog(self.oplog_file, self.dump_gzip)
+            oplog = Oplog(self.config, self.oplog_file, self.dump_gzip)
             oplog.load()
         except Exception, e:
             logging.exception("Error loading oplog: %s" % e)

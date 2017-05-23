@@ -10,8 +10,8 @@ from mongodb_consistent_backup.Pipeline import PoolThread
 
 
 class ResolverThread(PoolThread):
-    def __init__(self, state, uri, tailed_oplog, mongodump_oplog, max_end_ts, compression='none'):
-        super(ResolverThread, self).__init__(self.__class__.__name__, compression)
+    def __init__(self, state, uri, config, tailed_oplog, mongodump_oplog, max_end_ts, compression='none'):
+        super(ResolverThread, self).__init__(self.__class__.__name__, config, compression)
         self.state              = state
         self.uri                = uri
         self.tailed_oplog       = tailed_oplog
@@ -24,8 +24,11 @@ class ResolverThread(PoolThread):
         self.stopped = False
 
     def run(self):
-        self.oplogs['backup'] = Oplog(self.mongodump_oplog['file'], self.do_gzip(), 'a+')
-        self.oplogs['tailed'] = Oplog(self.tailed_oplog['file'], self.do_gzip())
+        print self.config
+        self.oplogs['backup'] = Oplog(self.config, self.mongodump_oplog['file'], self.do_gzip(), 'a+')
+        self.oplogs['tailed'] = Oplog(self.config, self.tailed_oplog['file'], self.do_gzip())
+
+	print "made it here"
 
         logging.info("Resolving oplog for %s to max ts: %s" % (self.uri, self.max_end_ts))
         try:

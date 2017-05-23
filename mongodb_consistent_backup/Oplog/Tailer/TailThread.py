@@ -5,7 +5,7 @@ import sys
 # noinspection PyPackageRequirements
 from multiprocessing import Process
 from pymongo import CursorType
-from pymongo.errors import AutoReconnect
+from pymongo.errors import AutoReconnect, CursorNotFound, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout, NotMasterError
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from time import sleep, time
 
@@ -40,7 +40,7 @@ class TailThread(Process):
 
     def oplog(self):
         if not self._oplog:
-            self._oplog = Oplog(self.oplog_file, self.dump_gzip, 'w+')
+            self._oplog = Oplog(self.config, self.oplog_file, self.dump_gzip, 'w+')
         return self._oplog
 
     def close(self, exit_code=None, frame=None):
@@ -71,10 +71,10 @@ class TailThread(Process):
         tail_start_ts = db.oplog.rs.find().sort('$natural', -1)[0]['ts']
         self.state.set('running', True)
         while not self.do_stop.is_set():
-            # http://api.mongodb.com/python/current/examples/tailable.html
-            query  = {'ts':{'$gt':tail_start_ts}}
-            cursor = db.oplog.rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True)
             try:
+                # http://api.mongodb.com/python/current/examples/tailable.html
+                query  = {'ts':{'$gt':tail_start_ts}}
+                cursor = db.oplog.rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True)
                 while not self.do_stop.is_set():
                     try:
                         # get the next oplog doc and write it
@@ -91,15 +91,21 @@ class TailThread(Process):
 
                         # print status report every N seconds
                         self.status()
-                    except (AutoReconnect, StopIteration):
+                    except NotMasterError:
+                        # pymongo.errors.NotMasterError means a RECOVERING-state when connected to secondary
+                        self.do_stop.set()
+                        logging.error("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
+                        raise OperationError("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
+                    except CursorNotFound:
+                        self.do_stop.set()
+                        logging.error("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
+                        raise OperationError("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
+                    except (AutoReconnect, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout, StopIteration):
                         if self.do_stop.is_set():
                             break
                         sleep(1)
-                    except Exception, e:
-                        self.do_stop.set()
-                        raise e
             except Exception, e:
-                logging.fatal("Tailer %s error: %s" % (self.uri, e))
+                logging.error("Tailer %s error: %s" % (self.uri, e))
                 self.exit_code = 1
                 self.do_stop.set()
                 break
