@@ -67,15 +67,17 @@ class TailThread(Process):
         self.conn = DB(self.uri, self.config, True, 'secondary').connection()
         db        = self.conn['local']
         oplog     = self.oplog()
+        cursor    = None
 
         tail_start_ts = db.oplog.rs.find().sort('$natural', -1)[0]['ts']
         self.state.set('running', True)
         while not self.do_stop.is_set():
             try:
                 # http://api.mongodb.com/python/current/examples/tailable.html
-                query  = {'ts':{'$gt':tail_start_ts}}
+                query = {'ts':{'$gt':tail_start_ts}}
+                logging.debug("Querying oplog on %s with query: %s" % (self.uri, query))
                 cursor = db.oplog.rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True)
-                while not self.do_stop.is_set():
+                while cursor.alive:
                     try:
                         # get the next oplog doc and write it
                         doc = cursor.next()
@@ -92,7 +94,7 @@ class TailThread(Process):
                         # print status report every N seconds
                         self.status()
                     except NotMasterError:
-                        # pymongo.errors.NotMasterError means a RECOVERING-state when connected to secondary
+                        # pymongo.errors.NotMasterError means a RECOVERING-state when connected to secondary (which should be true)
                         self.do_stop.set()
                         logging.error("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
                         raise OperationError("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
@@ -103,19 +105,23 @@ class TailThread(Process):
                     except (AutoReconnect, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout, StopIteration):
                         if self.do_stop.is_set():
                             break
-                        sleep(1)
+                        if cursor.alive:
+                            cursor.close()
+                sleep(1)
             except Exception, e:
-                logging.error("Tailer %s error: %s" % (self.uri, e))
+                logging.error("Tailer %s encountered error: %s" % (self.uri, e))
                 self.exit_code = 1
                 self.do_stop.set()
                 break
             finally:
-                logging.debug("Stopping oplog cursor on %s" % self.uri)
-                cursor.close()
+                if cursor and cursor.alive:
+                    logging.debug("Stopping oplog cursor on %s" % self.uri)
+                    cursor.close()
                 oplog.flush()
-        oplog.close()
-        self.stopped = True
-        self.timer.stop(self.timer_name)
+                oplog.close()
+                self.stopped = True
+                self.state.set('running', False)
+                self.timer.stop(self.timer_name)
 
         try:
             if self.exit_code == 0:
@@ -124,7 +130,6 @@ class TailThread(Process):
                 if last_ts:
                     log_msg_extra = "%s, end ts: %s" % (log_msg_extra, last_ts)
                 logging.info("Done tailing oplog on %s, %s" % (self.uri, log_msg_extra))
-            self.state.set('running', False)
             self.state.set('completed', True)
         except OperationError:
             pass

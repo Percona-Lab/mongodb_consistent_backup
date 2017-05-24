@@ -24,14 +24,10 @@ class ResolverThread(PoolThread):
         self.stopped = False
 
     def run(self):
-        print self.config
-        self.oplogs['backup'] = Oplog(self.config, self.mongodump_oplog['file'], self.do_gzip(), 'a+')
-        self.oplogs['tailed'] = Oplog(self.config, self.tailed_oplog['file'], self.do_gzip())
-
-	print "made it here"
-
-        logging.info("Resolving oplog for %s to max ts: %s" % (self.uri, self.max_end_ts))
         try:
+            #self.oplogs['backup'] = Oplog(self.config, self.mongodump_oplog['file'], self.do_gzip(), 'a+')
+            #self.oplogs['tailed'] = Oplog(self.config, self.tailed_oplog['file'], self.do_gzip())
+            logging.info("Resolving oplog for %s to max ts: %s" % (self.uri, self.max_end_ts))
             self.state.set('running', True)
             self.state.set('first_ts', self.mongodump_oplog['first_ts'])
             if not self.state.get('first_ts'):
