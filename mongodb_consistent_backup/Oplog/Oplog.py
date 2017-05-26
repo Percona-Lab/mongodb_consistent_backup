@@ -21,8 +21,8 @@ class Oplog:
         self._last_ts  = None
         self._oplog    = None
 
-        self.flush_secs           = self.config.oplog.tailer.flush_interval
-        self.flush_max_writes     = self.config.oplog.tailer.flush_max_writes
+        self.flush_max_docs     = self.config.oplog.flush.max_docs
+        self.flush_secs           = self.config.oplog.flush.max_secs
         self._last_flush_unixtime = int(time())
         self._writes_since_flush  = 0
 
@@ -81,7 +81,7 @@ class Oplog:
         return int(time()) - self._last_flush_unixtime
 
     def do_flush(self):
-        if self._writes_since_flush > self.flush_max_writes:
+        if self._writes_since_flush > self.flush_max_docs:
             return True
         elif self.secs_since_flush() > self.flush_secs:
             return True
