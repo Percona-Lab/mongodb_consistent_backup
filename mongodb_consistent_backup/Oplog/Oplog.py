@@ -71,8 +71,8 @@ class Oplog:
             if not self._first_ts:
                 self._first_ts = doc['ts']
             self._last_ts = doc['ts']
-            #if auto_flush and self.do_flush():
-            #    self.flush()
+            if auto_flush:
+                self.autoflush()
         except Exception, e:
             logging.fatal("Cannot write to oplog file %s! Error: %s" % (self.oplog_file, e))
             raise OperationError(e)
@@ -89,8 +89,14 @@ class Oplog:
 
     def flush(self):
         if self._oplog:
-            logging.debug("Flushing oplog file: %s (seconds_since=%i, writes_since=%i)" % (self.oplog_file, self.secs_since_flush(), self._writes_since_flush))
+            # https://docs.python.org/2/library/os.html#os.fsync
             self._oplog.flush()
+            return os.fsync(self._oplog.fileno())
+
+    def autoflush(self):
+        if self._oplog and self.do_flush():
+            logging.debug("Flushing oplog file: %s (seconds_since=%i, writes_since=%i)" % (self.oplog_file, self.secs_since_flush(), self._writes_since_flush))
+            self.flush()
             self._last_flush_unixtime = int(time())
             self._writes_since_flush  = 0
             return True

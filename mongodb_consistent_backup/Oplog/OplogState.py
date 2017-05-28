@@ -34,12 +34,16 @@ class OplogState:
                 else:
                     return None
             return state 
+        except IOError, e:
+            return None 
         except Exception, e:
             raise OperationError(e)
 
     def set(self, key, value):
         try:
             self._state[key] = value
+        except IOError, e:
+            pass
         except Exception, e:
             raise OperationError(e)
 
