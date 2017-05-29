@@ -3,6 +3,7 @@ import sys
 
 # Skip bson in requirements , pymongo provides
 # noinspection PyPackageRequirements
+from bson.codec_options import CodecOptions
 from multiprocessing import Process
 from pymongo import CursorType
 from pymongo.errors import AutoReconnect
@@ -67,13 +68,14 @@ class TailThread(Process):
         self.conn = DB(self.uri, self.config, True, 'secondary').connection()
         db        = self.conn['local']
         oplog     = self.oplog()
+        oplog_rs  = db.oplog.rs.with_options(codec_options=CodecOptions(unicode_decode_error_handler="ignore"))
 
-        tail_start_ts = db.oplog.rs.find().sort('$natural', -1)[0]['ts']
+        tail_start_ts = oplog_rs.find().sort('$natural', -1)[0]['ts']
         self.state.set('running', True)
         while not self.do_stop.is_set():
             # http://api.mongodb.com/python/current/examples/tailable.html
             query  = {'ts':{'$gt':tail_start_ts}}
-            cursor = db.oplog.rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True)
+            cursor = oplog_rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True)
             try:
                 while not self.do_stop.is_set():
                     try:
