@@ -3,6 +3,7 @@ import sys
 
 # Skip bson in requirements , pymongo provides
 # noinspection PyPackageRequirements
+from bson.codec_options import CodecOptions
 from multiprocessing import Process
 from pymongo import CursorType
 from pymongo.errors import AutoReconnect, CursorNotFound, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout, NotMasterError
@@ -81,15 +82,16 @@ class TailThread(Process):
             self.conn = DB(self.uri, self.config, True, 'secondary').connection()
             db        = self.conn['local']
             oplog     = self.oplog()
+            oplog_rs  = db.oplog.rs.with_options(codec_options=CodecOptions(unicode_decode_error_handler="ignore"))
     
-            tail_start_doc = db.oplog.rs.find_one(sort=[('$natural', -1)])
+            tail_start_doc = oplog_rs.find_one(sort=[('$natural', -1)])
             self.state.set('running', True)
             while not self.do_stop.is_set():
                 try:
                     # http://api.mongodb.com/python/current/examples/tailable.html
                     query = {'ts':{'$gt':tail_start_doc['ts']}}
                     logging.debug("Querying oplog on %s with query: %s" % (self.uri, query))
-                    self._cursor = db.oplog.rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True).comment(self.cursor_name)
+                    self._cursor = oplog_rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True).comment(self.cursor_name)
                     while self.check_cursor():
                         try:
                             # get the next oplog doc and write it
