@@ -5,7 +5,7 @@ import sys
 # noinspection PyPackageRequirements
 from bson.codec_options import CodecOptions
 from multiprocessing import Process
-from pymongo import CursorType
+from pymongo import DESCENDING, CursorType
 from pymongo.errors import AutoReconnect, CursorNotFound, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout, NotMasterError
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from time import sleep, time
@@ -84,7 +84,7 @@ class TailThread(Process):
             oplog     = self.oplog()
             oplog_rs  = db.oplog.rs.with_options(codec_options=CodecOptions(unicode_decode_error_handler="ignore"))
     
-            tail_start_doc = oplog_rs.find_one(sort=[('$natural', -1)])
+            tail_start_doc = oplog_rs.find_one(sort=[('$natural', DESCENDING)])
             self.state.set('running', True)
             while not self.do_stop.is_set():
                 try:
