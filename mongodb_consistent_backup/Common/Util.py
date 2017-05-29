@@ -25,6 +25,6 @@ def validate_hostname(hostname):
     try:
         if ":" in hostname:
             hostname, port = hostname.split(":")
-        socket.gethostbyname(hostname)
+        socket.getaddrinfo(hostname, None)
     except socket.error, e:
         raise OperationError("Could not resolve host '%s', error: %s" % (hostname, e))
