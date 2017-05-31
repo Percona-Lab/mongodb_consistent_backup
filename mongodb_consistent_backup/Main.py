@@ -49,6 +49,7 @@ class MongodbConsistentBackup(object):
         self.logger                   = None
         self.current_log_file         = None
         self.backup_log_file          = None
+        self.last_error_msg           = ''
 
         try:
             self.setup_config()
@@ -57,6 +58,7 @@ class MongodbConsistentBackup(object):
             self.get_lock()
             self.logger.update_symlink()
             self.init()
+            self.setup_notifier()
             self.set_backup_dirs()
             self.get_db_conn()
             self.setup_state()
@@ -97,6 +99,18 @@ class MongodbConsistentBackup(object):
         StateRoot(self.backup_root_directory, self.config).write(True)
         self.state = StateBackup(self.backup_directory, self.config, self.backup_time, self.uri, sys.argv)
         self.state.write()
+
+    def setup_notifier(self):
+        try:
+            self.notify = Notify(
+                self.manager,
+                self.config,
+                self.timer,
+                self.backup_root_subdirectory,
+                self.backup_directory
+            )
+        except Exception, e:
+            self.exception("Problem starting notifier! Error: %s" % e, e)
 
     def get_db_conn(self):
         self.uri = MongoUri(self.config.host, self.config.port)
@@ -171,23 +185,23 @@ class MongodbConsistentBackup(object):
 
         if self.manager:
             self.manager.shutdown()
-
-        if self.notify:
-            try:
-                self.notify.notify("%s: backup '%s' failed!" % (
-                    self.config,
-                    self.program_name
-                ), False)
-                self.notify.run()
-                self.notify.close()
-            except:
-                pass
-
         if self.db:
             self.db.close()
 
-        logging.info("Cleanup complete, exiting")
+        if self.notify:
+            try:
+                self.notify.notify("%s: backup '%s/%s' failed! Error: '%s'" % (
+                    self.program_name,
+                    self.config.backup.name,
+                    self.backup_time,
+                    self.last_error_msg
+                ))
+                self.notify.run()
+                self.notify.close()
+            except Exception, e:
+                logging.error("Error from notifier: %s" % e)
 
+        logging.info("Cleanup complete, exiting")
         if self.logger:
             self.logger.rotate()
             self.logger.close()
@@ -196,6 +210,7 @@ class MongodbConsistentBackup(object):
         sys.exit(1)
 
     def exception(self, error_message, error):
+        self.last_error_msg = error_message
         if isinstance(error, NotifyError):
             logging.error(error_message)
         else:
@@ -236,18 +251,6 @@ class MongodbConsistentBackup(object):
             )
         except Exception, e:
             self.exception("Problem starting archiver! Error: %s" % e, e)
-
-        # Setup the notifier
-        try:
-            self.notify = Notify(
-                self.manager,
-                self.config,
-                self.timer,
-                self.backup_root_subdirectory,
-                self.backup_directory
-            )
-        except Exception, e:
-            self.exception("Problem starting notifier! Error: %s" % e, e)
 
         # Setup the uploader
         try:

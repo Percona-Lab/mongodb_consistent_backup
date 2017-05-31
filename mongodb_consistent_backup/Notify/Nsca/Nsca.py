@@ -54,7 +54,6 @@ class Nsca(Task):
 
     def run(self, ret_code, output):
         if self.notifier:
-            self.timer.start(self.timer_name)
             logging.info("Sending %sNSCA report to check host/name '%s/%s' at NSCA host %s" % (
                 self.mode_type,
                 self.check_host,
@@ -66,7 +65,6 @@ class Nsca(Task):
             try:
                 self.notifier.svc_result(self.check_host, self.check_name, ret_code, str(output))
                 logging.debug('Sent %sNSCA report to host %s' % (self.mode_type, self.server))
-                self.timer.stop(self.timer_name)
             except Exception, e:
                 logging.error('Failed to send %sNSCA report to host %s: %s' % (self.mode_type, self.server, sys.exc_info()[1]))
                 raise NotifyError(e)
