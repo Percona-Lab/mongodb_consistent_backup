@@ -1,6 +1,7 @@
 import os
 import logging
 
+import boto.s3.multipart
 from copy_reg import pickle
 from math import ceil
 from multiprocessing import Pool
@@ -102,7 +103,10 @@ class S3(Task):
                 self._pool.close()
                 self._pool.join()
 
-                if len(self._multipart.get_all_parts()) == chunk_count:
+                part_count = 0
+                for part in boto.s3.multipart.part_lister(self._multipart):
+                  part_count += 1
+                if part_count == chunk_count:
                     self._multipart.complete_upload()
                     key = self.bucket.get_key(key_name)
                     if self.s3_acl:
