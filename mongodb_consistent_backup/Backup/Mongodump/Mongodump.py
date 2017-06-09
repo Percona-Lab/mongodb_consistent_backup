@@ -111,7 +111,7 @@ class Mongodump(Task):
     def threads(self, threads=None):
         if threads:
             self.thread_count = int(threads)
-        elif not self.thread_count:
+        elif not self.thread_count and self.version is not 'unknown':
             if tuple(self.version.split(".")) >= tuple("3.2.0".split(".")):
                 self.thread_count = 1
                 if self.cpu_count > len(self.replsets):
