@@ -59,8 +59,9 @@ class Resolver(Task):
         for shard in self.backup_oplogs:
             instance = self.backup_oplogs[shard]
             if 'last_ts' in instance and instance['last_ts'] is not None:
-                if end_ts is None or instance['last_ts'].time > end_ts.time:
-                    end_ts = Timestamp(instance['last_ts'].time, 0)
+                last_ts = instance['last_ts']
+                if end_ts is None or last_ts > end_ts:
+                    end_ts = last_ts
         return end_ts
 
     def get_consistent_end_ts(self):
@@ -69,12 +70,12 @@ class Resolver(Task):
         for shard in self.tailed_oplogs:
             instance = self.tailed_oplogs[shard]
             if 'last_ts' in instance and instance['last_ts'] is not None:
-                last_ts_time = instance['last_ts'].time
-                if end_ts is None or last_ts_time < end_ts.time:
-                    if last_ts_time < bkp_end_ts.time:
-                        last_ts_time = bkp_end_ts.time + 1
-                    end_ts = Timestamp(last_ts_time, 0)
-        return end_ts
+                last_ts = instance['last_ts']
+                if end_ts is None or last_ts < end_ts:
+                    end_ts = last_ts
+                    if last_ts < bkp_end_ts:
+                        end_ts = bkp_end_ts
+        return Timestamp(end_ts.time + 1, 0)
 
     def done(self, done_uri):
         if done_uri in self._pooled:
