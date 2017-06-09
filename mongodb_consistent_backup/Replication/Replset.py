@@ -116,17 +116,20 @@ class Replset:
             rep_lag = 0
         return rep_lag, member_optime_ts
 
-    def get_voting_members(self):
-        voting    = []
-        rs_status = self.get_rs_status(force, quiet)
-        for member in rs_status['members']:
-            if 'vote' in member and member['vote'] == 1:
-                voting.append(member)
-        return voting
+    def get_electable_members(self, force=False):
+        electable = []
+        rs_config = self.get_rs_config(force, True)
+        for member in rs_config['members']:
+            if 'arbiterOnly' in member and member['arbiterOnly'] == True:
+                continue
+            elif 'priority' in member and member['priority'] == 0:
+                continue
+            electable.append(member)
+        return electable
 
     def get_rs_quorum(self):
-        voting_members = len(self.get_voting_members())
-        return ceil(voting_members / 2.0)
+        electable_members = len(self.get_electable_members())
+        return ceil(electable_members / 2.0)
 
     def find_primary(self, force=False, quiet=False):
         if force or not self.primary:
