@@ -116,6 +116,18 @@ class Replset:
             rep_lag = 0
         return rep_lag, member_optime_ts
 
+    def get_voting_members(self):
+        voting    = []
+        rs_status = self.get_rs_status(force, quiet)
+        for member in rs_status['members']:
+            if 'vote' in member and member['vote'] == 1:
+                voting.append(member)
+        return voting
+
+    def get_rs_quorum(self):
+        voting_members = len(self.get_voting_members())
+        return ceil(voting_members / 2.0)
+
     def find_primary(self, force=False, quiet=False):
         if force or not self.primary:
              rs_status = self.get_rs_status(force, quiet)
@@ -145,8 +157,8 @@ class Replset:
         rs_status = self.get_rs_status(force, quiet)
         rs_config = self.get_rs_config(force, quiet)
         db_config = self.get_mongo_config(force, quiet)
+        quorum    = self.get_rs_quorum()
         rs_name   = rs_status['set']
-        quorum    = ceil(len(rs_status['members']) / 2.0)
 
         if self.secondary and not force:
             return self.secondary
