@@ -35,11 +35,11 @@ class Mongodump(Task):
         self.states                = {}
         self._summary              = {}
 
-        if self.config.backup.mongodump.threads and self.config.backup.mongodump.threads > 0:
-            self.threads(self.config.backup.mongodump.threads)
-
         self.parse_mongodump_version()
         self.choose_compression()
+
+        if self.config.backup.mongodump.threads and self.config.backup.mongodump.threads > 0:
+            self.threads(self.config.backup.mongodump.threads)
 
     def parse_mongodump_version(self):
         if os.path.isfile(self.binary):
