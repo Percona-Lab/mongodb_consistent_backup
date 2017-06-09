@@ -7,6 +7,7 @@ PREFIX?=/usr/local
 BASEDIR?=$(DESTDIR)$(PREFIX)
 BINDIR?=$(BASEDIR)/bin
 SHAREDIR?=$(BASEDIR)/share
+DOCKER_TAG?="$(NAME):$(VERSION)"
 
 
 all: bin/mongodb-consistent-backup
@@ -34,7 +35,7 @@ rpm: bin/mongodb-consistent-backup
 	rpmbuild -D "_topdir $(PWD)/build/rpm" -D "version $(VERSION)" -bb scripts/$(NAME).spec
 
 docker:
-	docker build --no-cache -t mongodb_consistent_backup .
+	docker build --no-cache --tag $(DOCKER_TAG) --build-arg "RELEASE=$(VERSION)" .
 
 clean:
 	rm -rf bin build $(NAME).egg-info tmp 2>/dev/null
