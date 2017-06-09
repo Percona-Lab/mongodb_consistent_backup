@@ -47,7 +47,7 @@ class S3(Task):
         self._multipart   = None
         self._upload_done = False
         if None in (self.access_key, self.secret_key, self.region):
-            raise "Invalid S3 security key or region detected!"
+            raise OperationError("Invalid S3 security key or region detected!")
         try:
             self.s3_conn = S3Session(self.region, self.access_key, self.secret_key, self.bucket_name)
             self.bucket  = self.s3_conn.get_bucket(self.bucket_name)
