@@ -116,6 +116,27 @@ class Replset:
             rep_lag = 0
         return rep_lag, member_optime_ts
 
+    def get_electable_members(self, force=False):
+        electable = []
+        rs_config = self.get_rs_config(force, True)
+        for member in rs_config['members']:
+            if 'arbiterOnly' in member and member['arbiterOnly'] == True:
+                continue
+            elif 'priority' in member and member['priority'] == 0:
+                continue
+            electable.append(member)
+        return electable
+
+    def get_rs_quorum(self):
+        electable_members = len(self.get_electable_members())
+        return ceil(electable_members / 2.0)
+
+    def is_member_electable(self, member):
+        for electable_member in self.get_electable_members():
+            if member == electable_member:
+                return True
+        return False
+
     def find_primary(self, force=False, quiet=False):
         if force or not self.primary:
              rs_status = self.get_rs_status(force, quiet)
@@ -145,25 +166,29 @@ class Replset:
         rs_status = self.get_rs_status(force, quiet)
         rs_config = self.get_rs_config(force, quiet)
         db_config = self.get_mongo_config(force, quiet)
+        quorum    = self.get_rs_quorum()
         rs_name   = rs_status['set']
-        quorum    = ceil(len(rs_status['members']) / 2.0)
 
         if self.secondary and not force:
             return self.secondary
 
-        secondary_count = 0
+        electable_count = 0
         for member in rs_status['members']:
-            member_uri = MongoUri(member['name'], 27017, rs_name)
+            member_uri    = MongoUri(member['name'], 27017, rs_name)
+            member_config = self.get_rs_config_member(member)
+
+            if self.is_member_electable(member_config):
+                electable_count += 1
+
             if member['state'] == 7:
                 logging.info("Found ARBITER %s, skipping" % member_uri)
             elif member['state'] > 2:
                 logging.warning("Found down or unhealthy SECONDARY %s with state: %s" % (member_uri, member['stateStr']))
             elif member['state'] == 2 and member['health'] > 0:
-                log_data      = {}
-                score         = self.max_lag_secs * 10
-                score_scale   = 100 / score
-                priority      = 0
-                member_config = self.get_rs_config_member(member)
+                log_data    = {}
+                score       = self.max_lag_secs * 10
+                score_scale = 100 / score
+                priority    = 0
                 if 'hidden' in member_config and member_config['hidden']:
                     score += (score * self.hidden_weight)
                     log_data['hidden'] = True
@@ -192,7 +217,6 @@ class Replset:
                             'score': score
                         }
                     log_msg = "Found SECONDARY %s" % member_uri
-                    secondary_count += 1
                 else:
                     log_msg = "Found SECONDARY %s with too high replication lag! Skipping" % member_uri
 
@@ -204,10 +228,10 @@ class Replset:
                 log_data['score']  = int(score)
                 logging.info("%s: %s" % (log_msg, str(log_data)))
                 self.replset_summary['secondary'] = { "member": member, "uri": member_uri.str(), "data": log_data }
-        if self.secondary is None or (secondary_count + 1) < quorum:
-            logging.error("Not enough valid secondaries in replset %s to take backup! Num replset members: %i, required quorum: %i" % (
+        if self.secondary is None or electable_count < quorum:
+            logging.error("Not enough valid secondaries in replset %s to take backup! Num replset electable members: %i, required quorum: %i" % (
                 rs_name,
-                secondary_count,
+                electable_count,
                 quorum
             ))
             raise OperationError("Not enough secondaries in replset %s to safely take backup!" % rs_name)
