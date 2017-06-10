@@ -112,11 +112,11 @@ class MongodumpThread(Process):
             mongodump_flags.extend(["--authenticationDatabase", self.authdb])
         if self.user and self.password:
             # >= 3.0.2 supports password input via stdin to mask from ps
-            if tuple("3.0.2".split(".")) <= tuple(self.version.split(".")):
+            if tuple(self.version.split(".")) >= tuple("3.0.2".split(".")):
                 mongodump_flags.extend(["-u", self.user, "-p", '""'])
                 self.do_stdin_passwd = True
             else:
-                logging.warning("Mongodump is too old to set password securely! Upgrade to mongodump >= 3.2.0 to resolve this") 
+                logging.warning("Mongodump is too old to set password securely! Upgrade to mongodump >= 3.0.2 to resolve this") 
                 mongodump_flags.extend(["-u", self.user, "-p", self.password])
         mongodump_cmd.extend(mongodump_flags)
         return mongodump_cmd
