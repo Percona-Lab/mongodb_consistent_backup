@@ -15,6 +15,6 @@ def run():
         m.run()
     except Exception, e:
         # noinspection PyUnusedLocal
-        print "Backup failed: %s" % e)
+        print "Backup failed: %s" % e
         traceback.print_exc()
         sys.exit(1)
