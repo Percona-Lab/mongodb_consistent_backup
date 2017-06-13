@@ -119,7 +119,10 @@ class StateBackup(StateBase):
         logging.info("Initializing backup state directory: %s" % self.base_dir)
 
     def set(self, name, summary):
-        self.state[name] = summary
+        if name == None and isinstance(summary, dict):
+            self.state = self.merge(summary, self.state)        
+        else:
+            self.state[name] = summary
         self.write(True)        
 
 

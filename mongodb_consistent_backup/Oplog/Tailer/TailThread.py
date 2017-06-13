@@ -101,10 +101,13 @@ class TailThread(Process):
                             # update states
                             self.count += 1
                             if self.count == 1:
-                                self.state.set('first_ts', doc['ts'])
+                                self.first_ts = doc['ts']
                             self.last_ts = doc['ts']
-                            self.state.set('count', self.count)
-                            self.state.set('last_ts', self.last_ts)
+                            self.state.set(None, {
+                                'count':    self.count,
+                                'first_ts': self.first_ts,
+                                'last_ts':  self.last_ts
+                            })
     
                             # print status report every N seconds
                             self.status()
