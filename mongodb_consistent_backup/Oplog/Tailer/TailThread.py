@@ -132,8 +132,6 @@ class TailThread(Process):
                             raise OperationError("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
                         except (AutoReconnect, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout), e:
                             logging.error("Tailer %s received pymongo.errors.AutoReconnect exception: %s" % (self.uri, e))
-                            if self.do_stop.is_set():
-                                break
                         except StopIteration:
                             if self.do_stop.is_set():
                                 break
