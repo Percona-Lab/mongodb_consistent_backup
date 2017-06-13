@@ -6,13 +6,13 @@ from mongodb_consistent_backup.Pipeline import PoolThread
 
 
 class TarThread(PoolThread):
-    def __init__(self, config, backup_dir, output_file):
-        super(TarThread, self).__init__(self.__class__.__name__, config, config.archive.tar.compression)
-        self.compression_method = self.config.archive.tar.compression
+    def __init__(self, backup_dir, output_file, compression='none', verbose=False, binary="tar"):
+        super(TarThread, self).__init__(self.__class__.__name__, compression)
         self.backup_dir         = backup_dir
         self.output_file        = output_file
-        self.verbose            = self.config.verbose
-        self.binary             = "tar"
+        self.compression_method = compression
+        self.verbose            = verbose
+        self.binary             = binary
 
         self._command = None
 

@@ -25,6 +25,8 @@ class TailThread(Process):
         self.oplog_file  = oplog_file
         self.state       = state
         self.dump_gzip   = dump_gzip
+        self.flush_docs  = self.config.oplog.flush.max_docs
+        self.flush_secs  = self.config.oplog.flush.max_secs
         self.status_secs = self.config.oplog.tailer.status_interval
         self.status_last = time()
 
@@ -32,6 +34,7 @@ class TailThread(Process):
         self.timer_name   = "%s-%s" % (self.__class__.__name__, self.uri.replset)
         self.conn         = None
         self.count        = 0
+        self.first_ts     = None
         self.last_ts      = None
         self.stopped      = False
         self._oplog       = None
@@ -44,7 +47,13 @@ class TailThread(Process):
 
     def oplog(self):
         if not self._oplog:
-            self._oplog = Oplog(self.config, self.oplog_file, self.dump_gzip, 'w+')
+            self._oplog = Oplog(
+                self.oplog_file,
+                self.dump_gzip,
+                'w+',
+                self.flush_docs,
+                self.flush_secs
+            )
         return self._oplog
 
     def close(self, exit_code=None, frame=None):
@@ -99,15 +108,16 @@ class TailThread(Process):
                             oplog.add(doc)
     
                             # update states
-                            self.count += 1
-                            if self.count == 1:
-                                self.first_ts = doc['ts']
+                            self.count  += 1
                             self.last_ts = doc['ts']
-                            self.state.set(None, {
+                            if self.first_ts == None:
+                                self.first_ts = self.last_ts
+                            update = {
                                 'count':    self.count,
                                 'first_ts': self.first_ts,
                                 'last_ts':  self.last_ts
-                            })
+                            }
+                            self.state.set(None, update, True)
     
                             # print status report every N seconds
                             self.status()

@@ -10,21 +10,20 @@ from mongodb_consistent_backup.Errors import OperationError
 
 
 class Oplog:
-    def __init__(self, config, oplog_file, do_gzip=False, file_mode="r"):
-        self.config     = config
+    def __init__(self, oplog_file, do_gzip=False, file_mode="r", flush_docs=100, flush_secs=10):
         self.oplog_file = oplog_file
         self.do_gzip    = do_gzip
         self.file_mode  = file_mode
+        self.flush_docs = flush_docs
+        self.flush_secs = flush_secs
 
         self._count    = 0
         self._first_ts = None
         self._last_ts  = None
         self._oplog    = None
 
-        self.flush_max_docs     = self.config.oplog.flush.max_docs
-        self.flush_secs           = self.config.oplog.flush.max_secs
         self._last_flush_unixtime = int(time())
-        self._writes_since_flush  = 0
+        self._writes_unflushed  = 0
 
         self.open()
 
@@ -66,8 +65,8 @@ class Oplog:
     def add(self, doc, auto_flush=True):
         try:
             self._oplog.write(BSON.encode(doc))
-            self._writes_since_flush += 1
-            self._count              += 1
+            self._writes_unflushed += 1
+            self._count            += 1
             if not self._first_ts:
                 self._first_ts = doc['ts']
             self._last_ts = doc['ts']
@@ -81,7 +80,7 @@ class Oplog:
         return int(time()) - self._last_flush_unixtime
 
     def do_flush(self):
-        if self._writes_since_flush > self.flush_max_docs:
+        if self._writes_unflushed > self.flush_docs:
             return True
         elif self.secs_since_flush() > self.flush_secs:
             return True
@@ -91,15 +90,14 @@ class Oplog:
         if self._oplog:
             # https://docs.python.org/2/library/os.html#os.fsync
             self._oplog.flush()
+            self._last_flush_unixtime = int(time())
+            self._writes_unflushed    = 0
             return os.fsync(self._oplog.fileno())
 
     def autoflush(self):
         if self._oplog and self.do_flush():
-            logging.debug("Flushing oplog file: %s (seconds_since=%i, writes_since=%i)" % (self.oplog_file, self.secs_since_flush(), self._writes_since_flush))
-            self.flush()
-            self._last_flush_unixtime = int(time())
-            self._writes_since_flush  = 0
-            return True
+            logging.debug("Flushing oplog file: %s (secs_since_last=%i, unflushed=%i, flushed_ts=%s)" % (self.oplog_file, self.secs_since_flush(), self._writes_unflushed, self.last_ts()))
+            return self.flush()
 
     def close(self):
         if self._oplog:

@@ -143,7 +143,7 @@ class MongodumpThread(Process):
             logging.exception("Error performing mongodump: %s" % e)
 
         try:
-            oplog = Oplog(self.config, self.oplog_file, self.dump_gzip)
+            oplog = Oplog(self.oplog_file, self.dump_gzip)
             oplog.load()
         except Exception, e:
             logging.exception("Error loading oplog: %s" % e)

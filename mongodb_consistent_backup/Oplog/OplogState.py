@@ -39,9 +39,13 @@ class OplogState:
         except Exception, e:
             raise OperationError(e)
 
-    def set(self, key, value):
+    def set(self, key, value, merge=False):
         try:
-            self._state[key] = value
+            if merge and isinstance(value, dict):
+                for key in value:
+                    self._state[key] = value[key]
+            else:
+                self._state[key] = value
         except IOError, e:
             pass
         except Exception, e:

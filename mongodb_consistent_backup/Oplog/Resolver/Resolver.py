@@ -111,10 +111,11 @@ class Resolver(Task):
                         raise OperationError("Backup oplog is newer than the tailed oplog!")
                     else:
                         thread_name = uri.str()
+                        logging.debug("Starting ResolverThread: %s" % thread_name)
                         self._results[thread_name] = self._pool.apply_async(ResolverThread(
+                            self.config.dump(),
                             self.resolver_state[shard],
                             uri,
-                            self.config,
                             tailed_oplog.copy(),
                             backup_oplog.copy(),
                             self.get_consistent_end_ts(),

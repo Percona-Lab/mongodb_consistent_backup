@@ -4,9 +4,11 @@ from mongodb_consistent_backup.Errors import Error
 
 
 class PoolThread(object):
+    #def __init__(self, thread_name, config, timer, compression_method='none'):
     def __init__(self, thread_name, config, compression_method='none'):
         self.thread_name        = thread_name
         self.config             = config
+        #self.timer              = timer
         self.compression_method = compression_method
 
         self.timer_name = self.__class__.__name__
