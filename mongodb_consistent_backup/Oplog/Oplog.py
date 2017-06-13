@@ -10,7 +10,7 @@ from mongodb_consistent_backup.Errors import OperationError
 
 
 class Oplog:
-    def __init__(self, oplog_file, do_gzip=False, file_mode="r", flush_docs=100, flush_secs=10):
+    def __init__(self, oplog_file, do_gzip=False, file_mode="r", flush_docs=100, flush_secs=1):
         self.oplog_file = oplog_file
         self.do_gzip    = do_gzip
         self.file_mode  = file_mode
@@ -96,7 +96,7 @@ class Oplog:
 
     def autoflush(self):
         if self._oplog and self.do_flush():
-            logging.debug("Flushing oplog file: %s (secs_since_last=%i, unflushed=%i, flushed_ts=%s)" % (self.oplog_file, self.secs_since_flush(), self._writes_unflushed, self.last_ts()))
+            logging.debug("Flushing: %s (secs_since_last=%i, unflushed=%i, flushed_ts=%s)" % (self.oplog_file, self.secs_since_flush(), self._writes_unflushed, self.last_ts()))
             return self.flush()
 
     def close(self):
