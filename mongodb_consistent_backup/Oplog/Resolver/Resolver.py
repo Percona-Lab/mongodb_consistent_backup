@@ -54,14 +54,28 @@ class Resolver(Task):
            logging.info("Stopped all oplog resolver threads")
            self.stopped = True
 
+    def get_backup_end_max_ts(self):
+        end_ts = None
+        for shard in self.backup_oplogs:
+            instance = self.backup_oplogs[shard]
+            if 'last_ts' in instance and instance['last_ts'] is not None:
+                last_ts = instance['last_ts']
+                if end_ts is None or last_ts > end_ts:
+                    end_ts = last_ts
+        return end_ts
+
     def get_consistent_end_ts(self):
-        ts = None
+        end_ts     = None
+        bkp_end_ts = self.get_backup_end_max_ts()
         for shard in self.tailed_oplogs:
             instance = self.tailed_oplogs[shard]
             if 'last_ts' in instance and instance['last_ts'] is not None:
-                if ts is None or instance['last_ts'].time < ts.time:
-                    ts = Timestamp(instance['last_ts'].time, 0)
-        return ts
+                last_ts = instance['last_ts']
+                if end_ts is None or last_ts < end_ts:
+                    end_ts = last_ts
+                    if last_ts < bkp_end_ts:
+                        end_ts = bkp_end_ts
+        return Timestamp(end_ts.time + 1, 0)
 
     def done(self, done_uri):
         if done_uri in self._pooled:
