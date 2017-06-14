@@ -23,10 +23,16 @@ class Tailer(Task):
         self.status_secs = self.config.oplog.tailer.status_interval
         self.replsets    = replsets
         self.backup_stop = backup_stop
+        self._enabled    = self.config.oplog.tailer.enabled
 
         self.compression_supported = ['none', 'gzip']
         self.shards                = {}
         self._summary              = {}
+
+    def enabled(self):
+        if self._enabled.lower().strip() != 'false':
+            return True
+        return False
 
     def summary(self):
         return self._summary
@@ -39,6 +45,9 @@ class Tailer(Task):
         return oplog_file
 
     def run(self):
+        if not self.enabled():
+            logging.info("Oplog tailer is disabled, skipping")
+            return
         logging.info("Starting oplog tailers on all replica sets (options: compression=%s, status_secs=%i)" % (self.compression(), self.status_secs))
         self.timer.start(self.timer_name)
         for shard in self.replsets:
@@ -71,6 +80,8 @@ class Tailer(Task):
                 sleep(0.5)
 
     def stop(self, kill=False, sleep_secs=3):
+        if not self.enabled():
+            return
         logging.info("Stopping all oplog tailers")
         for shard in self.shards:
             replset = self.replsets[shard]
@@ -116,6 +127,8 @@ class Tailer(Task):
         return self._summary
 
     def close(self):
+        if not self.enabled():
+            return
         for shard in self.shards:
             try:
                 self.shards[shard]['stop'].set()

@@ -96,7 +96,7 @@ class Oplog:
 
     def autoflush(self):
         if self._oplog and self.do_flush():
-            logging.debug("Flushing: %s (secs_since_last=%i, unflushed=%i, flushed_ts=%s)" % (self.oplog_file, self.secs_since_flush(), self._writes_unflushed, self.last_ts()))
+            logging.debug("Flushing %s (secs_since=%i, unflushed=%i, flushed_ts=%s)" % (self.oplog_file, self.secs_since_flush(), self._writes_unflushed, self.last_ts()))
             return self.flush()
 
     def close(self):

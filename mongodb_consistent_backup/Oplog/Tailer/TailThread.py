@@ -99,53 +99,51 @@ class TailThread(Process):
             tail_start_doc = oplog_rs.find_one(sort=[('$natural', DESCENDING)])
             self.state.set('running', True)
             while not self.tail_stop.is_set() and not self.backup_stop.is_set():
-                try:
-                    # http://api.mongodb.com/python/current/examples/tailable.html
-                    query = {'ts':{'$gt':tail_start_doc['ts']}}
-                    logging.debug("Querying oplog on %s with query: %s" % (self.uri, query))
-                    self._cursor = oplog_rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True).comment(self.cursor_name)
-                    while self.check_cursor():
-                        try:
-                            # get the next oplog doc and write it
-                            doc = self._cursor.next()
-                            oplog.add(doc)
-    
-                            # update states
-                            self.count  += 1
-                            self.last_ts = doc['ts']
-                            if self.first_ts == None:
-                                self.first_ts = self.last_ts
-                            update = {
-                                'count':    self.count,
-                                'first_ts': self.first_ts,
-                                'last_ts':  self.last_ts
-                            }
-                            self.state.set(None, update, True)
-    
-                            # print status report every N seconds
-                            self.status()
-                        except NotMasterError:
-                            # pymongo.errors.NotMasterError means a RECOVERING-state when connected to secondary (which should be true)
+                # http://api.mongodb.com/python/current/examples/tailable.html
+                query = {'ts':{'$gt':tail_start_doc['ts']}}
+                logging.debug("Querying oplog on %s with query: %s" % (self.uri, query))
+                self._cursor = oplog_rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True).comment(self.cursor_name)
+                while self.check_cursor():
+                    try:
+                        # get the next oplog doc and write it
+                        doc = self._cursor.next()
+                        oplog.add(doc)
+
+                        # update states
+                        self.count  += 1
+                        self.last_ts = doc['ts']
+                        if self.first_ts == None:
+                            self.first_ts = self.last_ts
+                        update = {
+                            'count':    self.count,
+                            'first_ts': self.first_ts,
+                            'last_ts':  self.last_ts
+                        }
+                        self.state.set(None, update, True)
+
+                        # print status report every N seconds
+                        self.status()
+                    except NotMasterError:
+                        # pymongo.errors.NotMasterError means a RECOVERING-state when connected to secondary (which should be true)
+                        self.backup_stop.set()
+                        logging.error("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
+                        raise OperationError("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
+                    except CursorNotFound:
+                        self.backup_stop.set()
+                        logging.error("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
+                        raise OperationError("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
+                    except (AutoReconnect, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout), e:
+                        logging.warning("Tailer %s received pymongo.errors.AutoReconnect exception: %s. Attempting retry" % (self.uri, e))
+                        if self._tail_retry > self._tail_retry_max:
                             self.backup_stop.set()
-                            logging.error("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
-                            raise OperationError("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
-                        except CursorNotFound:
-                            self.backup_stop.set()
-                            logging.error("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
-                            raise OperationError("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
-                        except (AutoReconnect, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout), e:
-                            logging.warning("Tailer %s received pymongo.errors.AutoReconnect exception: %s. Attempting retry" % (self.uri, e))
-                            if self._tail_retry > self._tail_retry_max:
-                                logging.error("Reconnected to %s  %i/%i times, stopping backup!")
-                                self.backup_stop.set()
-                        except StopIteration:
-                            continue
-                        if self.tail_stop.is_set():
-                            break
-                    sleep(1)
-                except Exception, e:
-                    self.tail_stop.set()
-                    raise e
+                            logging.error("Reconnected to %s %i/%i times, stopping backup!" % (self.uri, self._tail_retry, self._tail_retry_max))
+                            raise OperationError("Reconnected to %s %i/%i times, stopping backup!" % (self.uri, self._tail_retry, self._tail_retry_max))
+                        self._tail_retry += 1
+                    except StopIteration:
+                        continue
+                    if self.tail_stop.is_set():
+                        break
+                sleep(1)
         except OperationError, e:
             logging.error("Tailer %s encountered error: %s" % (self.uri, e))
             self.exit_code = 1

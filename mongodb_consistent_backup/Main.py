@@ -35,6 +35,7 @@ class MongodbConsistentBackup(object):
         self.backup_time              = None
         self.backup_directory         = None
         self.backup_root_subdirectory = None
+        self.backup_stop              = Event()
         self.uri                      = None
         self.db                       = None
         self.is_sharded               = False
@@ -338,7 +339,6 @@ class MongodbConsistentBackup(object):
                 self.exception("Problem stopping the balancer! Error: %s" % e, e)
 
             # init the oplogtailers
-            backup_stop = Event()
             try:
                 self.oplogtailer = Tailer(
                     self.manager,
@@ -347,7 +347,7 @@ class MongodbConsistentBackup(object):
                     self.backup_root_subdirectory,
                     self.backup_directory,
                     self.replsets,
-                    backup_stop
+                    self.backup_stop
                 )
             except Exception, e:
                 self.exception("Problem initializing oplog tailer! Error: %s" % e, e)
@@ -361,7 +361,7 @@ class MongodbConsistentBackup(object):
                     self.backup_root_subdirectory,
                     self.backup_directory,
                     self.replsets, 
-                    backup_stop,
+                    self.backup_stop,
                     self.sharding
                 )
                 if self.backup.is_compressed():
