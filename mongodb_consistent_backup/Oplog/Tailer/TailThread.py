@@ -16,9 +16,10 @@ from mongodb_consistent_backup.Oplog import Oplog
 
 
 class TailThread(Process):
-    def __init__(self, do_stop, uri, config, timer, oplog_file, state, dump_gzip=False):
+    def __init__(self, backup_stop, tail_stop, uri, config, timer, oplog_file, state, dump_gzip=False):
         Process.__init__(self)
-        self.do_stop     = do_stop
+        self.backup_stop = backup_stop
+        self.tail_stop   = tail_stop
         self.uri         = uri
         self.config      = config
         self.timer       = timer
@@ -30,17 +31,19 @@ class TailThread(Process):
         self.status_secs = self.config.oplog.tailer.status_interval
         self.status_last = time()
 
-        self.cursor_name  = "mongodb_consistent_backup.Oplog.Tailer.TailThread"
-        self.timer_name   = "%s-%s" % (self.__class__.__name__, self.uri.replset)
-        self.conn         = None
-        self.count        = 0
-        self.first_ts     = None
-        self.last_ts      = None
-        self.stopped      = False
-        self._oplog       = None
-        self._cursor      = None
-        self._cursor_addr = None
-        self.exit_code    = 0
+        self.cursor_name     = "mongodb_consistent_backup.Oplog.Tailer.TailThread"
+        self.timer_name      = "%s-%s" % (self.__class__.__name__, self.uri.replset)
+        self.conn            = None
+        self.count           = 0
+        self.first_ts        = None
+        self.last_ts         = None
+        self.stopped         = False
+        self._oplog          = None
+        self._cursor         = None
+        self._cursor_addr    = None
+        self.exit_code       = 0
+        self._tail_retry     = 0
+        self._tail_retry_max = 10
 
         signal(SIGINT, SIG_IGN)
         signal(SIGTERM, self.close)
@@ -59,7 +62,7 @@ class TailThread(Process):
     def close(self, exit_code=None, frame=None):
         del exit_code
         del frame
-        self.do_stop.set()
+        self.tail_stop.set()
         if self.conn:
             self.conn.close()
         sys.exit(1)
@@ -75,7 +78,7 @@ class TailThread(Process):
         return False
 
     def status(self):
-        if self.do_stop.is_set():
+        if self.tail_stop.is_set():
             return
         now = time()
         if (now - self.status_last) >= self.status_secs:
@@ -95,7 +98,7 @@ class TailThread(Process):
     
             tail_start_doc = oplog_rs.find_one(sort=[('$natural', DESCENDING)])
             self.state.set('running', True)
-            while not self.do_stop.is_set():
+            while not self.tail_stop.is_set() and not self.backup_stop.is_set():
                 try:
                     # http://api.mongodb.com/python/current/examples/tailable.html
                     query = {'ts':{'$gt':tail_start_doc['ts']}}
@@ -123,21 +126,25 @@ class TailThread(Process):
                             self.status()
                         except NotMasterError:
                             # pymongo.errors.NotMasterError means a RECOVERING-state when connected to secondary (which should be true)
-                            self.do_stop.set()
+                            self.backup_stop.set()
                             logging.error("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
                             raise OperationError("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
                         except CursorNotFound:
-                            self.do_stop.set()
+                            self.backup_stop.set()
                             logging.error("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
                             raise OperationError("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
                         except (AutoReconnect, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout), e:
-                            logging.error("Tailer %s received pymongo.errors.AutoReconnect exception: %s" % (self.uri, e))
+                            logging.warning("Tailer %s received pymongo.errors.AutoReconnect exception: %s. Attempting retry" % (self.uri, e))
+                            if self._tail_retry > self._tail_retry_max:
+                                logging.error("Reconnected to %s  %i/%i times, stopping backup!")
+                                self.backup_stop.set()
                         except StopIteration:
-                            if self.do_stop.is_set():
-                                break
+                            continue
+                        if self.tail_stop.is_set():
+                            break
                     sleep(1)
                 except Exception, e:
-                    self.do_stop.set()
+                    self.tail_stop.set()
                     raise e
         except OperationError, e:
             logging.error("Tailer %s encountered error: %s" % (self.uri, e))

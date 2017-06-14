@@ -4,7 +4,7 @@ import signal
 import sys
 
 from datetime import datetime
-from multiprocessing import current_process, Manager
+from multiprocessing import current_process, Event, Manager
 
 from Archive import Archive
 from Backup import Backup
@@ -338,6 +338,7 @@ class MongodbConsistentBackup(object):
                 self.exception("Problem stopping the balancer! Error: %s" % e, e)
 
             # init the oplogtailers
+            backup_stop = Event()
             try:
                 self.oplogtailer = Tailer(
                     self.manager,
@@ -345,7 +346,8 @@ class MongodbConsistentBackup(object):
                     self.timer,
                     self.backup_root_subdirectory,
                     self.backup_directory,
-                    self.replsets
+                    self.replsets,
+                    backup_stop
                 )
             except Exception, e:
                 self.exception("Problem initializing oplog tailer! Error: %s" % e, e)
@@ -359,6 +361,7 @@ class MongodbConsistentBackup(object):
                     self.backup_root_subdirectory,
                     self.backup_directory,
                     self.replsets, 
+                    backup_stop,
                     self.sharding
                 )
                 if self.backup.is_compressed():

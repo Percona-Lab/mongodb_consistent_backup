@@ -16,7 +16,7 @@ from MongodumpThread import MongodumpThread
 
 
 class Mongodump(Task):
-    def __init__(self, manager, config, timer, base_dir, backup_dir, replsets, sharding=None):
+    def __init__(self, manager, config, timer, base_dir, backup_dir, replsets, backup_stop=None, sharding=None):
         super(Mongodump, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir)
         self.compression_method = self.config.backup.mongodump.compression
         self.binary             = self.config.backup.mongodump.binary
@@ -24,6 +24,7 @@ class Mongodump(Task):
         self.password           = self.config.password
         self.authdb             = self.config.authdb
         self.replsets           = replsets
+        self.backup_stop        = backup_stop
         self.sharding           = sharding
 
         self.compression_supported = ['auto', 'none', 'gzip']
@@ -90,6 +91,9 @@ class Mongodump(Task):
         start_threads = len(self.dump_threads)
         # wait for all threads to finish
         while len(self.dump_threads) > 0:
+            if self.backup_stop and self.backup_stop.is_set():
+                logging.error("Received backup stop event due to error(s), stopping backup!")
+                raise OperationError("Received backup stop event due to error(s)")
             for thread in self.dump_threads:
                 if not thread.is_alive():
                     if thread.exitcode == 0:
@@ -177,6 +181,7 @@ class Mongodump(Task):
                 self.dump_threads[0].join()
 
         self.completed = True
+        self.stopped   = True
         return self._summary
 
     def close(self):

@@ -82,11 +82,11 @@ class Stage(object):
                 self.running = True
                 logging.info("Running stage %s with task: %s" % (self.stage, self.task.capitalize()))
                 data = self._task.run()
+                self.stopped = True
             except Exception, e:
                 raise OperationError(e)
             finally:
                 self.running = False
-                self.stopped = True
                 self.timers.stop(self.stage)
                 if self._task.completed:
                     logging.info("Completed running stage %s with task %s in %.2f seconds" % (self.stage, self.task.capitalize(), self.timers.duration(self.stage)))
