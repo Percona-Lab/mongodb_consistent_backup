@@ -138,7 +138,7 @@ class DB:
     def get_oplog_cursor_since(self, caller, ts):
         frame   = getframeinfo(currentframe().f_back)
         comment = "%s:%s;%s:%i" % (caller.__name__, frame.function, frame.filename, frame.lineno)
-        query   = {'ts':{'$gt':ts}}
+        query   = {'ts':{'$gte':ts}}
         logging.debug("Querying oplog on %s with query: %s" % (self.uri, query))
         # http://api.mongodb.com/python/current/examples/tailable.html
         return self.get_oplog_rs().find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True).comment(comment)

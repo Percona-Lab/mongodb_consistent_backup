@@ -66,6 +66,8 @@ class TailThread(Process):
         sys.exit(1)
 
     def check_cursor(self):
+        if self.backup_stop.is_set() or self.tail_stop.is_set():
+            return False
         if self._cursor and self._cursor.alive:
             if self._cursor_addr and self._cursor.address and self._cursor.address != self._cursor_addr:
                 self.backup_stop.set()
@@ -97,16 +99,18 @@ class TailThread(Process):
             self.state.set('running', True)
             self.connect()
             oplog = self.oplog()
-            self.last_ts = self.db.get_oplog_tail_ts()
             while not self.tail_stop.is_set() and not self.backup_stop.is_set():
                 try:
-                    self._cursor = self.db.get_oplog_cursor_since(self.__class__, self.last_ts)
+                    if self.last_ts:
+                        self._cursor = self.db.get_oplog_cursor_since(self.__class__, self.last_ts)
+                    else:
+                        self._cursor = self.db.get_oplog_cursor_since(self.__class__, self.db.get_oplog_tail_ts())
                     while self.check_cursor():
-                        if self.tail_stop.is_set():
-                            break
                         try:
                             # get the next oplog doc and write it
                             doc = self._cursor.next()
+                            if self.last_ts and self.last_ts >= doc['ts']:
+                                continue
                             oplog.add(doc)
     
                             # update states
@@ -144,8 +148,13 @@ class TailThread(Process):
                     sleep(1)
                 finally:
                     self._cursor.close()
+        except OperationError, e:
+            logging.error("Tailer %s encountered error: %s" % (self.uri, e))
+            self.exit_code = 1
+            self.backup_stop.set()
+            raise OperationError(e)
         except Exception, e:
-            logging.error("Tailer %s unexpected encountered error: %s" % (self.uri, e))
+            logging.error("Tailer %s encountered an unexpected error: %s" % (self.uri, e))
             self.exit_code = 1
             self.backup_stop.set()
             raise e 
