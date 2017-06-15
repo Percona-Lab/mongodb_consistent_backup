@@ -3,7 +3,7 @@ import sys
 
 # noinspection PyPackageRequirements
 from multiprocessing import Process
-from pymongo.errors import AutoReconnect, CursorNotFound, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout, NotMasterError
+from pymongo.errors import AutoReconnect, ConnectionFailure, CursorNotFound, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout, NotMasterError
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from time import sleep, time
 
@@ -67,8 +67,8 @@ class TailThread(Process):
 
     def check_cursor(self):
         if self._cursor and self._cursor.alive:
-            if self._cursor_addr and self._cursor.address != self._cursor_addr:
-                self.close()
+            if self._cursor_addr and self._cursor.address and self._cursor.address != self._cursor_addr:
+                self.backup_stop.set()
                 raise OperationError("Tailer host changed from %s to %s!" % (self._cursor_addr, self._cursor.address))
             elif not self._cursor_addr:
                 self._cursor_addr = self._cursor.address
@@ -89,72 +89,65 @@ class TailThread(Process):
             self.db = DB(self.uri, self.config, True, 'secondary')
         return self.db.connection()
 
-    def reconnect(self):
-        if self.db:
-            if self._cursor:
-                logging.debug("Closing existing cursor on %i" % self.uri)
-                self._cursor.close()
-            logging.debug("Closing existing connection on %i" % self.uri)
-            self.db.close()
-        logging.info("Reconnecting to %s" % self.uri)
-        return self.connect()
-
     def run(self):
         try:
             logging.info("Tailing oplog on %s for changes" % self.uri)
             self.timer.start(self.timer_name)
     
+            self.state.set('running', True)
             self.connect()
             oplog = self.oplog()
             self.last_ts = self.db.get_oplog_tail_ts()
-            self.state.set('running', True)
             while not self.tail_stop.is_set() and not self.backup_stop.is_set():
-                self._cursor = self.db.get_oplog_cursor_since(self.__class__, self.last_ts)
-                while self.check_cursor():
-                    if self.tail_stop.is_set():
-                        break
-                    try:
-                        # get the next oplog doc and write it
-                        doc = self._cursor.next()
-                        oplog.add(doc)
-
-                        # update states
-                        self.count  += 1
-                        self.last_ts = doc['ts']
-                        if self.first_ts == None:
-                            self.first_ts = self.last_ts
-                        update = {
-                            'count':    self.count,
-                            'first_ts': self.first_ts,
-                            'last_ts':  self.last_ts
-                        }
-                        self.state.set(None, update, True)
-
-                        # print status report every N seconds
-                        self.status()
-                    except NotMasterError:
-                        # pymongo.errors.NotMasterError means a RECOVERING-state when connected to secondary (which should be true)
-                        self.backup_stop.set()
-                        logging.error("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
-                        raise OperationError("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
-                    except CursorNotFound:
-                        self.backup_stop.set()
-                        logging.error("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
-                        raise OperationError("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
-                    except (AutoReconnect, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout), e:
-                        logging.error("Tailer %s received pymongo.errors.AutoReconnect exception: %s. Attempting retry" % (self.uri, e))
-                        if self._tail_retry > self._tail_retry_max:
+                try:
+                    self._cursor = self.db.get_oplog_cursor_since(self.__class__, self.last_ts)
+                    while self.check_cursor():
+                        if self.tail_stop.is_set():
+                            break
+                        try:
+                            # get the next oplog doc and write it
+                            doc = self._cursor.next()
+                            oplog.add(doc)
+    
+                            # update states
+                            self.count  += 1
+                            self.last_ts = doc['ts']
+                            if self.first_ts == None:
+                                self.first_ts = self.last_ts
+                            update = {
+                                'count':    self.count,
+                                'first_ts': self.first_ts,
+                                'last_ts':  self.last_ts
+                            }
+                            self.state.set(None, update, True)
+    
+                            # print status report every N seconds
+                            self.status()
+                        except NotMasterError:
+                            # pymongo.errors.NotMasterError means a RECOVERING-state when connected to secondary (which should be true)
                             self.backup_stop.set()
-                            logging.error("Reconnected to %s %i/%i times, stopping backup!" % (self.uri, self._tail_retry, self._tail_retry_max))
-                            raise OperationError("Reconnected to %s %i/%i times, stopping backup!" % (self.uri, self._tail_retry, self._tail_retry_max))
-                        self._tail_retry += 1
-                        self.reconnect()
-                    except StopIteration:
-                        continue
-                sleep(1)
+                            logging.error("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
+                            raise OperationError("Node %s is in RECOVERING state! Stopping tailer thread" % self.uri)
+                        except CursorNotFound:
+                            self.backup_stop.set()
+                            logging.error("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
+                            raise OperationError("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
+                        except (AutoReconnect, ConnectionFailure, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout), e:
+                            logging.error("Tailer %s received %s exception: %s. Attempting retry" % (self.uri, type(e).__name__, e))
+                            if self._tail_retry > self._tail_retry_max:
+                                self.backup_stop.set()
+                                logging.error("Reconnected to %s %i/%i times, stopping backup!" % (self.uri, self._tail_retry, self._tail_retry_max))
+                                raise OperationError("Reconnected to %s %i/%i times, stopping backup!" % (self.uri, self._tail_retry, self._tail_retry_max))
+                            self._tail_retry += 1
+                        except StopIteration:
+                            continue
+                    sleep(1)
+                finally:
+                    self._cursor.close()
         except Exception, e:
             logging.error("Tailer %s unexpected encountered error: %s" % (self.uri, e))
             self.exit_code = 1
+            self.backup_stop.set()
             raise e 
         finally:
             if self._cursor:
