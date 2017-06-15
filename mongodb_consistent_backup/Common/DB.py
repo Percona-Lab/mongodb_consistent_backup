@@ -1,5 +1,6 @@
 import logging
 
+from inspect import currentframe, getframeinfo
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure, ServerSelectionTimeoutError
 from time import sleep
@@ -75,6 +76,12 @@ class DB:
         if not status:
             raise DBOperationError("Could not get output from command: '%s' after %i retries!" % (admin_command, self.retries))
         return status
+
+    def set_cursor_comment(self, caller_class, cursor):
+        last_frame = currentframe().f_back
+        frame_info = getframeinfo(last_frame)
+        comment    = "%s:%s;%s:%i" % (caller_class.__name__, frame_info.function, frame_info.filename, frame_info.lineno)
+        return cursor.comment(comment)
 
     def server_version(self):
         status = self.admin_command('serverStatus')

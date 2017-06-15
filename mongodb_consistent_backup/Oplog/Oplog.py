@@ -62,7 +62,7 @@ class Oplog:
             logging.fatal("Error reading oplog file %s! Error: %s" % (self.oplog_file, e))
             raise OperationError(e)
 
-    def add(self, doc, auto_flush=True):
+    def add(self, doc, autoflush=True):
         try:
             self._oplog.write(BSON.encode(doc))
             self._writes_unflushed += 1
@@ -70,7 +70,7 @@ class Oplog:
             if not self._first_ts:
                 self._first_ts = doc['ts']
             self._last_ts = doc['ts']
-            if auto_flush:
+            if autoflush:
                 self.autoflush()
         except Exception, e:
             logging.fatal("Cannot write to oplog file %s! Error: %s" % (self.oplog_file, e))
@@ -88,6 +88,10 @@ class Oplog:
 
     def flush(self):
         if self._oplog:
+            return self._oplog.flush()
+
+    def fsync(self):
+        if self._oplog:
             # https://docs.python.org/2/library/os.html#os.fsync
             self._oplog.flush()
             self._last_flush_unixtime = int(time())
@@ -96,12 +100,12 @@ class Oplog:
 
     def autoflush(self):
         if self._oplog and self.do_flush():
-            logging.debug("Flushing %s (secs_since=%i, unflushed=%i, flushed_ts=%s)" % (self.oplog_file, self.secs_since_flush(), self._writes_unflushed, self.last_ts()))
-            return self.flush()
+            logging.debug("Fsyncing %s (secs_since=%i, changes=%i, ts=%s)" % (self.oplog_file, self.secs_since_flush(), self._writes_unflushed, self.last_ts()))
+            return self.fsync()
 
     def close(self):
         if self._oplog:
-            self.flush()
+            self.fsync()
             return self._oplog.close()
 
     def count(self):

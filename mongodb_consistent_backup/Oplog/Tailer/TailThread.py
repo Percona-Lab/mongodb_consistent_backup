@@ -33,6 +33,7 @@ class TailThread(Process):
 
         self.cursor_name     = "mongodb_consistent_backup.Oplog.Tailer.TailThread"
         self.timer_name      = "%s-%s" % (self.__class__.__name__, self.uri.replset)
+        self.db              = None
         self.conn            = None
         self.count           = 0
         self.first_ts        = None
@@ -63,8 +64,8 @@ class TailThread(Process):
         del exit_code
         del frame
         self.tail_stop.set()
-        if self.conn:
-            self.conn.close()
+        if self.db:
+            self.db.close()
         sys.exit(1)
 
     def check_cursor(self):
@@ -86,24 +87,43 @@ class TailThread(Process):
             logging.info("Oplog tailer %s status: %i oplog changes, ts: %s" % (self.uri, state['count'], state['last_ts']))
             self.status_last = now
 
+    def connect(self):
+        if not self.db:
+            self.db = DB(self.uri, self.config, True, 'secondary')
+        return self.db.connection()
+
+    def reconnect(self):
+        if self.db:
+            if self._cursor:
+                logging.debug("Closing existing cursor on %i" % self.uri)
+                self._cursor.close()
+            logging.debug("Closing existing connection on %i" % self.uri)
+            self.db.close()
+        logging.info("Reconnecting to %s" % self.uri)
+        return self.connect()
+
+    def get_oplog_rs(self):
+        conn = self.connect()
+        db   = conn['local']
+        return db.oplog.rs.with_options(codec_options=CodecOptions(unicode_decode_error_handler="ignore"))
+
     def run(self):
         try:
             logging.info("Tailing oplog on %s for changes" % self.uri)
             self.timer.start(self.timer_name)
     
-            self.conn = DB(self.uri, self.config, True, 'secondary').connection()
-            db        = self.conn['local']
-            oplog     = self.oplog()
-            oplog_rs  = db.oplog.rs.with_options(codec_options=CodecOptions(unicode_decode_error_handler="ignore"))
-    
-            tail_start_doc = oplog_rs.find_one(sort=[('$natural', DESCENDING)])
+            oplog = self.oplog()
+            self.last_ts = self.get_oplog_rs().find_one(sort=[('$natural', DESCENDING)])['ts']
             self.state.set('running', True)
             while not self.tail_stop.is_set() and not self.backup_stop.is_set():
                 # http://api.mongodb.com/python/current/examples/tailable.html
-                query = {'ts':{'$gt':tail_start_doc['ts']}}
+                query = {'ts':{'$gt':self.last_ts}}
                 logging.debug("Querying oplog on %s with query: %s" % (self.uri, query))
-                self._cursor = oplog_rs.find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True).comment(self.cursor_name)
+                self._cursor = self.get_oplog_rs().find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True)
+                self.db.set_cursor_comment(self.__class__, self._cursor)
                 while self.check_cursor():
+                    if self.tail_stop.is_set():
+                        break
                     try:
                         # get the next oplog doc and write it
                         doc = self._cursor.next()
@@ -133,24 +153,20 @@ class TailThread(Process):
                         logging.error("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
                         raise OperationError("Cursor disappeared on server %s! Stopping tailer thread" % self.uri)
                     except (AutoReconnect, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout), e:
-                        logging.warning("Tailer %s received pymongo.errors.AutoReconnect exception: %s. Attempting retry" % (self.uri, e))
+                        logging.error("Tailer %s received pymongo.errors.AutoReconnect exception: %s. Attempting retry" % (self.uri, e))
                         if self._tail_retry > self._tail_retry_max:
                             self.backup_stop.set()
                             logging.error("Reconnected to %s %i/%i times, stopping backup!" % (self.uri, self._tail_retry, self._tail_retry_max))
                             raise OperationError("Reconnected to %s %i/%i times, stopping backup!" % (self.uri, self._tail_retry, self._tail_retry_max))
                         self._tail_retry += 1
+                        self.reconnect()
                     except StopIteration:
                         continue
-                    if self.tail_stop.is_set():
-                        break
                 sleep(1)
-        except OperationError, e:
-            logging.error("Tailer %s encountered error: %s" % (self.uri, e))
-            self.exit_code = 1
         except Exception, e:
             logging.error("Tailer %s unexpected encountered error: %s" % (self.uri, e))
             self.exit_code = 1
-            raise Error(e) 
+            raise e 
         finally:
             if self._cursor:
                 logging.debug("Stopping oplog cursor on %s" % self.uri)
