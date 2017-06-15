@@ -1,11 +1,8 @@
 import logging
 import sys
 
-# Skip bson in requirements , pymongo provides
 # noinspection PyPackageRequirements
-from bson.codec_options import CodecOptions
 from multiprocessing import Process
-from pymongo import DESCENDING, CursorType
 from pymongo.errors import AutoReconnect, CursorNotFound, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout, NotMasterError
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from time import sleep, time
@@ -102,25 +99,17 @@ class TailThread(Process):
         logging.info("Reconnecting to %s" % self.uri)
         return self.connect()
 
-    def get_oplog_rs(self):
-        conn = self.connect()
-        db   = conn['local']
-        return db.oplog.rs.with_options(codec_options=CodecOptions(unicode_decode_error_handler="ignore"))
-
     def run(self):
         try:
             logging.info("Tailing oplog on %s for changes" % self.uri)
             self.timer.start(self.timer_name)
     
+            self.connect()
             oplog = self.oplog()
-            self.last_ts = self.get_oplog_rs().find_one(sort=[('$natural', DESCENDING)])['ts']
+            self.last_ts = self.db.get_oplog_tail_ts()
             self.state.set('running', True)
             while not self.tail_stop.is_set() and not self.backup_stop.is_set():
-                # http://api.mongodb.com/python/current/examples/tailable.html
-                query = {'ts':{'$gt':self.last_ts}}
-                logging.debug("Querying oplog on %s with query: %s" % (self.uri, query))
-                self._cursor = self.get_oplog_rs().find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True)
-                self.db.set_cursor_comment(self.__class__, self._cursor)
+                self._cursor = self.db.get_oplog_cursor_since(self.__class__, self.last_ts)
                 while self.check_cursor():
                     if self.tail_stop.is_set():
                         break
