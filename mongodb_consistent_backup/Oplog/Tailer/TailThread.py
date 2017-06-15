@@ -68,7 +68,7 @@ class TailThread(Process):
     def check_cursor(self):
         if self.backup_stop.is_set() or self.tail_stop.is_set():
             return False
-        if self._cursor and self._cursor.alive:
+        elif self._cursor and self._cursor.alive:
             if self._cursor_addr and self._cursor.address and self._cursor.address != self._cursor_addr:
                 self.backup_stop.set()
                 raise OperationError("Tailer host changed from %s to %s!" % (self._cursor_addr, self._cursor.address))
