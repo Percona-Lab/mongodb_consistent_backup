@@ -4,7 +4,7 @@ import signal
 import sys
 
 from datetime import datetime
-from multiprocessing import current_process, Manager
+from multiprocessing import current_process, Event, Manager
 
 from Archive import Archive
 from Backup import Backup
@@ -35,6 +35,7 @@ class MongodbConsistentBackup(object):
         self.backup_time              = None
         self.backup_directory         = None
         self.backup_root_subdirectory = None
+        self.backup_stop              = Event()
         self.uri                      = None
         self.db                       = None
         self.is_sharded               = False
@@ -345,7 +346,8 @@ class MongodbConsistentBackup(object):
                     self.timer,
                     self.backup_root_subdirectory,
                     self.backup_directory,
-                    self.replsets
+                    self.replsets,
+                    self.backup_stop
                 )
             except Exception, e:
                 self.exception("Problem initializing oplog tailer! Error: %s" % e, e)
@@ -359,6 +361,7 @@ class MongodbConsistentBackup(object):
                     self.backup_root_subdirectory,
                     self.backup_directory,
                     self.replsets, 
+                    self.backup_stop,
                     self.sharding
                 )
                 if self.backup.is_compressed():
@@ -465,7 +468,7 @@ class MongodbConsistentBackup(object):
 
         StateDoneStamp(self.backup_directory, self.config).write()
         self.update_symlinks()
-        logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration(self.timer_name)))
 
         self.logger.rotate()
+        logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration(self.timer_name)))
         self.release_lock()

@@ -11,8 +11,9 @@ from mongodb_consistent_backup.Pipeline import PoolThread
 
 
 class ResolverThread(PoolThread):
-    def __init__(self, state, uri, tailed_oplog, mongodump_oplog, max_end_ts, compression='none'):
+    def __init__(self, config, state, uri, tailed_oplog, mongodump_oplog, max_end_ts, compression='none'):
         super(ResolverThread, self).__init__(self.__class__.__name__, compression)
+        self.config             = config
         self.state              = state
         self.uri                = uri
         self.tailed_oplog       = tailed_oplog
@@ -20,16 +21,19 @@ class ResolverThread(PoolThread):
         self.max_end_ts         = max_end_ts
         self.compression_method = compression
 
+        # Pool threads break self.config unless flattened to a normal dict:
+        self.flush_docs = self.config['oplog']['flush']['max_docs']
+        self.flush_secs = self.config['oplog']['flush']['max_secs']
+
         self.oplogs  = {}
         self.changes = 0
         self.stopped = False
 
     def run(self):
-        self.oplogs['backup'] = Oplog(self.mongodump_oplog['file'], self.do_gzip(), 'a+')
-        self.oplogs['tailed'] = Oplog(self.tailed_oplog['file'], self.do_gzip())
-
-        logging.info("Resolving oplog for %s to max ts: %s" % (self.uri, self.max_end_ts))
         try:
+            self.oplogs['backup'] = Oplog(self.mongodump_oplog['file'], self.do_gzip(), 'a+', self.flush_docs, self.flush_secs)
+            self.oplogs['tailed'] = Oplog(self.tailed_oplog['file'], self.do_gzip())
+            logging.info("Resolving oplog for %s to max ts: %s" % (self.uri, self.max_end_ts))
             self.state.set('running', True)
             self.state.set('first_ts', self.mongodump_oplog['first_ts'])
             if not self.state.get('first_ts'):
@@ -60,7 +64,6 @@ class ResolverThread(PoolThread):
         if len(self.oplogs) > 0 and not self.stopped:
             logging.debug("Closing oplog file handles")
             for oplog in self.oplogs:
-                self.oplogs[oplog].flush()
                 self.oplogs[oplog].close()
             self.stopped = True
         if 'file' in self.tailed_oplog and os.path.isfile(self.tailed_oplog['file']):

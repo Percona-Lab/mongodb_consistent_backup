@@ -14,7 +14,7 @@ from mongodb_consistent_backup.Pipeline import Task
 
 
 class Tailer(Task):
-    def __init__(self, manager, config, timer, base_dir, backup_dir, replsets):
+    def __init__(self, manager, config, timer, base_dir, backup_dir, replsets, backup_stop):
         super(Tailer, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir)
         self.backup_name = self.config.name
         self.user        = self.config.username
@@ -22,10 +22,17 @@ class Tailer(Task):
         self.authdb      = self.config.authdb
         self.status_secs = self.config.oplog.tailer.status_interval
         self.replsets    = replsets
+        self.backup_stop = backup_stop
+        self._enabled    = self.config.oplog.tailer.enabled
 
         self.compression_supported = ['none', 'gzip']
         self.shards                = {}
         self._summary              = {}
+
+    def enabled(self):
+        if self._enabled.lower().strip() != 'false':
+            return True
+        return False
 
     def summary(self):
         return self._summary
@@ -38,10 +45,13 @@ class Tailer(Task):
         return oplog_file
 
     def run(self):
+        if not self.enabled():
+            logging.info("Oplog tailer is disabled, skipping")
+            return
         logging.info("Starting oplog tailers on all replica sets (options: compression=%s, status_secs=%i)" % (self.compression(), self.status_secs))
         self.timer.start(self.timer_name)
         for shard in self.replsets:
-            stop        = Event()
+            tail_stop   = Event()
             secondary   = self.replsets[shard].find_secondary()
             mongo_uri   = secondary['uri']
             shard_name  = mongo_uri.replset
@@ -49,7 +59,8 @@ class Tailer(Task):
             oplog_file  = self.prepare_oplog_files(shard_name)
             oplog_state = OplogState(self.manager, mongo_uri, oplog_file)
             thread = TailThread(
-                stop,
+                self.backup_stop,
+                tail_stop,
                 mongo_uri,
                 self.config,
                 self.timer,
@@ -58,7 +69,7 @@ class Tailer(Task):
                 self.do_gzip()
             )
             self.shards[shard] = {
-                'stop':   stop,
+                'stop':   tail_stop,
                 'thread': thread,
                 'state':  oplog_state
             }
@@ -68,7 +79,9 @@ class Tailer(Task):
                     raise OperationError("Oplog tailer for %s failed with exit code %i!" % (mongo_uri, self.shards[shard]['thread'].exitcode))
                 sleep(0.5)
 
-    def stop(self, kill=False, sleep_secs=0.5):
+    def stop(self, kill=False, sleep_secs=3):
+        if not self.enabled():
+            return
         logging.info("Stopping all oplog tailers")
         for shard in self.shards:
             replset = self.replsets[shard]
@@ -114,6 +127,8 @@ class Tailer(Task):
         return self._summary
 
     def close(self):
+        if not self.enabled():
+            return
         for shard in self.shards:
             try:
                 self.shards[shard]['stop'].set()
