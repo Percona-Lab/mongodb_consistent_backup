@@ -78,12 +78,6 @@ class DB:
             raise DBOperationError("Could not get output from command: '%s' after %i retries!" % (admin_command, self.retries))
         return status
 
-    def set_cursor_comment(self, caller_class, cursor):
-        last_frame = currentframe().f_back
-        frame_info = getframeinfo(last_frame)
-        comment    = "%s:%s;%s:%i" % (caller_class.__name__, frame_info.function, frame_info.filename, frame_info.lineno)
-        return cursor.comment(comment)
-
     def server_version(self):
         status = self.admin_command('serverStatus')
         try:
@@ -142,10 +136,6 @@ class DB:
         logging.debug("Querying oplog on %s with query: %s" % (self.uri, query))
         # http://api.mongodb.com/python/current/examples/tailable.html
         return self.get_oplog_rs().find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True).comment(comment)
-
-    def ping(self):
-        if self._conn:
-            return self._conn.ping()
 
     def close(self):
         if self._conn:
