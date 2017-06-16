@@ -169,10 +169,9 @@ class TailThread(Process):
             self.timer.stop(self.timer_name)
 
         if self.exit_code == 0:
-            log_msg_extra = "%i oplog changes" % self.state.get('count')
-            last_ts = self.state.get('last_ts')
-            if last_ts:
-                log_msg_extra = "%s, end ts: %s" % (log_msg_extra, last_ts)
+            log_msg_extra = "%i oplog changes" % self.count
+            if self.last_ts:
+                log_msg_extra = "%s, end ts: %s" % (log_msg_extra, self.last_ts)
             logging.info("Done tailing oplog on %s, %s" % (self.uri, log_msg_extra))
             self.state.set('completed', True)
  

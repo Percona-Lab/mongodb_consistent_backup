@@ -22,8 +22,8 @@ class Oplog:
         self._last_ts  = None
         self._oplog    = None
 
-        self._last_flush_unixtime = int(time())
-        self._writes_unflushed  = 0
+        self._last_flush_time  = time()
+        self._writes_unflushed = 0
 
         self.open()
 
@@ -77,7 +77,7 @@ class Oplog:
             raise OperationError(e)
 
     def secs_since_flush(self):
-        return int(time()) - self._last_flush_unixtime
+        return time() - self._last_flush_time
 
     def do_flush(self):
         if self._writes_unflushed > self.flush_docs:
@@ -94,13 +94,13 @@ class Oplog:
         if self._oplog:
             # https://docs.python.org/2/library/os.html#os.fsync
             self._oplog.flush()
-            self._last_flush_unixtime = int(time())
-            self._writes_unflushed    = 0
+            self._last_flush_time  = time()
+            self._writes_unflushed = 0
             return os.fsync(self._oplog.fileno())
 
     def autoflush(self):
         if self._oplog and self.do_flush():
-            logging.debug("Fsyncing %s (secs_since=%i, changes=%i, ts=%s)" % (self.oplog_file, self.secs_since_flush(), self._writes_unflushed, self.last_ts()))
+            logging.debug("Fsyncing %s (secs_since=%.2f, changes=%i, ts=%s)" % (self.oplog_file, self.secs_since_flush(), self._writes_unflushed, self.last_ts()))
             return self.fsync()
 
     def close(self):
