@@ -8,7 +8,7 @@ from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from time import sleep, time
 
 from mongodb_consistent_backup.Common import DB
-from mongodb_consistent_backup.Errors import Error, OperationError
+from mongodb_consistent_backup.Errors import OperationError
 from mongodb_consistent_backup.Oplog import Oplog
 
 

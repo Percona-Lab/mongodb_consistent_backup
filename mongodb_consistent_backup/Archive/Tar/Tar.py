@@ -68,7 +68,7 @@ class Tar(Task):
                     output_file = "%s.tar" % subdir_name
                     if self.do_gzip():
                         output_file  = "%s.tgz" % subdir_name
-                    self._pool.apply_async(TarThread(subdir_name, output_file, self.compression(), self.verbose).run, callback=self.done)
+                    self._pool.apply_async(TarThread(subdir_name, output_file, self.compression(), self.verbose, self.binary).run, callback=self.done)
                     self._pooled.append(subdir_name)
             except Exception, e:
                 self._pool.terminate()
