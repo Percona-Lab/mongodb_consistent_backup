@@ -132,7 +132,7 @@ class DB:
     def get_oplog_cursor_since(self, caller, ts=None):
         frame   = getframeinfo(currentframe().f_back)
         comment = "%s:%s;%s:%i" % (caller.__name__, frame.function, frame.filename, frame.lineno)
-	if not ts:
+        if not ts:
             ts = self.get_oplog_tail_ts()
         query = {'ts':{'$gte':ts}}
         logging.debug("Querying oplog on %s with query: %s" % (self.uri, query))
