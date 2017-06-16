@@ -101,10 +101,7 @@ class TailThread(Process):
             oplog = self.oplog()
             while not self.tail_stop.is_set() and not self.backup_stop.is_set():
                 try:
-                    if self.last_ts:
-                        self._cursor = self.db.get_oplog_cursor_since(self.__class__, self.last_ts)
-                    else:
-                        self._cursor = self.db.get_oplog_cursor_since(self.__class__, self.db.get_oplog_tail_ts())
+                    self._cursor = self.db.get_oplog_cursor_since(self.__class__, self.last_ts)
                     while self.check_cursor():
                         try:
                             # get the next oplog doc and write it
