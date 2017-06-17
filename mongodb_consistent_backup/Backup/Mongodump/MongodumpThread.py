@@ -14,21 +14,21 @@ from mongodb_consistent_backup.Oplog import Oplog
 
 # noinspection PyStringFormat
 class MongodumpThread(Process):
-    def __init__(self, state, uri, timer, user, password, authdb, base_dir, binary, version,
-                 threads=0, dump_gzip=False, verbose=False):
+    def __init__(self, state, uri, timer, config, base_dir, version, threads=0, dump_gzip=False):
         Process.__init__(self)
         self.state     = state
         self.uri       = uri
         self.timer     = timer
-        self.user      = user
-        self.password  = password
-        self.authdb    = authdb
+        self.config    = config
         self.base_dir  = base_dir
-        self.binary    = binary
         self.version   = version
         self.threads   = threads
         self.dump_gzip = dump_gzip
-        self.verbose   = verbose
+
+        self.user     = self.config.username
+        self.password = self.config.password
+        self.authdb   = self.config.authdb
+        self.binary   = self.config.backup.mongodump.binary
 
         self.timer_name        = "%s-%s" % (self.__class__.__name__, self.uri.replset)
         self.exit_code         = 1
@@ -112,11 +112,11 @@ class MongodumpThread(Process):
             mongodump_flags.extend(["--authenticationDatabase", self.authdb])
         if self.user and self.password:
             # >= 3.0.2 supports password input via stdin to mask from ps
-            if tuple("3.0.2".split(".")) <= tuple(self.version.split(".")):
+            if tuple(self.version.split(".")) >= tuple("3.0.2".split(".")):
                 mongodump_flags.extend(["-u", self.user, "-p", '""'])
                 self.do_stdin_passwd = True
             else:
-                logging.warning("Mongodump is too old to set password securely! Upgrade to mongodump >= 3.2.0 to resolve this") 
+                logging.warning("Mongodump is too old to set password securely! Upgrade to mongodump >= 3.0.2 to resolve this") 
                 mongodump_flags.extend(["-u", self.user, "-p", self.password])
         mongodump_cmd.extend(mongodump_flags)
         return mongodump_cmd

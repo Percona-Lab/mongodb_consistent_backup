@@ -4,20 +4,26 @@ import logging
 from gzip import GzipFile
 from bson import BSON, decode_file_iter
 from bson.codec_options import CodecOptions
+from time import time
 
 from mongodb_consistent_backup.Errors import OperationError
 
 
 class Oplog:
-    def __init__(self, oplog_file, do_gzip=False, file_mode="r"):
+    def __init__(self, oplog_file, do_gzip=False, file_mode="r", flush_docs=100, flush_secs=1):
         self.oplog_file = oplog_file
         self.do_gzip    = do_gzip
         self.file_mode  = file_mode
+        self.flush_docs = flush_docs
+        self.flush_secs = flush_secs
 
         self._count    = 0
         self._first_ts = None
         self._last_ts  = None
         self._oplog    = None
+
+        self._last_flush_time  = time()
+        self._writes_unflushed = 0
 
         self.open()
 
@@ -56,23 +62,50 @@ class Oplog:
             logging.fatal("Error reading oplog file %s! Error: %s" % (self.oplog_file, e))
             raise OperationError(e)
 
-    def add(self, doc):
+    def add(self, doc, autoflush=True):
         try:
             self._oplog.write(BSON.encode(doc))
-            self._count += 1
+            self._writes_unflushed += 1
+            self._count            += 1
             if not self._first_ts:
                 self._first_ts = doc['ts']
             self._last_ts = doc['ts']
+            if autoflush:
+                self.autoflush()
         except Exception, e:
             logging.fatal("Cannot write to oplog file %s! Error: %s" % (self.oplog_file, e))
             raise OperationError(e)
+
+    def secs_since_flush(self):
+        return time() - self._last_flush_time
+
+    def do_flush(self):
+        if self._writes_unflushed > self.flush_docs:
+            return True
+        elif self.secs_since_flush() > self.flush_secs:
+            return True
+        return False
 
     def flush(self):
         if self._oplog:
             return self._oplog.flush()
 
+    def fsync(self):
+        if self._oplog:
+            # https://docs.python.org/2/library/os.html#os.fsync
+            self._oplog.flush()
+            self._last_flush_time  = time()
+            self._writes_unflushed = 0
+            return os.fsync(self._oplog.fileno())
+
+    def autoflush(self):
+        if self._oplog and self.do_flush():
+            logging.debug("Fsyncing %s (secs_since=%.2f, changes=%i, ts=%s)" % (self.oplog_file, self.secs_since_flush(), self._writes_unflushed, self.last_ts()))
+            return self.fsync()
+
     def close(self):
         if self._oplog:
+            self.fsync()
             return self._oplog.close()
 
     def count(self):

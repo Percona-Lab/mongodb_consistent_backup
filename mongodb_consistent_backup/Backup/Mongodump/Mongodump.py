@@ -2,12 +2,12 @@ import os, sys
 import logging
 import signal
 
-from fabric.api import hide, settings, local
 from math import floor
 from multiprocessing import cpu_count
+from subprocess import check_output
 from time import sleep
 
-from mongodb_consistent_backup.Common import MongoUri
+from mongodb_consistent_backup.Common import MongoUri, config_to_string
 from mongodb_consistent_backup.Errors import Error, OperationError
 from mongodb_consistent_backup.Oplog import OplogState
 from mongodb_consistent_backup.Pipeline import Task
@@ -16,7 +16,7 @@ from MongodumpThread import MongodumpThread
 
 
 class Mongodump(Task):
-    def __init__(self, manager, config, timer, base_dir, backup_dir, replsets, sharding=None):
+    def __init__(self, manager, config, timer, base_dir, backup_dir, replsets, backup_stop=None, sharding=None):
         super(Mongodump, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir)
         self.compression_method = self.config.backup.mongodump.compression
         self.binary             = self.config.backup.mongodump.binary
@@ -24,23 +24,38 @@ class Mongodump(Task):
         self.password           = self.config.password
         self.authdb             = self.config.authdb
         self.replsets           = replsets
+        self.backup_stop        = backup_stop
         self.sharding           = sharding
 
         self.compression_supported = ['auto', 'none', 'gzip']
         self.version               = 'unknown'
+        self.version_extra         = {}
         self.threads_max           = 16
         self.config_replset        = False
         self.dump_threads          = []
         self.states                = {}
         self._summary              = {}
 
+        self.parse_mongodump_version()
+        self.choose_compression()
+
         if self.config.backup.mongodump.threads and self.config.backup.mongodump.threads > 0:
             self.threads(self.config.backup.mongodump.threads)
 
-        with hide('running', 'warnings'), settings(warn_only=True):
-            self.version = local("%s --version|awk 'NR >1 {exit}; /version/{print $NF}'" % self.binary, capture=True)
-
-        self.choose_compression()
+    def parse_mongodump_version(self):
+        if os.path.isfile(self.binary):
+            output = check_output([self.binary, "--version"])
+            lines  = output.rstrip().split("\n")
+            for line in lines:
+                if "version:" in line:
+                    name, version_num = line.split(" version: ")
+                    if name == 'mongodump':
+                        self.version = version_num
+                        if '-' in version_num:
+                            self.version = version_num.split("-")[0]
+                    self.version_extra[name.lower()] = version_num
+            return self.version, self.version_extra
+        raise OperationError("Could not parse mongodump --version output!")
 
     def choose_compression(self):
         if self.can_gzip():
@@ -76,6 +91,9 @@ class Mongodump(Task):
         start_threads = len(self.dump_threads)
         # wait for all threads to finish
         while len(self.dump_threads) > 0:
+            if self.backup_stop and self.backup_stop.is_set():
+                logging.error("Received backup stop event due to error(s), stopping backup!")
+                raise OperationError("Received backup stop event due to error(s)")
             for thread in self.dump_threads:
                 if not thread.is_alive():
                     if thread.exitcode == 0:
@@ -97,7 +115,7 @@ class Mongodump(Task):
     def threads(self, threads=None):
         if threads:
             self.thread_count = int(threads)
-        elif not self.thread_count:
+        elif not self.thread_count and self.version is not 'unknown':
             if tuple(self.version.split(".")) >= tuple("3.2.0".split(".")):
                 self.thread_count = 1
                 if self.cpu_count > len(self.replsets):
@@ -120,23 +138,24 @@ class Mongodump(Task):
                 self.states[shard],
                 mongo_uri,
                 self.timer,
-                self.user,
-                self.password,
-                self.authdb,
+                self.config,
                 self.backup_dir,
-                self.binary,
                 self.version,
                 self.threads(),
-                self.do_gzip(),
-                self.verbose
+                self.do_gzip()
             )
             self.dump_threads.append(thread)
 
         if not len(self.dump_threads) > 0:
             raise OperationError('No backup threads started!')
 
+        options = {
+            'compression':      self.compression(),
+            'threads_per_dump': self.threads()
+        }
+        options.update(self.version_extra)
         logging.info(
-            "Starting backups using mongodump %s (options: compression=%s, threads_per_dump=%i)" % (self.version, self.compression(), self.threads()))
+            "Starting backups using mongodump %s (options: %s)" % (self.version, config_to_string(options)))
         for thread in self.dump_threads:
             thread.start()
         self.wait()
@@ -152,20 +171,17 @@ class Mongodump(Task):
                     self.states['configsvr'],
                     mongo_uri,
                     self.timer,
-                    self.user,
-                    self.password,
-                    self.authdb,
+                    self.config,
                     self.backup_dir,
-                    self.binary,
                     self.version,
                     self.threads(),
-                    self.do_gzip(),
-                    self.verbose
+                    self.do_gzip()
                 )]
                 self.dump_threads[0].start()
                 self.dump_threads[0].join()
 
         self.completed = True
+        self.stopped   = True
         return self._summary
 
     def close(self):
