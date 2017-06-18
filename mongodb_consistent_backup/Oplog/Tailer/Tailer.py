@@ -30,7 +30,9 @@ class Tailer(Task):
         self._summary              = {}
 
     def enabled(self):
-        if self._enabled.lower().strip() != 'false':
+        if isinstance(self._enabled, bool):
+            return self._enabled
+        elif isinstance(self._enabled, str) and self._enabled.strip().lower() != 'false':
             return True
         return False
 
