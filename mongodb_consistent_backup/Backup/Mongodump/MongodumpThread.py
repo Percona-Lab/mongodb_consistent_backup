@@ -32,6 +32,7 @@ class MongodumpThread(Process):
 
         self.timer_name        = "%s-%s" % (self.__class__.__name__, self.uri.replset)
         self.exit_code         = 1
+        self.error_message     = None
         self._command          = None
         self.do_stdin_passwd   = False
         self.stdin_passwd_sent = False
@@ -76,6 +77,17 @@ class MongodumpThread(Process):
             self._process.stdin.flush()
             self.stdin_passwd_sent = True
 
+    def is_failed_line(self, line):
+        if line and line.startswith("Failed: "):
+            return True
+        return False
+
+    def handle_failure(self, line):
+        self.error_message = line.replace("Failed: ", "").capitalize()
+        logging.error("Mongodump error: %s" % self.error_message)
+        self.exit_code = 1
+        self.close()
+
     def wait(self):
         try:
             while self._process.stderr:
@@ -88,6 +100,9 @@ class MongodumpThread(Process):
                             continue
                         elif self.is_password_prompt(read):
                             self.handle_password_prompt()
+                        elif self.is_failed_line(read):
+                            self.handle_failure(read)
+                            break
                         else:
                             logging.info(line)
                 if self._process.poll() != None:
