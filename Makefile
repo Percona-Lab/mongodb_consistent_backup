@@ -34,7 +34,7 @@ rpm: bin/mongodb-consistent-backup
 	cp -f $(PWD)/conf/mongodb-consistent-backup.example.conf build/rpm/SOURCES/mongodb-consistent-backup.conf
 	rpmbuild -D "_topdir $(PWD)/build/rpm" -D "version $(VERSION)" -bb scripts/$(NAME).spec
 
-docker:
+docker: bin/mongodb-consistent-backup
 	docker build --no-cache --tag $(DOCKER_TAG) --build-arg "RELEASE=$(VERSION)" .
 
 clean:

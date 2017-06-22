@@ -6,10 +6,10 @@ from mongodb_consistent_backup.Errors import OperationError
 
 
 def config_to_string(config):
-    config_vars = ""
+    config_pairs = []
     for key in config:
-        config_vars += "%s=%s, " % (key, config[key])
-    return config_vars[:-1]
+        config_pairs.append("%s=%s" % (key, config[key]))
+    return ", ".join(config_pairs)
 
 def is_datetime(string):
     try:

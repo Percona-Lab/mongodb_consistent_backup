@@ -35,7 +35,7 @@ class Stage(object):
             module    = sys.modules["%s.%s" % (self.stage, self.task.capitalize())]
             mod_class = getattr(module, self.task.capitalize())
         except LookupError, e:
-            raise OperationError('Could not load task: %s' % self.task)
+            raise OperationError('Could not load task %s: %s' % (self.task, e))
         if mod_class:
             self._task = mod_class(
                 self.manager,
@@ -82,11 +82,11 @@ class Stage(object):
                 self.running = True
                 logging.info("Running stage %s with task: %s" % (self.stage, self.task.capitalize()))
                 data = self._task.run()
+                self.stopped = True
             except Exception, e:
                 raise OperationError(e)
             finally:
                 self.running = False
-                self.stopped = True
                 self.timers.stop(self.stage)
                 if self._task.completed:
                     logging.info("Completed running stage %s with task %s in %.2f seconds" % (self.stage, self.task.capitalize(), self.timers.duration(self.stage)))

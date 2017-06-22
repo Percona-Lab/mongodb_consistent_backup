@@ -54,14 +54,28 @@ class Resolver(Task):
            logging.info("Stopped all oplog resolver threads")
            self.stopped = True
 
+    def get_backup_end_max_ts(self):
+        end_ts = None
+        for shard in self.backup_oplogs:
+            instance = self.backup_oplogs[shard]
+            if 'last_ts' in instance and instance['last_ts'] is not None:
+                last_ts = instance['last_ts']
+                if end_ts is None or last_ts > end_ts:
+                    end_ts = last_ts
+        return end_ts
+
     def get_consistent_end_ts(self):
-        ts = None
+        end_ts     = None
+        bkp_end_ts = self.get_backup_end_max_ts()
         for shard in self.tailed_oplogs:
             instance = self.tailed_oplogs[shard]
             if 'last_ts' in instance and instance['last_ts'] is not None:
-                if ts is None or instance['last_ts'].time < ts.time:
-                    ts = Timestamp(instance['last_ts'].time, 0)
-        return ts
+                last_ts = instance['last_ts']
+                if end_ts is None or last_ts < end_ts:
+                    end_ts = last_ts
+                    if last_ts < bkp_end_ts:
+                        end_ts = bkp_end_ts
+        return Timestamp(end_ts.time + 1, 0)
 
     def done(self, done_uri):
         if done_uri in self._pooled:
@@ -91,27 +105,29 @@ class Resolver(Task):
             self.running = False
 
     def run(self):
-        logging.info("Resolving oplogs (options: threads=%s, compression=%s)" % (self.threads(), self.compression()))
-        self.timer.start(self.timer_name)
-        self.running = True
-
-        for shard in self.backup_oplogs:
-            backup_oplog = self.backup_oplogs[shard]
-            self.resolver_state[shard] = OplogState(self.manager, None, backup_oplog['file'])
-            uri = MongoUri(backup_oplog['uri']).get()
-            if shard in self.tailed_oplogs:
-                tailed_oplog = self.tailed_oplogs[shard]
-                tailed_oplog_file = tailed_oplog['file']
-                if backup_oplog['last_ts'] is None and tailed_oplog['last_ts'] is None:
-                    logging.info("No oplog changes to resolve for %s" % uri)
-                elif backup_oplog['last_ts'] > tailed_oplog['last_ts']:
-                    logging.fatal(
-                        "Backup oplog is newer than the tailed oplog! This situation is unsupported. Please retry backup")
-                    raise OperationError("Backup oplog is newer than the tailed oplog!")
-                else:
-                    try:
+        try:
+            logging.info("Resolving oplogs (options: threads=%s, compression=%s)" % (self.threads(), self.compression()))
+            self.timer.start(self.timer_name)
+            self.running = True
+    
+            for shard in self.backup_oplogs:
+                backup_oplog = self.backup_oplogs[shard]
+                self.resolver_state[shard] = OplogState(self.manager, None, backup_oplog['file'])
+                uri = MongoUri(backup_oplog['uri']).get()
+                if shard in self.tailed_oplogs:
+                    tailed_oplog = self.tailed_oplogs[shard]
+                    tailed_oplog_file = tailed_oplog['file']
+                    if backup_oplog['last_ts'] is None and tailed_oplog['last_ts'] is None:
+                        logging.info("No oplog changes to resolve for %s" % uri)
+                    elif backup_oplog['last_ts'] > tailed_oplog['last_ts']:
+                        logging.fatal(
+                            "Backup oplog is newer than the tailed oplog! This situation is unsupported. Please retry backup")
+                        raise OperationError("Backup oplog is newer than the tailed oplog!")
+                    else:
                         thread_name = uri.str()
+                        logging.debug("Starting ResolverThread: %s" % thread_name)
                         self._results[thread_name] = self._pool.apply_async(ResolverThread(
+                            self.config.dump(),
                             self.resolver_state[shard],
                             uri,
                             tailed_oplog.copy(),
@@ -120,18 +136,18 @@ class Resolver(Task):
                             self.compression()
                         ).run, callback=self.done)
                         self._pooled.append(thread_name)
-                    except Exception, e:
-                        logging.fatal("Resolve failed for %s! Error: %s" % (uri, e))
-                        raise Error(e)
-            else:
-                logging.info("No tailed oplog for host %s" % uri)
-        self.wait()
-        self.running   = False
-        self.stopped   = True
-        self.completed = True
-
-        self.timer.stop(self.timer_name)
-        logging.info("Oplog resolving completed in %.2f seconds" % self.timer.duration(self.timer_name))
+                else:
+                    logging.info("No tailed oplog for host %s" % uri)
+            self.wait()
+            self.completed = True
+            logging.info("Oplog resolving completed in %.2f seconds" % self.timer.duration(self.timer_name))
+        except Exception, e:
+            logging.error("Resolver failed for %s: %s" % (uri, e))
+            raise e
+        finally:
+            self.timer.stop(self.timer_name)
+            self.running = False
+            self.stopped = True
 
         for shard in self.resolver_state:
             self.resolver_summary[shard] = self.resolver_state[shard].get()
