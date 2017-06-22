@@ -1,4 +1,5 @@
 from Gs import Gs
+from GsUploadThread import GsUploadThread
 
 
 def config(parser):
