@@ -35,7 +35,7 @@ class Stage(object):
             module    = sys.modules["%s.%s" % (self.stage, self.task.capitalize())]
             mod_class = getattr(module, self.task.capitalize())
         except LookupError, e:
-            raise OperationError('Could not load task %s: %s' % (self.task, e))
+            raise OperationError('Could not load task: %s' % self.task)
         if mod_class:
             self._task = mod_class(
                 self.manager,
