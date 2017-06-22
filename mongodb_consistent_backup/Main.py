@@ -414,7 +414,7 @@ class MongodbConsistentBackup(object):
                 self.db.close()
 
             # resolve/merge tailed oplog into mongodump oplog.bson to a consistent point for all shards
-            if self.backup.task.lower() == "mongodump" and self.oplogtailer:
+            if self.backup.task.lower() == "mongodump" and self.oplogtailer.enabled():
                 self.resolver = Resolver(
                     self.manager,
                     self.config,
