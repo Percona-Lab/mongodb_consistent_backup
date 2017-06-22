@@ -1,4 +1,5 @@
-from GS import GS
+from Gs import Gs
+
 
 def config(parser):
     parser.add_argument("--upload.gs.project_id", dest="upload.gs.project_id", help="Google Cloud Storage Uploader Project ID (required for GS upload)", type=str)
