@@ -33,6 +33,17 @@ class Gs(Task):
     def close(self):
         pass
 
+    def get_backup_files(self, base_dir=None, files=[]):
+        if not base_dir:
+            base_dir = self.backup_dir
+        for child in os.listdir(base_dir):
+            path = os.path.join(base_dir, child)
+            if os.path.isfile(path):
+                files.append(path)
+            elif os.path.isdir(path):
+                self.get_backup_files(path, files)
+        return files
+
     def get_uri(self, path):
         return boto.storage_uri(path, 'gs')
     
@@ -67,7 +78,7 @@ class Gs(Task):
     def upload(self, filename, path=None):
         if not path:
             path = filename
-	path = "%s/%s" % (self.bucket, path)
+        path = "%s/%s" % (self.bucket, path)
         if self.object_exists(path):
             object_md5hash = self.get_object_md5hash(path)
             if object_md5hash and self.get_file_md5hash(filename) == object_md5hash:
@@ -83,7 +94,7 @@ class Gs(Task):
         try:
             f   = open(filename, 'r')
             uri = self.get_uri(path)
-            logging.debug("Uploading object to GS: %s" % path)
+            logging.info("Uploading object to Google Cloud Storage: %s" % path)
             return uri.new_key().set_contents_from_file(f)
         finally:
             if f:
@@ -91,22 +102,20 @@ class Gs(Task):
 
     def run(self):
         if not os.path.isdir(self.backup_dir):
-            logging.error("The source directory: %s does not exist or is not a directory! Skipping GS Upload!" % self.backup_dir)
+            logging.error("The source directory: %s does not exist or is not a directory! Skipping Google Cloud Storage upload!" % self.backup_dir)
             return
         try:
             self.running = True
             self.timer.start(self.timer_name)
-            for file_name in os.listdir(self.backup_dir):
-                file_path = os.path.join(self.backup_dir, file_name)
-                gs_path   = os.path.join(self.base_dir, file_name)
-                # skip mongodb-consistent-backup_META dir
-                if os.path.isdir(file_path):
-                    continue
+            logging.info("Uploading backup dir %s to Google Cloud Storage bucket: %s" % (self.backup_dir, self.bucket))
+            for file_path in self.get_backup_files():
+                gs_path = os.path.relpath(file_path, self.backup_loc)
                 self.upload(file_path, gs_path)
             self.exit_code = 0
             self.completed = True
         except Exception, e:
-            logging.error("Uploading to GS failed! Error: %s" % e)
+            logging.error("Uploading to Google Cloud Storage failed! Error: %s" % e)
             raise OperationError(e)
         finally:
+            self.timer.stop(self.timer_name)
             self.stopped = True
