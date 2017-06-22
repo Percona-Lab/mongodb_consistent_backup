@@ -213,7 +213,7 @@ Roadmap
 -  Upload compatibility for ZBackup archive phase *(upload unsupported today)*
 -  Backup retention/rotation *(eg: delete old backups)*
 -  Support more notification methods *(Prometheus, PagerDuty, etc)*
--  Support more upload methods *(Google Cloud Storage, Rsync, etc)*
+-  Support more upload methods *(Rsync, etc)*
 -  Support SSL MongoDB connections
 -  Documentation for running under Docker with persistent volumes
 -  Python unit tests
