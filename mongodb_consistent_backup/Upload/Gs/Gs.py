@@ -10,11 +10,12 @@ from mongodb_consistent_backup.Pipeline import Task
 class Gs(Task):
     def __init__(self, manager, config, timer, base_dir, backup_dir, **kwargs):
         super(Gs, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir, **kwargs)
-        self.backup_loc = self.config.backup.location
-        self.project_id = self.config.upload.gs.project_id
-        self.access_key = self.config.upload.gs.access_key
-        self.secret_key = self.config.upload.gs.secret_key
-        self.bucket     = self.config.upload.gs.bucket
+        self.backup_location = self.config.backup.location
+        self.remove_uploaded = self.config.upload.remove_uploaded
+        self.project_id      = self.config.upload.gs.project_id
+        self.access_key      = self.config.upload.gs.access_key
+        self.secret_key      = self.config.upload.gs.secret_key
+        self.bucket          = self.config.upload.gs.bucket
 
         self._header_values  = {"x-goog-project-id": self.project_id}
         self._key_meta_cache = {}
@@ -95,10 +96,16 @@ class Gs(Task):
             f   = open(filename, 'r')
             uri = self.get_uri(path)
             logging.info("Uploading object to Google Cloud Storage: %s" % path)
-            return uri.new_key().set_contents_from_file(f)
+            uri.new_key().set_contents_from_file(f)
+            self.handle_uploaded(filename)
         finally:
             if f:
                 f.close()
+
+    def handle_uploaded(self, local_path):
+        if self.remove_uploaded:
+            logging.debug("Removing successfully uploaded file: %s" % local_path)
+            os.remove(local_path)
 
     def run(self):
         if not os.path.isdir(self.backup_dir):
@@ -109,7 +116,7 @@ class Gs(Task):
             self.timer.start(self.timer_name)
             logging.info("Uploading backup dir %s to Google Cloud Storage bucket: %s" % (self.backup_dir, self.bucket))
             for file_path in self.get_backup_files():
-                gs_path = os.path.relpath(file_path, self.backup_loc)
+                gs_path = os.path.relpath(file_path, self.backup_location)
                 self.upload(file_path, gs_path)
             self.exit_code = 0
             self.completed = True
