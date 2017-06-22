@@ -17,6 +17,7 @@ class Gs(Task):
         self.secret_key      = self.config.upload.gs.secret_key
         self.bucket          = self.config.upload.gs.bucket
 
+        self.meta_data_dir   = "mongodb-consistent-backup_META"
         self._header_values  = {"x-goog-project-id": self.project_id}
         self._key_meta_cache = {}
 
@@ -103,7 +104,7 @@ class Gs(Task):
                 f.close()
 
     def handle_uploaded(self, local_path):
-        if self.remove_uploaded:
+        if self.remove_uploaded and not local_path.startswith(os.path.join(self.backup_dir, self.meta_data_dir)):
             logging.debug("Removing successfully uploaded file: %s" % local_path)
             os.remove(local_path)
 
