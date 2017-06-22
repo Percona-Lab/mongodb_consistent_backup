@@ -1,9 +1,9 @@
 multiprocessing
-Fabric==1.13.1
+Fabric==1.13.2
 pymongo==3.4.0
 pynsca==1.5
 PyYAML==3.12
-boto==2.45.0
+boto==2.47.0
 filechunkio==1.8
 python-dateutil==2.2
 yconf==0.3.4
