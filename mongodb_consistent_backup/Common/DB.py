@@ -1,6 +1,8 @@
 import logging
 
-from pymongo import MongoClient
+from bson.codec_options import CodecOptions
+from inspect import currentframe, getframeinfo
+from pymongo import DESCENDING, CursorType, MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure, ServerSelectionTimeoutError
 from time import sleep
 
@@ -116,6 +118,26 @@ class DB:
         if 'setName' in isMaster:
             return isMaster['setName']
         return None
+
+    def get_oplog_rs(self):
+        if not self._conn:
+            self.connect()
+        db = self._conn['local']
+        return db.oplog.rs.with_options(codec_options=CodecOptions(unicode_decode_error_handler="ignore"))
+
+    def get_oplog_tail_ts(self):
+        logging.debug("Gathering oldest 'ts' in %s oplog" % self.uri)
+        return self.get_oplog_rs().find_one(sort=[('$natural', DESCENDING)])['ts']
+
+    def get_oplog_cursor_since(self, caller, ts=None):
+        frame   = getframeinfo(currentframe().f_back)
+        comment = "%s:%s;%s:%i" % (caller.__name__, frame.function, frame.filename, frame.lineno)
+        if not ts:
+            ts = self.get_oplog_tail_ts()
+        query = {'ts':{'$gte':ts}}
+        logging.debug("Querying oplog on %s with query: %s" % (self.uri, query))
+        # http://api.mongodb.com/python/current/examples/tailable.html
+        return self.get_oplog_rs().find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True).comment(comment)
 
     def close(self):
         if self._conn:
