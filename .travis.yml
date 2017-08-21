@@ -10,6 +10,8 @@ before_install:
   - docker pull percona/percona-server-mongodb
   - docker run -d -p 127.0.0.1:27017:27017 percona/percona-server-mongodb --port=27017 --replSet=rs0
   - docker run -d -p 127.0.0.1:27027:27027 percona/percona-server-mongodb --port=27027 --replSet=rs0
+  - docker ps -a
+  - sleep 5
   - echo 'rs.initiate({ _id: "rs0", members: [ { _id:0, host: "127.0.0.1:27017"}, { _id: 1, host: "127.0.0.1:27027" } ] })' | mongo --port 27017
 install: 'pip install virtualenv flake8'
 script:
