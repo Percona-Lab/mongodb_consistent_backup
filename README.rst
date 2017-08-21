@@ -4,8 +4,8 @@ MongoDB Consistent Backup Tool - mongodb-consistent-backup
 .. image:: https://github-release-version.herokuapp.com/github/Percona-Lab/mongodb_consistent_backup/release.svg?style=flat
     :target: https://github.com/Percona-Lab/mongodb_consistent_backup/releases/latest
 
-.. image:: https://travis-ci.org/timvaillancourt/mongodb_consistent_backup.svg?branch=master
-    :target: https://travis-ci.org/timvaillancourt/mongodb_consistent_backup
+.. image:: https://travis-ci.org/Percona-Lab/mongodb_consistent_backup.svg?branch=master
+    :target: https://travis-ci.org/Percona-Lab/mongodb_consistent_backup
 
 About
 ~~~~~
