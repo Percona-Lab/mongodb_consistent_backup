@@ -1,6 +1,16 @@
 language: python
 python:
   - "2.7"
+services:
+  - docker
+before_install:
+  - wget https://repo.percona.com/apt/percona-release_0.1-4.$(lsb_release -sc)_all.deb
+  - sudo dpkg -i percona-release_0.1-4.$(lsb_release -sc)_all.deb
+  - sudo apt-get -y install Percona-Server-MongoDB-34-shell
+  - docker pull percona/percona-server-mongodb
+  - docker run -d -p 127.0.0.1:27017:27017 percona/percona-server-mongodb --port=27017 --replSet=rs0
+  - docker run -d -p 127.0.0.1:27027:27027 percona/percona-server-mongodb --port=27027 --replSet=rs0
+  - echo 'rs.initiate({ _id: "rs0", members: [ { _id:0, host: "127.0.0.1:27017"}, { _id: 1, host: "127.0.0.1:27027" } ] })' | mongo --port 27017
 install: 'pip install virtualenv flake8'
 script:
 # - make flake8
