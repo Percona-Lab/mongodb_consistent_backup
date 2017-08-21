@@ -21,7 +21,7 @@ jobs:
         - make docker
         - docker run -it mongodb_consistent_backup:latest --version
         - mkdir -p $TRAVIS_BUILD_DIR/docker
-        - docker save >$TRAVIS_BUILD_DIR/docker/image.tar
+        - docker save mongodb_consistent_backup >$TRAVIS_BUILD_DIR/docker/image.tar
     - stage: test-cluster-32
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/image.tar
