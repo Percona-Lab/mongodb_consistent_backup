@@ -15,12 +15,12 @@ pushd $(dirname $0)
 	sleep 10
 	
 	echo "# Initiating csReplSet (config server set)"
-	docker-compose run --rm mongo-cs-1 mongo --port 27019 --quiet --eval 'rs.initiate({
+	docker-compose run --rm mongo-cs-1 mongo --port 27017 --quiet --eval 'rs.initiate({
 	  _id: "csReplSet",
 	  configsvr: true,
 	  members: [
-	    { _id: 0, host: "mongo-cs-1:27019" },
-	    { _id: 1, host: "mongo-cs-2:27029" }
+	    { _id: 0, host: "mongo-cs-1:27017" },
+	    { _id: 1, host: "mongo-cs-2:27017" }
 	  ]
 	})'
 	
@@ -29,7 +29,7 @@ pushd $(dirname $0)
 	  _id: "rs0",
 	  members: [
 	    { _id: 0, host: "mongo-rs0-1:27017" },
-	    { _id: 1, host: "mongo-rs0-2:27027", priority: 0 }
+	    { _id: 1, host: "mongo-rs0-2:27017", priority: 0 }
 	  ]
 	})'
 	
@@ -40,7 +40,7 @@ pushd $(dirname $0)
 	set -e
 	TRIES=0
 	while [ $TRIES -le 5 ]; do
-  	  docker-compose run --rm mongo-mongos mongo --port 27018 --quiet --eval 'sh.addShard("rs0/mongo-rs0-1:27017,mongo-rs0-2:27027")'
+  	  docker-compose run --rm mongo-mongos mongo --port 27017 --quiet --eval 'sh.addShard("rs0/mongo-rs0-1:27017,mongo-rs0-2:27017")'
 	  [ $? = 0 ] && break
 	  echo "# Retrying adding shard rs0"
 	  TRIES=$(($TRIES + 1))
