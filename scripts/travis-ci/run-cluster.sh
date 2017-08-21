@@ -37,7 +37,7 @@ pushd $(dirname $0)
 	sleep 10
 	
 	echo "# Adding shard rs0"
-	set -e
+	set +e
 	TRIES=0
 	while [ $TRIES -le 5 ]; do
   	  docker-compose run --rm mongo-mongos /usr/bin/mongo mongo-mongos:27017 --quiet --eval 'sh.addShard("rs0/mongo-s-rs0-1:27017,mongo-s-rs0-2:27017")'
@@ -46,7 +46,7 @@ pushd $(dirname $0)
 	  TRIES=$(($TRIES + 1))
 	  sleep 3
 	done
-	set +e
+	set -e
 
         echo "# Starting mongodb_consistent_backup, cluster mode (in docker)"
         docker-compose up --abort-on-container-exit backup-cluster
