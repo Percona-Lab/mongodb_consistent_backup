@@ -15,7 +15,7 @@ pushd $(dirname $0)
 	sleep 10
 	
 	echo "# Initiating csReplSet (config server set)"
-	docker-compose run --rm mongo-cs-1 mongo --port 27017 --quiet --eval 'rs.initiate({
+	docker-compose run --rm mongo-mongos /usr/bin/mongo mongo-cs-1:27017 --quiet --eval 'rs.initiate({
 	  _id: "csReplSet",
 	  configsvr: true,
 	  members: [
@@ -25,11 +25,11 @@ pushd $(dirname $0)
 	})'
 	
 	echo "# Initiating rs0"
-	docker-compose run --rm mongo-rs0-1 mongo --port 27017 --quiet --eval 'rs.initiate({
+	docker-compose run --rm mongo-mongos /usr/bin/mongo mongo-s-rs0-1:27017 --quiet --eval 'rs.initiate({
 	  _id: "rs0",
 	  members: [
-	    { _id: 0, host: "mongo-rs0-1:27017" },
-	    { _id: 1, host: "mongo-rs0-2:27017", priority: 0 }
+	    { _id: 0, host: "mongo-s-rs0-1:27017" },
+	    { _id: 1, host: "mongo-s-rs0-2:27017", priority: 0 }
 	  ]
 	})'
 	
@@ -40,7 +40,7 @@ pushd $(dirname $0)
 	set -e
 	TRIES=0
 	while [ $TRIES -le 5 ]; do
-  	  docker-compose run --rm mongo-mongos mongo --port 27017 --quiet --eval 'sh.addShard("rs0/mongo-rs0-1:27017,mongo-rs0-2:27017")'
+  	  docker-compose run --rm mongo-mongos /usr/bin/mongo mongo-mongos:27017 --quiet --eval 'sh.addShard("rs0/mongo-s-rs0-1:27017,mongo-s-rs0-2:27017")'
 	  [ $? = 0 ] && break
 	  echo "# Retrying adding shard rs0"
 	  TRIES=$(($TRIES + 1))
@@ -49,10 +49,7 @@ pushd $(dirname $0)
 	set +e
 
         echo "# Starting mongodb_consistent_backup, cluster mode (in docker)"
-        docker-compose up  --abort-on-container-exit mongodb_consistent_backup-cluster
-
-        echo "# Starting mongodb_consistent_backup, replset-only mode (in docker)"
-        docker-compose up  --abort-on-container-exit mongodb_consistent_backup-replset
+        docker-compose up --abort-on-container-exit backup-cluster
 
         echo "# Stopping instances with docker-compose"
         docker-compose down
