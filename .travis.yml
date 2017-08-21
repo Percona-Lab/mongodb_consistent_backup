@@ -42,3 +42,35 @@ jobs:
         - echo 'rs.initiate({ _id: "rs0", members: [ { _id: 0, host: "127.0.0.1:27017" }, { _id: 1, host: "127.0.0.1:27027", priority: 0 } ] })' | mongo --port 27017 admin
         - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name replset-32 --host rs0/127.0.0.1:27017,127.0.0.1:27027
         - docker stop test-replset-32-1 test-replset-32-2
+    - stage: test-cluster-34
+      script:
+        - docker run --name=test-replset-34-1 --rm -d -p 127.0.0.1:27017:27017 percona/percona-server-mongodb:3.4 --port=27017 --replSet=rs0
+        - docker run --name=test-replset-34-2 --rm -d -p 127.0.0.1:27027:27027 percona/percona-server-mongodb:3.4 --port=27027 --replSet=rs0
+        - docker run --name=test-replset-34-3 --rm -d -p 127.0.0.1:27019:27019 percona/percona-server-mongodb:3.4 --port=27019 --replSet=csReplSet --configsvr
+        - docker run --name=test-replset-34-4 --rm -d -p 127.0.0.1:27029:27029 percona/percona-server-mongodb:3.4 --port=27029 --replSet=csReplSet --configsvr
+        - sleep 5
+        - docker ps -a
+        - echo 'rs.initiate({ _id: "rs0", members: [ { _id: 0, host: "127.0.0.1:27017" }, { _id: 1, host: "127.0.0.1:27027", priority: 0 } ] })' | mongo --port 27017 admin
+        - echo 'rs.initiate({ _id: "csReplSet", configsvr: true, members: [ { _id: 0, host: "127.0.0.1:27019" }, { _id: 1, host: "127.0.0.1:27029", priority: 0 } ] })' | mongo --port 27019 admin
+        - docker run --name=test-replset-34-5 --rm -d -p 127.0.0.1:27018:27018 percona/percona-server-mongodb:3.4 /usr/bin/mongos --port=27018 --configdb=csReplSet/127.0.0.1:27019,127.0.0.1:27029
+        - docker ps -a
+        - sleep 5
+        - echo 'sh.addShard("rs0/127.0.0.1:27017,127.0.0.1:27027")' | mongo --port 27018 admin
+        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name cluster-34 --host csReplSet/127.0.0.1:27019,127.0.0.1:27029
+        - docker stop test-replset-34-1 test-replset-34-2 test-replset-34-3 test-replset-34-4 test-replset-34-5
+    - stage: test-cluster-32
+      script:
+        - docker run --name=test-replset-32-1 --rm -d -p 127.0.0.1:27017:27017 percona/percona-server-mongodb:3.2 --port=27017 --replSet=rs0
+        - docker run --name=test-replset-32-2 --rm -d -p 127.0.0.1:27027:27027 percona/percona-server-mongodb:3.2 --port=27027 --replSet=rs0
+        - docker run --name=test-replset-32-3 --rm -d -p 127.0.0.1:27019:27019 percona/percona-server-mongodb:3.2 --port=27019 --replSet=csReplSet --configsvr
+        - docker run --name=test-replset-32-4 --rm -d -p 127.0.0.1:27029:27029 percona/percona-server-mongodb:3.2 --port=27029 --replSet=csReplSet --configsvr
+        - sleep 5
+        - docker ps -a
+        - echo 'rs.initiate({ _id: "rs0", members: [ { _id: 0, host: "127.0.0.1:27017" }, { _id: 1, host: "127.0.0.1:27027", priority: 0 } ] })' | mongo --port 27017 admin
+        - echo 'rs.initiate({ _id: "csReplSet", configsvr: true, members: [ { _id: 0, host: "127.0.0.1:27019" }, { _id: 1, host: "127.0.0.1:27029", priority: 0 } ] })' | mongo --port 27019 admin
+        - docker run --name=test-replset-32-5 --rm -d -p 127.0.0.1:27018:27018 percona/percona-server-mongodb:3.2 /usr/bin/mongos --port=27018 --configdb=csReplSet/127.0.0.1:27019,127.0.0.1:27029
+        - docker ps -a
+        - sleep 5
+        - echo 'sh.addShard("rs0/127.0.0.1:27017,127.0.0.1:27027")' | mongo --port 27018 admin
+        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name cluster-32 --host csReplSet/127.0.0.1:27019,127.0.0.1:27029
+        - docker stop test-replset-32-1 test-replset-32-2 test-replset-32-3 test-replset-32-4 test-replset-32-5
