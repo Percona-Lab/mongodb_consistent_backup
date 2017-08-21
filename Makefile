@@ -22,7 +22,7 @@ install: bin/mongodb-consistent-backup
 	install -m 0644 LICENSE $(SHAREDIR)/$(NAME)/LICENSE
 	install -m 0644 README.rst $(SHAREDIR)/$(NAME)/README.rst
 
-test:
+flake8:
 	flake8 --ignore E221,E501 $(PWD)/$(NAME)
 
 uninstall:
