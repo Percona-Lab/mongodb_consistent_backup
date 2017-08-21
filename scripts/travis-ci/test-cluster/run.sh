@@ -39,6 +39,7 @@ pushd $(dirname $0)
 	while [ $TRIES -le 5 ]; do
   	  docker-compose run --rm mongo-mongos mongo --port 27018 --quiet --eval 'sh.addShard("rs0/mongo-rs0-1:27017,mongo-rs0-2:27027")'
 	  [ $? = 0 ] && break
+	  echo "# Retrying adding shard rs0"
 	  TRIES=$(($TRIES + 1))
 	  sleep 3
 	done
