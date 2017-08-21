@@ -28,6 +28,7 @@ services:
     - mongo-cs-2
   backup-cluster:
     image: mongodb_consistent_backup:latest
+    entrypoint: mongodb-consistent-backup
     command: --backup.location /tmp --backup.name test-cluster --host csReplSet/mongo-cs-1:27017,mongo-cs-2:27017
     depends_on:
     - mongo-mongos
