@@ -2,9 +2,10 @@ language: python
 python:
   - "2.7"
 cache:
-  - $HOME/.cache/pip
-  - $TRAVIS_BUILD_DIR/tmp/pex
-  - $TRAVIS_BUILD_DIR/tmp/pip
+  pip: true
+  directories: 
+    - $TRAVIS_BUILD_DIR/tmp/pex
+    - $TRAVIS_BUILD_DIR/tmp/pip
 services:
   - docker
 install: 'pip install virtualenv flake8'
