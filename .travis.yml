@@ -16,15 +16,16 @@ jobs:
     - stage: build
       script:
         - make
-    - stage: test
+    - stage: test-prepare
         - wget https://repo.percona.com/apt/percona-release_0.1-4.$(lsb_release -sc)_all.deb
         - sudo dpkg -i percona-release_0.1-4.$(lsb_release -sc)_all.deb
         - sudo apt-get -y install Percona-Server-MongoDB-34-shell Percona-Server-MongoDB-34-tools
         - docker pull percona/percona-server-mongodb
+        - mkdir -p $TRAVIS_BUILD_DIR/data
+    - stage: test-replset
         - docker run -d -p 127.0.0.1:27017:27017 percona/percona-server-mongodb --port=27017 --replSet=rs0
         - docker run -d -p 127.0.0.1:27027:27027 percona/percona-server-mongodb --port=27027 --replSet=rs0
         - docker ps -a
         - sleep 5
         - echo 'rs.initiate({ _id: "rs0", members: [ { _id: 0, host: "127.0.0.1:27017" }, { _id: 1, host: "127.0.0.1:27027", priority: 0 } ] })' | mongo --port 27017 admin
-        - mkdir -p $TRAVIS_BUILD_DIR/data
         - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name travis --host rs0/127.0.0.1:27017,127.0.0.1:27027
