@@ -1,6 +1,7 @@
 language: python
 python:
   - "2.7"
-install: 'pip install flake8'
+#install: 'pip install flake8'
 script:
-  - flake8 mongodb_consistent_backup
+# - flake8 --ignore E221,E501 mongodb_consistent_backup
+  - make
