@@ -5,6 +5,7 @@ cache:
   pip: true
   directories: 
     - $TRAVIS_BUILD_DIR/bin
+    - $TRAVIS_BUILD_DIR/docker
     - $TRAVIS_BUILD_DIR/tmp/pex
     - $TRAVIS_BUILD_DIR/tmp/pip
 services:
@@ -19,13 +20,13 @@ jobs:
       script:
         - make docker
         - docker run -it mongodb_consistent_backup:latest --version
+        - mkdir -p $TRAVIS_BUILD_DIR/docker
+        - docker save >$TRAVIS_BUILD_DIR/docker/image.tar
     - stage: test-cluster-32
       script:
-        - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/prepare.sh 3.2
+        - docker load -i $TRAVIS_BUILD_DIR/docker/image.tar
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/run.sh 3.2
-        - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/stop.sh 3.2
     - stage: test-cluster-34
       script:
-        - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/prepare.sh 3.4
+        - docker load -i $TRAVIS_BUILD_DIR/docker/image.tar
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/run.sh 3.4
-        - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/stop.sh 3.4
