@@ -24,53 +24,11 @@ jobs:
         - sudo apt-get -y install Percona-Server-MongoDB-34-shell Percona-Server-MongoDB-34-tools
         - docker pull percona/percona-server-mongodb:3.2 percona/percona-server-mongodb:3.4
         - mkdir -p $TRAVIS_BUILD_DIR/data
-    - stage: test-replset-34
-      script:
-        - docker run --name=test-replset-34-1 --rm -d -p 127.0.0.1:27017:27017 percona/percona-server-mongodb:3.4 --port=27017 --replSet=rs0
-        - docker run --name=test-replset-34-2 --rm -d -p 127.0.0.1:27027:27027 percona/percona-server-mongodb:3.4 --port=27027 --replSet=rs0
-        - docker ps -a
-        - sleep 5
-        - mongo --port 27017 --eval "rs.initiate(); rs.add({ host: \"127.0.0.1:27027\", priority: 0 })"
-        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name replset-34 --host rs0/127.0.0.1:27017,127.0.0.1:27027
-        - docker stop test-replset-34-1 test-replset-34-2
-    - stage: test-replset-32
-      script:
-        - docker run --name=test-replset-32-1 --rm -d -p 127.0.0.1:27017:27017 percona/percona-server-mongodb:3.2 --port=27017 --replSet=rs0
-        - docker run --name=test-replset-32-2 --rm -d -p 127.0.0.1:27027:27027 percona/percona-server-mongodb:3.2 --port=27027 --replSet=rs0
-        - docker ps -a
-        - sleep 5
-        - mongo --port 27017 --eval "rs.initiate(); rs.add({ host: \"127.0.0.1:27027\", priority: 0 })"
-        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name replset-32 --host rs0/127.0.0.1:27017,127.0.0.1:27027
-        - docker stop test-replset-32-1 test-replset-32-2
     - stage: test-cluster-34
       script:
-        - docker run --name=test-replset-34-1 --rm -d -p 127.0.0.1:27017:27017 percona/percona-server-mongodb:3.4 --port=27017 --replSet=rs0
-        - docker run --name=test-replset-34-2 --rm -d -p 127.0.0.1:27027:27027 percona/percona-server-mongodb:3.4 --port=27027 --replSet=rs0
-        - docker run --name=test-replset-34-3 --rm -d -p 127.0.0.1:27019:27019 percona/percona-server-mongodb:3.4 --port=27019 --replSet=csReplSet --configsvr
-        - docker run --name=test-replset-34-4 --rm -d -p 127.0.0.1:27029:27029 percona/percona-server-mongodb:3.4 --port=27029 --replSet=csReplSet --configsvr
-        - sleep 5
-        - docker ps -a
-        - mongo --port 27019 --eval "rs.initiate(); rs.add({ host: \"127.0.0.1:27029\" })"
-        - mongo --port 27017 --eval "rs.initiate(); rs.add({ host: \"127.0.0.1:27027\", priority: 0 })"
-        - docker run --name=test-replset-34-5 --rm -d -p 127.0.0.1:27018:27018 percona/percona-server-mongodb:3.4 /usr/bin/mongos --port=27018 --configdb=csReplSet/127.0.0.1:27019,127.0.0.1:27029
-        - docker ps -a
-        - sleep 5
-        - mongo --port 27018 --eval "sh.addShard(\"rs0/127.0.0.1:27017,127.0.0.1:27027\")"
-        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name cluster-34 --host csReplSet/127.0.0.1:27019,127.0.0.1:27029
-        - docker stop test-replset-34-1 test-replset-34-2 test-replset-34-3 test-replset-34-4 test-replset-34-5
+        - $TRAVIS_BUILD_DIR/scripts/docker-test-cluster.sh 3.4 test-cluster-34
+        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name test-cluster-34 --host csReplSet/127.0.0.1:27019,127.0.0.1:27029
     - stage: test-cluster-32
       script:
-        - docker run --name=test-replset-32-1 --rm -d -p 127.0.0.1:27017:27017 percona/percona-server-mongodb:3.2 --port=27017 --replSet=rs0
-        - docker run --name=test-replset-32-2 --rm -d -p 127.0.0.1:27027:27027 percona/percona-server-mongodb:3.2 --port=27027 --replSet=rs0
-        - docker run --name=test-replset-32-3 --rm -d -p 127.0.0.1:27019:27019 percona/percona-server-mongodb:3.2 --port=27019 --replSet=csReplSet --configsvr
-        - docker run --name=test-replset-32-4 --rm -d -p 127.0.0.1:27029:27029 percona/percona-server-mongodb:3.2 --port=27029 --replSet=csReplSet --configsvr
-        - sleep 5
-        - docker ps -a
-        - mongo --port 27019 --eval "rs.initiate(); rs.add({ host: \"127.0.0.1:27029\", priority: 0 })"
-        - mongo --port 27017 --eval "rs.initiate(); rs.add({ host: \"127.0.0.1:27027\", priority: 0 })"
-        - docker run --name=test-replset-32-5 --rm -d -p 127.0.0.1:27018:27018 percona/percona-server-mongodb:3.2 /usr/bin/mongos --port=27018 --configdb=csReplSet/127.0.0.1:27019,127.0.0.1:27029
-        - docker ps -a
-        - sleep 5
-        - mongo --port 27018 --eval "sh.addShard(\"rs0/127.0.0.1:27017,127.0.0.1:27027\")"
-        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name cluster-32 --host csReplSet/127.0.0.1:27019,127.0.0.1:27029
-        - docker stop test-replset-32-1 test-replset-32-2 test-replset-32-3 test-replset-32-4 test-replset-32-5
+        - $TRAVIS_BUILD_DIR/scripts/docker-test-cluster.sh 3.2 test-cluster-32
+        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name test-cluster-32 --host csReplSet/127.0.0.1:27019,127.0.0.1:27029
