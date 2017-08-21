@@ -4,6 +4,7 @@ python:
 cache:
   pip: true
   directories: 
+    - $TRAVIS_BUILD_DIR/bin
     - $TRAVIS_BUILD_DIR/tmp/pex
     - $TRAVIS_BUILD_DIR/tmp/pip
 services:
@@ -21,6 +22,7 @@ jobs:
       script:
         - wget https://repo.percona.com/apt/percona-release_0.1-4.$(lsb_release -sc)_all.deb
         - sudo dpkg -i percona-release_0.1-4.$(lsb_release -sc)_all.deb
+        - sudo apt-get update
         - sudo apt-get -y install percona-server-mongodb-shell percona-server-mongodb-tools
         - docker pull percona/percona-server-mongodb:3.2
         - docker pull percona/percona-server-mongodb:3.4
