@@ -6,7 +6,6 @@ set -x
 MONGO_VERSION=${1:-3.2}
 
 pushd $(dirname $0)
-	#sed s/'{{MONGO_VERSION}}'/$MONGO_VERSION/g docker-compose.yml.tmpl >docker-compose.yml
 	export MONGO_VERSION=${MONGO_VERSION}
 
 	echo "# Starting instances with docker-compose"

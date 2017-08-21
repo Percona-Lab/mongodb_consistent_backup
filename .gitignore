@@ -3,4 +3,3 @@ build
 tmp
 *.pyc
 .idea
-scripts/travis-ci/test-cluster/docker-compose.yml
