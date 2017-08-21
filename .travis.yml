@@ -12,8 +12,10 @@ before_install:
   - docker run -d -p 127.0.0.1:27027:27027 percona/percona-server-mongodb --port=27027 --replSet=rs0
   - docker ps -a
   - sleep 5
-  - echo 'rs.initiate({ _id: "rs0", members: [ { _id:0, host: "127.0.0.1:27017"}, { _id: 1, host: "127.0.0.1:27027" } ] })' | mongo --port 27017
+  - echo 'rs.initiate({ _id: "rs0", members: [ { _id: 0, host: "127.0.0.1:27017" }, { _id: 1, host: "127.0.0.1:27027" } ] })' | mongo --port 27017 admin
 install: 'pip install virtualenv flake8'
 script:
 # - make flake8
   - make
+  - mkdir -p /data
+  - ./bin/mongodb-consistent-backup --backup.location /data --backup.name testbackup --host rs0/127.0.0.1:27017,127.0.0.1:27027
