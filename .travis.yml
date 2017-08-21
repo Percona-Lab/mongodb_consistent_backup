@@ -21,7 +21,7 @@ jobs:
       script:
         - wget https://repo.percona.com/apt/percona-release_0.1-4.$(lsb_release -sc)_all.deb
         - sudo dpkg -i percona-release_0.1-4.$(lsb_release -sc)_all.deb
-        - sudo apt-get -y install Percona-Server-MongoDB-34-shell Percona-Server-MongoDB-34-tools
+        - sudo apt-get -y install percona-server-mongodb-shell percona-server-mongodb-tools
         - docker pull percona/percona-server-mongodb:3.2
         - docker pull percona/percona-server-mongodb:3.4
         - mkdir -p $TRAVIS_BUILD_DIR/data
