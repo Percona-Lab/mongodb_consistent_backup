@@ -21,5 +21,5 @@ install: 'pip install virtualenv flake8'
 script:
 # - make flake8
   - make
-  - mkdir -p /data
-  - ./bin/mongodb-consistent-backup --backup.location /data --backup.name testbackup --host rs0/127.0.0.1:27017,127.0.0.1:27027
+  - mkdir -p $TRAVIS_BUILD_DIR/data
+  - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name travis --host rs0/127.0.0.1:27017,127.0.0.1:27027
