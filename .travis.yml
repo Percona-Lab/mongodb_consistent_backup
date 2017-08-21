@@ -18,17 +18,9 @@ jobs:
     - stage: build
       script:
         - make
+        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --version
     - stage: test-cluster-34
       script:
-        - docker pull percona/percona-server-mongodb:3.4
-        - $TRAVIS_BUILD_DIR/scripts/docker-test-cluster.sh 3.4 test-cluster-34
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/prepare.sh
         - mkdir -p $TRAVIS_BUILD_DIR/data
         - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name test-cluster-34 --host csReplSet/127.0.0.1:27019,127.0.0.1:27029
-        - rm -rf $TRAVIS_BUILD_DIR/data
-    - stage: test-cluster-32
-      script:
-        - docker pull percona/percona-server-mongodb:3.2
-        - $TRAVIS_BUILD_DIR/scripts/docker-test-cluster.sh 3.2 test-cluster-32
-        - mkdir -p $TRAVIS_BUILD_DIR/data
-        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name test-cluster-32 --host csReplSet/127.0.0.1:27019,127.0.0.1:27029
-        - rm -rf $TRAVIS_BUILD_DIR/data

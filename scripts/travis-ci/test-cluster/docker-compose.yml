@@ -1,0 +1,35 @@
+version: '2'
+services:
+  mongo-rs0-1:
+    cpu_shares: 30
+    ports:
+    - "27017:27017"
+    image: "percona/percona-server-mongodb:3.4"
+    command: mongod --port=27017 --replSet=rs0
+  mongo-rs0-2:
+    cpu_shares: 30
+    ports:
+    - "27027:27027"
+    image: "percona/percona-server-mongodb:3.4"
+    command: mongod --port=27027 --replSet=rs0
+  mongo-csReplSet-1:
+    cpu_shares: 15
+    ports:
+    - "27019:27019"
+    image: "percona/percona-server-mongodb:3.4"
+    command: mongod --port=27019 --replSet=csReplSet --configsvr --dbpath /data/db
+  mongo-csReplSet-2:
+    cpu_shares: 15
+    ports:
+    - "27029:27029"
+    image: "percona/percona-server-mongodb:3.4"
+    command: mongod --port=27029 --replSet=csReplSet --configsvr --dbpath /data/db
+  mongo-mongos:
+    cpu_shares: 10
+    ports:
+    - "27018:27018"
+    image: "percona/percona-server-mongodb:3.4"
+    command: mongos --port=27018 --configdb csReplSet/mongo-csReplSet-1:27019,mongo-csReplSet-2:27029
+    depends_on:
+    - mongo-csReplSet-1
+    - mongo-csReplSet-2
