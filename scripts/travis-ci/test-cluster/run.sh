@@ -10,6 +10,9 @@ pushd $(dirname $0)
 
 	echo "# Starting instances with docker-compose"
 	docker-compose up -d mongo-mongos
+
+	echo "# Waiting 10 seconds"
+	sleep 10
 	
 	echo "# Initiating csReplSet (config server set)"
 	docker-compose run --rm mongo-cs-1 mongo --port 27019 --quiet --eval 'rs.initiate({
