@@ -37,7 +37,7 @@ pushd $(dirname $0)
 	docker-compose run --rm mongo-mongos mongo mongo-mongos:27018 --quiet --eval 'sh.addShard("rs0/mongo-rs0-1:27017,mongo-rs0-2:27027")'
 
         echo "# Starting mongodb_consistent_backup (in docker)"
-        docker-compose up mongodb_consistent_backup
+        docker-compose up  --abort-on-container-exit mongodb_consistent_backup
 
         echo "# Stopping instances with docker-compose"
         docker-compose down
