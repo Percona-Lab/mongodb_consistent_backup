@@ -19,7 +19,7 @@ jobs:
     - stage: build
       script:
         - make docker
-        - docker run -it mongodb_consistent_backup:latest --version
+        - docker run --rm -it mongodb_consistent_backup:latest --version
         - mkdir -p $TRAVIS_BUILD_DIR/docker
         - docker save mongodb_consistent_backup:latest >$TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
     - stage: test-cluster-3.2
