@@ -37,6 +37,6 @@ services:
     - mongo-csReplSet-2
   mongodb_consistent_backup:
     image: "mongodb_consistent_backup"
-    command: mongodb-consistent-backup --backup.location /var --backup.name test-cluster --host csReplSet/mongo-csReplSet-1:27019,mongo-csReplSet-2:27029
+    command: --backup.location /var --backup.name test-cluster --host csReplSet/mongo-csReplSet-1:27019,mongo-csReplSet-2:27029
     depends_on:
     - mongo-mongos
