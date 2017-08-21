@@ -23,7 +23,8 @@ install: bin/mongodb-consistent-backup
 	install -m 0644 README.rst $(SHAREDIR)/$(NAME)/README.rst
 
 flake8:
-	flake8 --ignore E221,E501 $(PWD)/$(NAME)
+	# Ignore long-lines and space-aligned = and : for now
+	flake8 --ignore E221,E241,E501 $(PWD)/$(NAME)
 
 uninstall:
 	rm -f $(BINDIR)/mongodb-consistent-backup
