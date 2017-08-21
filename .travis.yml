@@ -1,9 +1,7 @@
 language: python
 python:
   - "2.7"
-before_install:
-  - sudo apt-get install libffi-dev libssl-dev -y
-install: 'pip install "requests[security]"'
+install: 'pip install virtualenv'
 script:
 # - flake8 --ignore E221,E501 mongodb_consistent_backup
   - make

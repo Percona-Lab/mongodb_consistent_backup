@@ -1,6 +1,8 @@
 MongoDB Consistent Backup Tool - mongodb-consistent-backup
 ----------------------------------------------------------
 
+[![Build Status](https://travis-ci.org/Percona-Lab/mongodb_consistent_backup.svg?branch=master)](https://travis-ci.org/Percona-Lab/mongodb_consistent_backup)
+
 About
 ~~~~~
 
