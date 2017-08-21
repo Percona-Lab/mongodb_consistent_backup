@@ -6,7 +6,7 @@ VERSION=${1:-3.2}
 NAME=${2:-test-cluster}
 
 
-IP=$(hostname -i)
+IP=$(/sbin/ip route|awk '/default/ { print $3 }')
 FULL_NAME="${NAME}-${VERSION}"
 DOCKER_TAG=percona/percona-server-mongodb:${VERSION}
 
