@@ -17,17 +17,15 @@ jobs:
 #        - make flake8
     - stage: build
       script:
-        - make
-        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --version
+        - make docker
+        - docker run -it mongodb_consistent_backup:latest --version
     - stage: test-cluster-32
       script:
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/prepare.sh 3.2
-        - mkdir -p $TRAVIS_BUILD_DIR/data
-        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name test-cluster-34 --host csReplSet/127.0.0.1:27019,127.0.0.1:27029
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/run.sh 3.2
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/stop.sh 3.2
     - stage: test-cluster-34
       script:
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/prepare.sh 3.4
-        - mkdir -p $TRAVIS_BUILD_DIR/data
-        - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup --backup.location $TRAVIS_BUILD_DIR/data --backup.name test-cluster-34 --host csReplSet/127.0.0.1:27019,127.0.0.1:27029
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/run.sh 3.4
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/test-cluster/stop.sh 3.4

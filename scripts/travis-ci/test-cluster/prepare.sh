@@ -9,7 +9,7 @@ pushd $(dirname $0)
 	sed s/'{{MONGO_VERSION}}'/$MONGO_VERSION/g docker-compose.yml.tmpl >docker-compose.yml
 
 	echo "# Starting instances with docker-compose"
-	docker-compose up -d
+	docker-compose up -d mongo-mongos
 	
 	echo "# Initiating csReplSet (config server set)"
 	docker-compose run --rm mongo-csReplSet-1 mongo mongo-csReplSet-1:27019 --quiet --eval 'rs.initiate({
