@@ -1,13 +1,12 @@
-import bson
 import os
 import logging
 
 from bson.timestamp import Timestamp
-from multiprocessing import Event, Manager
+from multiprocessing import Event
 from time import time, sleep
 
 from TailThread import TailThread
-from mongodb_consistent_backup.Common import parse_method, DB, MongoUri
+from mongodb_consistent_backup.Common import MongoUri
 from mongodb_consistent_backup.Errors import OperationError
 from mongodb_consistent_backup.Oplog import OplogState
 from mongodb_consistent_backup.Pipeline import Task
@@ -88,7 +87,6 @@ class Tailer(Task):
         for shard in self.shards:
             replset = self.replsets[shard]
             state   = self.shards[shard]['state']
-            stop    = self.shards[shard]['stop']
             thread  = self.shards[shard]['thread']
 
             try:
@@ -103,7 +101,7 @@ class Tailer(Task):
                 except:
                     logging.warning("Could not get current optime from PRIMARY! Using now as a stop time")
                     timestamp = Timestamp(int(time()), 0)
-    
+
                 # wait for replication to get in sync
                 while state.get('last_ts') and state.get('last_ts') < timestamp:
                     logging.info('Waiting for %s tailer to reach ts: %s, currrent: %s' % (uri, timestamp, state.get('last_ts')))

@@ -6,6 +6,7 @@ from boto.s3.connection import OrdinaryCallingFormat, SubdomainCallingFormat
 
 from mongodb_consistent_backup.Errors import OperationError
 
+
 class S3Session:
     def __init__(self, region, access_key, secret_key, bucket_name, secure=True, num_retries=5, socket_timeout=15):
         self.region         = region

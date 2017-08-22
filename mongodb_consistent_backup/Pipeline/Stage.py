@@ -1,7 +1,6 @@
 import logging
 import sys
 
-from mongodb_consistent_backup.Common import config_to_string, parse_method
 from mongodb_consistent_backup.Errors import Error, OperationError
 
 from Task import Task

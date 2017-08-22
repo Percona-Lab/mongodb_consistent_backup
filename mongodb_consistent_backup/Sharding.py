@@ -3,8 +3,8 @@ import logging
 from pymongo import DESCENDING
 from time import sleep
 
-from mongodb_consistent_backup.Common import DB, MongoUri, validate_hostname
-from mongodb_consistent_backup.Errors import DBOperationError, Error, OperationError
+from mongodb_consistent_backup.Common import DB, MongoUri
+from mongodb_consistent_backup.Errors import DBConnectionError, DBOperationError, Error, OperationError
 from mongodb_consistent_backup.Replication import Replset
 
 
@@ -59,7 +59,7 @@ class Sharding:
                     self.mongos_db = DB(mongos_uri, self.config, False, 'nearest')
                     logging.info("Connected to cluster mongos: %s" % mongos_uri)
                     return self.mongos_db
-                except DBConnectionFailure, e:
+                except DBConnectionError:
                     logging.debug("Failed to connect to mongos: %s, trying next available mongos" % mongos_uri)
             raise OperationError('Could not connect to any mongos!')
 
@@ -107,9 +107,9 @@ class Sharding:
                 config = self.connection['config']
                 state  = config['settings'].find_one({'_id': 'balancer'})
                 if not state:
-                   return True
+                    return True
                 elif 'stopped' in state and state.get('stopped') is True:
-                   return False
+                    return False
                 return True
         except Exception, e:
             raise DBOperationError(e)
@@ -159,8 +159,8 @@ class Sharding:
                 self.timer.stop(self.timer_name)
                 logging.info("Balancer stopped after %.2f seconds" % self.timer.duration(self.timer_name))
                 return
-        logging.fatal("Could not stop balancer %s: %s!" % (self.db.uri, e))
-        raise DBOperationError("Could not stop balancer %s: %s" % (self.db.uri, e))
+        logging.fatal("Could not stop balancer %s!" % self.db.uri)
+        raise DBOperationError("Could not stop balancer %s" % self.db.uri)
 
     def get_configdb_hosts(self):
         try:
@@ -192,9 +192,9 @@ class Sharding:
                 else:
                     self.config_db = DB(configdb_uri, self.config, True)
                 if self.config_db.is_replset():
-                    self.config_server = Replset(self.config, self.config_db) 
+                    self.config_server = Replset(self.config, self.config_db)
                 else:
-                    self.config_server = { 'host': configdb_uri.hosts() }
+                    self.config_server = {'host': configdb_uri.hosts()}
                     self.config_db.close()
             except Exception, e:
                 logging.fatal("Unable to locate config servers using %s: %s!" % (self.db.uri, e))

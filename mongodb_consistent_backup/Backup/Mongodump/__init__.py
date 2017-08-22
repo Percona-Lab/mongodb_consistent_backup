@@ -1,4 +1,4 @@
-from Mongodump import Mongodump
+from Mongodump import Mongodump  # NOQA
 
 
 def config(parser):

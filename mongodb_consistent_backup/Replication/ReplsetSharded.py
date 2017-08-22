@@ -1,7 +1,5 @@
-import logging
-
 from mongodb_consistent_backup.Common import DB, MongoUri
-from mongodb_consistent_backup.Errors import DBConnectionError, Error
+from mongodb_consistent_backup.Errors import Error
 from mongodb_consistent_backup.Sharding import Sharding
 from Replset import Replset
 
@@ -13,7 +11,7 @@ class ReplsetSharded:
         self.db           = db
         self.max_lag_secs = self.config.replication.max_lag_secs
 
-        self.replsets      = {} 
+        self.replsets      = {}
         self.replset_conns = {}
 
         # Check Sharding class:
@@ -35,14 +33,14 @@ class ReplsetSharded:
         return summary
 
     def get_replset_connection(self, uri, force=False):
-        if force or not uri.replset in self.replset_conns:
+        if force or uri.replset not in self.replset_conns:
             self.replset_conns[uri.replset] = DB(uri, self.config, True)
         return self.replset_conns[uri.replset]
 
     def get_replsets(self, force=False):
         for shard in self.sharding.shards():
             shard_uri = MongoUri(shard['host'])
-            if force or not shard_uri.replset in self.replsets:
+            if force or shard_uri.replset not in self.replsets:
                 rs_db = self.get_replset_connection(shard_uri)
                 self.replsets[shard_uri.replset] = Replset(self.config, rs_db)
 

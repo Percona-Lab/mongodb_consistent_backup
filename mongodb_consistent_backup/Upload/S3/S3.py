@@ -20,6 +20,8 @@ def _reduce_method(m):
         return getattr, (m.im_class, m.im_func.func_name)
     else:
         return getattr, (m.im_self, m.im_func.func_name)
+
+
 pickle(MethodType, _reduce_method)
 
 
@@ -38,10 +40,7 @@ class S3(Task):
         self.secure          = self.config.upload.s3.secure
         self.retries         = self.config.upload.s3.retries
         self.s3_acl          = self.config.upload.s3.acl
-
-        self.key_prefix = base_dir
-        if 'key_prefix' in self.args:
-            self.key_prefix = key_prefix
+        self.key_prefix      = base_dir
 
         self._pool        = None
         self._multipart   = None
@@ -105,7 +104,7 @@ class S3(Task):
 
                 part_count = 0
                 for part in boto.s3.multipart.part_lister(self._multipart):
-                  part_count += 1
+                    part_count += 1
                 if part_count == chunk_count:
                     self._multipart.complete_upload()
                     key = self.bucket.get_key(key_name)

@@ -32,7 +32,7 @@ class PrintVersions(Action):
 
 class ConfigParser(BaseConfiguration):
     def makeParserLoadSubmodules(self, parser):
-        for _, modname, ispkg in walk_packages(path=mongodb_consistent_backup.__path__, prefix=mongodb_consistent_backup.__name__+'.'):
+        for _, modname, ispkg in walk_packages(path=mongodb_consistent_backup.__path__, prefix=mongodb_consistent_backup.__name__ + '.'):
             if not ispkg:
                 continue
             try:
@@ -41,7 +41,7 @@ class ConfigParser(BaseConfiguration):
                 for comp in components[1:]:
                     mod = getattr(mod, comp)
                 parser = mod.config(parser)
-            except AttributeError, e:
+            except AttributeError:
                 continue
         return parser
 
@@ -104,7 +104,7 @@ class Config(object):
                         value = "******"
                     ret[key] = value
             return ret
-        elif isinstance(data, (str, int, bool)): # or isinstance(data, int) or isinstance(data, bool):
+        elif isinstance(data, (str, int, bool)):
             return data
 
     def dump(self):

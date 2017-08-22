@@ -118,9 +118,9 @@ class Oplog:
         return self._last_ts
 
     def stat(self):
-       return {
-           'file':     self.oplog_file,
-           'count':    self.count(),
-           'first_ts': self.first_ts(),
-           'last_ts':  self.last_ts()
-       }
+        return {
+            'file':     self.oplog_file,
+            'count':    self.count(),
+            'first_ts': self.first_ts(),
+            'last_ts':  self.last_ts()
+        }

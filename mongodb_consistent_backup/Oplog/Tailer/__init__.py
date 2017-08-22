@@ -1,2 +1,1 @@
-from Tailer import Tailer
-
+from Tailer import Tailer  # NOQA

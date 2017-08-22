@@ -7,7 +7,6 @@ from time import sleep
 from types import MethodType
 
 from TarThread import TarThread
-from mongodb_consistent_backup.Common import parse_method
 from mongodb_consistent_backup.Errors import Error, OperationError
 from mongodb_consistent_backup.Pipeline import Task
 
@@ -18,6 +17,7 @@ def _reduce_method(m):
         return getattr, (m.im_class, m.im_func.func_name)
     else:
         return getattr, (m.im_self, m.im_func.func_name)
+
 
 pickle(MethodType, _reduce_method)
 

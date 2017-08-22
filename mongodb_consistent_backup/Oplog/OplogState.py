@@ -9,7 +9,7 @@ class OplogState:
         self.uri = uri
         self.oplog_file = oplog_file
 
-        try: 
+        try:
             self._state = manager.dict()
             if uri:
                 self._state['uri'] = self.uri.str()
@@ -33,9 +33,9 @@ class OplogState:
                     return state[key]
                 else:
                     return None
-            return state 
-        except IOError, e:
-            return None 
+            return state
+        except IOError:
+            return None
         except Exception, e:
             raise OperationError(e)
 
@@ -58,7 +58,7 @@ class OplogState:
             f.write(json.dumps(self._state))
         except Exception, e:
             logging.debug("Writing oplog state to file: '%s'! Error: %s" % (self.oplog_file, e))
-            raise OperationError(e) 
+            raise OperationError(e)
         finally:
             if f:
                 f.close()

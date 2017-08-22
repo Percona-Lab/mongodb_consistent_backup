@@ -1,5 +1,5 @@
-from Replset import Replset
-from ReplsetSharded import ReplsetSharded
+from Replset import Replset  # NOQA
+from ReplsetSharded import ReplsetSharded  # NOQA
 
 
 def config(parser):
@@ -8,5 +8,5 @@ def config(parser):
     parser.add_argument("--replication.max_priority", dest="replication.max_priority", help="Max priority of secondary members for backup (default: 1000)", default=1000, type=int)
     parser.add_argument("--replication.hidden_only", dest="replication.hidden_only", help="Only use hidden secondary members for backup (default: false)", default=False, action="store_true")
     # todo: add tag-specific backup option
-    #parser.add_argument("-replication.use_tag", dest="replication.use_tag", help="Only use secondary members with tag for backup", type=str)
+    # parser.add_argument("-replication.use_tag", dest="replication.use_tag", help="Only use secondary members with tag for backup", type=str)
     return parser

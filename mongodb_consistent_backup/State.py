@@ -35,19 +35,19 @@ class StateBase(object):
     def merge(self, new, old):
         merged = old.copy()
         merged.update(new)
-        return merged 
+        return merged
 
     def load(self, load_one=False):
-         f = None
-         try:
+        f = None
+        try:
             f = open(self.state_file, "r")
             data = decode_all(f.read())
             if load_one and len(data) > 0:
                 return data[0]
             return data
-         except Exception, e:
+        except Exception, e:
             raise e
-         finally:
+        finally:
             if f:
                 f.close()
 
@@ -57,7 +57,7 @@ class StateBase(object):
             self.lock.acquire()
             if do_merge and os.path.isfile(self.state_file):
                 curr = self.load(True)
-                data = self.merge(self.state, curr)
+                self.merge(self.state, curr)
             f = open(self.state_file, 'w+')
             logging.debug("Writing %s state file: %s" % (self.__class__.__name__, self.state_file))
             self.state['updated_at'] = int(time())
@@ -67,7 +67,7 @@ class StateBase(object):
                 f.close()
             self.lock.release()
 
-    
+
 class StateBaseReplset(StateBase):
     def __init__(self, base_dir, config, backup_time, set_name, filename):
         StateBase.__init__(self, base_dir, config, filename)
@@ -120,7 +120,7 @@ class StateBackup(StateBase):
 
     def set(self, name, summary):
         self.state[name] = summary
-        self.write(True)        
+        self.write(True)
 
 
 class StateRoot(StateBase):
@@ -152,9 +152,9 @@ class StateRoot(StateBase):
                     continue
             logging.info("Found %i existing completed backups for set" % len(backups))
         return backups
-            
+
+
 class StateDoneStamp(StateBase):
     def __init__(self, base_dir, config):
         StateBase.__init__(self, base_dir, config, "done.bson")
         self.state = {'done': True}
-

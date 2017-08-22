@@ -1,4 +1,4 @@
-from Backup import Backup
+from Backup import Backup  # NOQA
 
 
 def config(parser):
