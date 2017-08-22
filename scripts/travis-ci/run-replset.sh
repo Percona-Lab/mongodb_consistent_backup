@@ -4,9 +4,11 @@ set -e
 set -x
 
 MONGO_VERSION=${1:-3.2}
+MCB_EXTRA="${@:2}"
 
 pushd $(dirname $0)
 	export MONGO_VERSION=${MONGO_VERSION}
+	export MCB_EXTRA=${MCB_EXTRA}
 
 	echo "# Starting instances with docker-compose"
 	docker-compose up -d mongo-rs0-1
