@@ -27,7 +27,7 @@ pushd $(dirname $0)
 	  members: [
 	    { _id: 0, host: "mongo-rs0-1:27017" },
 	    { _id: 1, host: "mongo-rs0-2:27017" },
-	    { _id: 3, host: "mongo-rs0-3:27017", priority: 0 }
+	    { _id: 2, host: "mongo-rs0-3:27017", priority: 0 }
 	  ]
 	})'
 	
