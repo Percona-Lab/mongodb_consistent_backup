@@ -11,12 +11,13 @@ pushd $(dirname $0)
 	source $PWD/func.sh
 
 	export MONGO_VERSION=${MONGO_VERSION}
+	export DATA_MONGOD_FLAGS="--shardsvr"
 	export MCB_EXTRA=${MCB_EXTRA}
 
 	CONFIGSVR_REPLSET=csReplSet
 	if [ "${CONFIGSVR_TYPE}" == "CSRS" ]; then
 		export CONFIGSVR_FLAGS="--replSet ${CONFIGSVR_REPLSET}"
-		export MONGOS_CONFIGDB="${CONFIGSVR_REPLSET}/mongo-cs-1:27017,mongo-cs-2:27017"
+		export MONGOS_CONFIGDB="${CONFIGSVR_REPLSET}/mongo-cs-1:27017,mongo-cs-2:27017,mongo-cs-3:27017"
 		echo "# Using CSRS-based config servers: '${MONGOS_CONFIGDB}'"
 	else
 		export CONFIGSVR_FLAGS=
@@ -24,6 +25,7 @@ pushd $(dirname $0)
 		echo "# Using SCCC-based config servers: '${MONGOS_CONFIGDB}'"
 	fi
 
+	# start mongo-mongos service (which starts the whole cluster)
 	echo "# Starting instances with docker-compose"
 	docker-compose up -d mongo-mongos
 
@@ -37,17 +39,19 @@ pushd $(dirname $0)
 		  configsvr: true,
 		  members: [
 		    { _id: 0, host: "mongo-cs-1:27017" },
-		    { _id: 1, host: "mongo-cs-2:27017" }
+		    { _id: 1, host: "mongo-cs-2:27017" },
+		    { _id: 1, host: "mongo-cs-3:27017" }
 		  ]
 		})'
 	fi
 	
 	echo "# Initiating rs0"
-	doMongo mongo-mongos mongo-s-rs0-1:27017 'rs.initiate({
+	doMongo mongo-mongos mongo-rs0-1:27017 'rs.initiate({
 	  _id: "rs0",
 	  members: [
-	    { _id: 0, host: "mongo-s-rs0-1:27017" },
-	    { _id: 1, host: "mongo-s-rs0-2:27017", priority: 0 }
+	    { _id: 0, host: "mongo-rs0-1:27017" },
+	    { _id: 1, host: "mongo-rs0-2:27017" },
+	    { _id: 1, host: "mongo-rs0-3:27017", priority: 0 }
 	  ]
 	})'
 	
@@ -55,7 +59,7 @@ pushd $(dirname $0)
 	sleep 10
 	
 	echo "# Adding shard rs0"
-  	doMongo mongo-mongos mongo-mongos:27017 'sh.addShard("rs0/mongo-s-rs0-1:27017,mongo-s-rs0-2:27017")'
+  	doMongo mongo-mongos mongo-mongos:27017 'sh.addShard("rs0/mongo-rs0-1:27017,mongo-rs0-2:27017,mongo-rs0-3:27017")'
 
         echo "# Starting mongodb_consistent_backup, cluster mode (in docker)"
         docker-compose up --abort-on-container-exit backup-cluster

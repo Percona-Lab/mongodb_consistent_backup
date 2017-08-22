@@ -10,6 +10,7 @@ pushd $(dirname $0)
 	source $PWD/func.sh
 
 	export MONGO_VERSION=${MONGO_VERSION}
+	export DATA_MONGOD_FLAGS=
 	export MCB_EXTRA=${MCB_EXTRA}
 
 	echo "# Starting instances with docker-compose"
