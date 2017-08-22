@@ -22,6 +22,10 @@ install: bin/mongodb-consistent-backup
 	install -m 0644 LICENSE $(SHAREDIR)/$(NAME)/LICENSE
 	install -m 0644 README.rst $(SHAREDIR)/$(NAME)/README.rst
 
+flake8:
+	# Ignore long-lines and space-aligned = and : for now
+	flake8 --ignore E221,E241,E501 $(PWD)/$(NAME)
+
 uninstall:
 	rm -f $(BINDIR)/mongodb-consistent-backup
 	rm -rf $(SHAREDIR)/$(NAME)
@@ -36,6 +40,7 @@ rpm: bin/mongodb-consistent-backup
 
 docker: bin/mongodb-consistent-backup
 	docker build --no-cache --tag $(DOCKER_TAG) --build-arg "RELEASE=$(VERSION)" .
+	docker tag $(DOCKER_TAG) $(NAME):latest
 
 clean:
 	rm -rf bin build $(NAME).egg-info tmp 2>/dev/null
