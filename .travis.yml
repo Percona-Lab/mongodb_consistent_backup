@@ -26,6 +26,10 @@ jobs:
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.4
+    - stage: test-replset-3.4
+      script:
+        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4
     - stage: test-cluster-3.2
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
@@ -34,18 +38,14 @@ jobs:
 #      script:
 #        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
 #        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.2
-    - stage: test-cluster-3.0
-      script:
-        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
-        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.0
-    - stage: test-replset-3.4
-      script:
-        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
-        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4
     - stage: test-replset-3.2
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.2
+    - stage: test-cluster-3.0
+      script:
+        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.0
     - stage: test-replset-3.0
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
