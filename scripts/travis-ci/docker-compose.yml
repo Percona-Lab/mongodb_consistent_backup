@@ -6,6 +6,9 @@ services:
   mongo-rs0-2:
     image: "percona/percona-server-mongodb:${MONGO_VERSION}"
     command: mongod --port 27017 --replSet=rs0 --dbpath /data/db
+  mongo-rs0-3:
+    image: "percona/percona-server-mongodb:${MONGO_VERSION}"
+    command: mongod --port 27017 --replSet=rs0 --dbpath /data/db
   mongo-s-rs0-1:
     image: "percona/percona-server-mongodb:${MONGO_VERSION}"
     command: mongod --port 27017 --replSet=rs0 --shardsvr --dbpath /data/db
@@ -35,7 +38,7 @@ services:
   backup-replset:
     image: mongodb_consistent_backup:latest
     entrypoint: mongodb-consistent-backup
-    command: --backup.location /tmp --backup.name test-replset --host rs0/mongo-rs0-1:27017,mongo-rs0-2:27017 --replication.max_lag_secs 15
+    command: --backup.location /tmp --backup.name test-replset --host rs0/mongo-rs0-1:27017,mongo-rs0-2:27017,mongo-rs0-3:27017 --replication.max_lag_secs 15
     depends_on:
     - mongo-rs0-1
     - mongo-rs0-2
