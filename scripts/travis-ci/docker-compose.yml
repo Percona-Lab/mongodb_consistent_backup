@@ -17,13 +17,13 @@ services:
     command: mongod --port 27017 --replSet=rs0 --shardsvr --dbpath /data/db
   mongo-cs-1:
     image: "percona/percona-server-mongodb:${MONGO_VERSION}"
-    command: mongod --port 27017 --replSet=csReplSet --configsvr --dbpath /data/db
+    command: mongod --port 27017 ${CONFIGSVR_FLAGS} --configsvr --dbpath /data/db
   mongo-cs-2:
     image: "percona/percona-server-mongodb:${MONGO_VERSION}"
-    command: mongod --port 27017 --replSet=csReplSet --configsvr --dbpath /data/db
+    command: mongod --port 27017 ${CONFIGSVR_FLAGS} --configsvr --dbpath /data/db
   mongo-mongos:
     image: "percona/percona-server-mongodb:${MONGO_VERSION}"
-    command: mongos --port 27017 --configdb csReplSet/mongo-cs-1:27017,mongo-cs-2:27017
+    command: mongos --port 27017 --configdb ${MONGOS_CONFIGDB}
     depends_on:
     - mongo-s-rs0-1
     - mongo-s-rs0-2
@@ -32,7 +32,7 @@ services:
   backup-cluster:
     image: mongodb_consistent_backup:latest
     entrypoint: mongodb-consistent-backup
-    command: --backup.location /tmp --backup.name test-cluster --host csReplSet/mongo-cs-1:27017,mongo-cs-2:27017 --replication.max_lag_secs 15 ${MCB_EXTRA}
+    command: --backup.location /tmp --backup.name test-cluster --host ${MONGOS_CONFIGDB} --replication.max_lag_secs 15 ${MCB_EXTRA}
     depends_on:
     - mongo-mongos
   backup-replset:
