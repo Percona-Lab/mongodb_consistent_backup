@@ -222,7 +222,7 @@ Submitting Code
 ~~~~~~~~~~~~~~~
 
 -  Submitted code must pass Python `'flake8' <https://pypi.python.org/pypi/flake8>`__ checks. Run *'make flake8'* to test.
--  To make review easier pull requests must address and solve a one problem at a time.
+-  To make review easier, pull requests must address and solve one problem at a time.
 
 Links
 ~~~~~
