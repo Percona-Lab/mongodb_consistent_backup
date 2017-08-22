@@ -13,15 +13,15 @@ pushd $(dirname $0)
 	export MONGO_VERSION=${MONGO_VERSION}
 	export MCB_EXTRA=${MCB_EXTRA}
 
-	export CONFIGSVR_REPLSET=csReplSet
+	CONFIGSVR_REPLSET=csReplSet
 	if [ "${CONFIGSVR_TYPE}" == "CSRS" ]; then
 		export CONFIGSVR_FLAGS="--replSet ${CONFIGSVR_REPLSET}"
 		export MONGOS_CONFIGDB="${CONFIGSVR_REPLSET}/mongo-cs-1:27017,mongo-cs-2:27017"
-		echo "# Using CSRS-based config servers: ${MONGOS_CONFIGDB}"
+		echo "# Using CSRS-based config servers: '${MONGOS_CONFIGDB}'"
 	else
 		export CONFIGSVR_FLAGS=
 		export MONGOS_CONFIGDB="mongo-cs-1:27017,mongo-cs-2:27017"
-		echo "# Using SCCC-based config servers: ${MONGOS_CONFIGDB}"
+		echo "# Using SCCC-based config servers: '${MONGOS_CONFIGDB}'"
 	fi
 
 	echo "# Starting instances with docker-compose"
@@ -31,7 +31,7 @@ pushd $(dirname $0)
 	sleep 10
 	
 	if [ "${CONFIGSVR_TYPE}" == "CSRS" ]; then
-		echo "# Initiating csReplSet (config server set)"
+		echo "# Initiating csReplSet (config server replica set)"
 		doMongo mongo-mongos mongo-cs-1:27017 'rs.initiate({
 		  _id: "csReplSet",
 		  configsvr: true,
