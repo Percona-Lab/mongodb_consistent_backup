@@ -58,3 +58,15 @@ jobs:
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --archive.method=zbackup
+#    - stage: test-upload-gs
+#      script:
+#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --upload.method=gs
+#    - stage: test-upload-rsync
+#      script:
+#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --upload.method=rsync
+#    - stage: test-upload-s3
+#      script:
+#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --upload.method=s3
