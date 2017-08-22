@@ -16,7 +16,7 @@ pushd $(dirname $0)
 
 	CONFIGSVR_REPLSET=csReplSet
 	if [ "${CONFIGSVR_TYPE}" == "CSRS" ]; then
-		export CONFIGSVR_FLAGS="--replSet ${CONFIGSVR_REPLSET}"
+		export CONFIGSVR_FLAGS="--replSet=${CONFIGSVR_REPLSET}"
 		export MONGOS_CONFIGDB="${CONFIGSVR_REPLSET}/mongo-cs-1:27017,mongo-cs-2:27017,mongo-cs-3:27017"
 		echo "# Using CSRS-based config servers: '${MONGOS_CONFIGDB}'"
 	else
