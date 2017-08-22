@@ -10,11 +10,12 @@ cache:
     - $TRAVIS_BUILD_DIR/tmp/pip
 services:
   - docker
-install: 'pip install virtualenv flake8'
+install: 'pip install virtualenv'
 jobs:
   include:
 #    - stage: flake8
 #      script:
+#        - pip install flake8
 #        - make flake8
     - stage: build
       script:
