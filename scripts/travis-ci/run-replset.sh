@@ -7,6 +7,8 @@ MONGO_VERSION=${1:-3.2}
 MCB_EXTRA="${@:2}"
 
 pushd $(dirname $0)
+	source $PWD/func.sh
+
 	export MONGO_VERSION=${MONGO_VERSION}
 	export MCB_EXTRA=${MCB_EXTRA}
 
@@ -19,7 +21,7 @@ pushd $(dirname $0)
 	sleep 10
 	
 	echo "# Initiating rs0"
-	docker-compose run --rm mongo-rs0-1 /usr/bin/mongo mongo-rs0-1:27017 --quiet --eval 'rs.initiate({
+	doMongo mongo-rs0-1 mongo-rs0-1:27017 'rs.initiate({
 	  _id: "rs0",
 	  members: [
 	    { _id: 0, host: "mongo-rs0-1:27017" },
