@@ -4,7 +4,6 @@ python:
 cache:
   pip: true
   directories: 
-    - $TRAVIS_BUILD_DIR/bin
     - $TRAVIS_BUILD_DIR/docker
     - $TRAVIS_BUILD_DIR/tmp/pex
     - $TRAVIS_BUILD_DIR/tmp/pip
