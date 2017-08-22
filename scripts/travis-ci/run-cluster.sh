@@ -3,6 +3,10 @@
 set -e
 set -x
 
+function print_usage() {
+	echo "Usage $0: [MONGO_VERSION] [CONFIGSVR_TYPE (CSRS or SCCC)] [mongodb-consistent-backup EXTRA FLAGS...]"
+}
+
 MONGO_VERSION=${1:-3.2}
 CONFIGSVR_TYPE=${2:-CSRS}
 MCB_EXTRA="${@:3}"
@@ -19,10 +23,14 @@ pushd $(dirname $0)
 		export CONFIGSVR_FLAGS="--replSet=${CONFIGSVR_REPLSET}"
 		export MONGOS_CONFIGDB="${CONFIGSVR_REPLSET}/mongo-cs-1:27017,mongo-cs-2:27017,mongo-cs-3:27017"
 		echo "# Using CSRS-based config servers: '${MONGOS_CONFIGDB}'"
-	else
+	elif [ "${CONFIGSVR_TYPE}" == "SCCC" ]; then
 		export CONFIGSVR_FLAGS=
 		export MONGOS_CONFIGDB="mongo-cs-1:27017,mongo-cs-2:27017"
 		echo "# Using SCCC-based config servers: '${MONGOS_CONFIGDB}'"
+	else
+		echo "Unsupported CONFIGSVR_TYPE field: '${CONFIGSVR_TYPE}'! Supported: CSRS (default) or SCCC"
+		print_usage
+		exit 1
 	fi
 
 	# start mongo-mongos service (which starts the whole cluster)
