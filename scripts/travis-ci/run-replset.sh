@@ -11,6 +11,8 @@ pushd $(dirname $0)
 
 	export MONGO_VERSION=${MONGO_VERSION}
 	export DATA_MONGOD_FLAGS=
+	export MONGOS_CONFIGDB=
+	export CONFIGSVR_FLAGS=
 	export MCB_EXTRA=${MCB_EXTRA}
 
 	echo "# Starting instances with docker-compose"
