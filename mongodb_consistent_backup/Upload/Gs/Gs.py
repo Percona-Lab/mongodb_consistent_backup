@@ -8,7 +8,7 @@ from types import MethodType
 
 from mongodb_consistent_backup.Errors import OperationError
 from mongodb_consistent_backup.Pipeline import Task
-from mongodb_consistent_backup.Upload.Gs.GsUploadThread import GsUploadThread
+from GsUploadThread import GsUploadThread
 
 
 # Allows pooled .apply_async()s to work on Class-methods:
@@ -17,6 +17,8 @@ def _reduce_method(m):
         return getattr, (m.im_class, m.im_func.func_name)
     else:
         return getattr, (m.im_self, m.im_func.func_name)
+
+
 pickle(MethodType, _reduce_method)
 
 

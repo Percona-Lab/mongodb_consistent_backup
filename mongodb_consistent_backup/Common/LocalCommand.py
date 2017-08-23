@@ -42,7 +42,7 @@ class LocalCommand:
                 sleep(0.1)
         except Exception, e:
             raise Error(e)
-    
+
         if self._process.returncode != 0:
             raise OperationError("%s command failed with exit code %i! Stderr output:\n%s" % (
                 self.command,

@@ -1,5 +1,4 @@
-from Gs import Gs
-from GsUploadThread import GsUploadThread
+from Gs import Gs  # NOQA
 
 
 def config(parser):

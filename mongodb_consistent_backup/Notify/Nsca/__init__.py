@@ -1,4 +1,4 @@
-from Nsca import Nsca
+from Nsca import Nsca  # NOQA
 
 
 def config(parser):

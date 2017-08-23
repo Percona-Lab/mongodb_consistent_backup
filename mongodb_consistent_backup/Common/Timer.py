@@ -8,7 +8,7 @@ class Timer:
         self.timers = manager.dict()
 
     def start(self, timer_name):
-        self.timers[timer_name] = { 'start': time(), 'started': True }
+        self.timers[timer_name] = {'start': time(), 'started': True}
 
     def stop(self, timer_name):
         try:
@@ -22,7 +22,7 @@ class Timer:
             else:
                 raise OperationError("No started timer named %s to stop!" % timer_name)
         except IOError:
-            pass            
+            pass
 
     def duration(self, timer_name):
         try:

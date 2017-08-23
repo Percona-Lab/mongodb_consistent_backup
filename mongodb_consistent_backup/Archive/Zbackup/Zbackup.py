@@ -95,20 +95,20 @@ class Zbackup(Task):
                 return None
             except Exception, e:
                 raise OperationError("Could not gather ZBackup version: %s" % e)
-    
+
     def has_zbackup(self):
         if self.version():
-           return True
+            return True
         return False
 
     def close(self, exit_code=None, frame=None):
         del exit_code
         del frame
         if not self.stopped:
-            if self._zbackup and self._zbackup.poll() == None:
+            if self._zbackup and self._zbackup.poll() is None:
                 logging.debug("Stopping running ZBackup command")
                 self._zbackup.terminate()
-            if self._tar and self._tar.poll() == None:
+            if self._tar and self._tar.poll() is None:
                 logging.debug("Stopping running ZBackup tar command")
                 self._tar.terminate()
             self.stopped = True
@@ -131,12 +131,12 @@ class Zbackup(Task):
                 self.poll()
                 if tar_done:
                     self._zbackup.communicate()
-                    if self._zbackup.poll() != None:
+                    if self._zbackup.poll() is not None:
                         logging.info("ZBackup completed successfully with exit code: %i" % self._zbackup.returncode)
                         if self._zbackup.returncode != 0:
                             raise OperationError("ZBackup exited with code: %i!" % self._zbackup.returncode)
                         break
-                elif self._tar.poll() != None:
+                elif self._tar.poll() is not None:
                     if self._tar.returncode == 0:
                         logging.debug("ZBackup tar command completed successfully with exit code: %i" % self._tar.returncode)
                         tar_done = True
@@ -160,9 +160,9 @@ class Zbackup(Task):
             lock = Lock(self.zbackup_lock)
             lock.acquire()
             try:
-                logging.info("Starting ZBackup version: %s (options: compression=%s, encryption=%s, threads=%i, cache_mb=%i)" %
-                    (self.version(), self.compression(), self.encrypted, self.threads(), self.zbackup_cache_mb)
-                )
+                logging.info("Starting ZBackup version: %s (options: compression=%s, encryption=%s, threads=%i, cache_mb=%i)" % (
+                    self.version(), self.compression(), self.encrypted, self.threads(), self.zbackup_cache_mb
+                ))
                 self.running = True
                 try:
                     for sub_dir in os.listdir(self.backup_dir):

@@ -3,7 +3,7 @@ import sys
 
 from pynsca import NSCANotifier
 
-from mongodb_consistent_backup.Errors import Error, NotifyError, OperationError
+from mongodb_consistent_backup.Errors import NotifyError, OperationError
 from mongodb_consistent_backup.Pipeline import Task
 
 

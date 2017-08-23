@@ -1,7 +1,7 @@
 import logging
 
 from mongodb_consistent_backup.Errors import Error, NotifyError
-from mongodb_consistent_backup.Notify.Nsca import Nsca
+from mongodb_consistent_backup.Notify.Nsca import Nsca  # NOQA
 from mongodb_consistent_backup.Pipeline import Stage
 
 
@@ -25,7 +25,7 @@ class Notify(Stage):
                     try:
                         (success, message) = self.notifications.pop()
                         state = self._task.failed
-                        if success == True:
+                        if success is True:
                             state = self._task.success
                         self._task.run(state, message)
                     except NotifyError:

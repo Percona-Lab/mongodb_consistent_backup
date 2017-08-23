@@ -15,6 +15,7 @@ class MongoAddr:
     def __str__(self):
         return self.str()
 
+
 class MongoUri:
     def __init__(self, url, default_port=27017, replset=None):
         self.url          = url
@@ -49,8 +50,8 @@ class MongoUri:
             addr = MongoAddr()
             addr.replset = self.replset
             if ":" in url:
-                 addr.host, addr.port = url.split(":")
-                 addr.port = int(addr.port)
+                addr.host, addr.port = url.split(":")
+                addr.port = int(addr.port)
             else:
                 addr.host = url
                 if not addr.port:

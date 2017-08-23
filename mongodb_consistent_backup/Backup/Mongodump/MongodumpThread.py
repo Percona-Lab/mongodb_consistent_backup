@@ -61,7 +61,7 @@ class MongodumpThread(Process):
                 (date, line) = line.split("\t")
             elif is_datetime(line):
                 return None
-            return "%s:\t%s" % (self.uri, line) 
+            return "%s:\t%s" % (self.uri, line)
         except:
             return None
 
@@ -105,7 +105,7 @@ class MongodumpThread(Process):
                             break
                         else:
                             logging.info(line)
-                if self._process.poll() != None:
+                if self._process.poll() is not None:
                     break
         except Exception, e:
             logging.exception("Error reading mongodump output: %s" % e)
@@ -117,7 +117,7 @@ class MongodumpThread(Process):
         mongodump_cmd   = [self.binary]
         mongodump_flags = ["--host", mongodump_uri.host, "--port", str(mongodump_uri.port), "--oplog", "--out", "%s/dump" % self.backup_dir]
         if self.threads > 0:
-            mongodump_flags.extend(["--numParallelCollections="+str(self.threads)])
+            mongodump_flags.extend(["--numParallelCollections=" + str(self.threads)])
         if self.dump_gzip:
             mongodump_flags.extend(["--gzip"])
         if tuple("3.4.0".split(".")) <= tuple(self.version.split(".")):
@@ -131,7 +131,7 @@ class MongodumpThread(Process):
                 mongodump_flags.extend(["-u", self.user, "-p", '""'])
                 self.do_stdin_passwd = True
             else:
-                logging.warning("Mongodump is too old to set password securely! Upgrade to mongodump >= 3.0.2 to resolve this") 
+                logging.warning("Mongodump is too old to set password securely! Upgrade to mongodump >= 3.0.2 to resolve this")
                 mongodump_flags.extend(["-u", self.user, "-p", self.password])
         mongodump_cmd.extend(mongodump_flags)
         return mongodump_cmd

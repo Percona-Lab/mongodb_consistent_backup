@@ -1,4 +1,5 @@
-from S3 import S3
+from S3 import S3  # NOQA
+
 
 def config(parser):
     parser.add_argument("--upload.s3.region", dest="upload.s3.region", help="S3 Uploader AWS region to connect to (default: us-east-1)", default="us-east-1", type=str)

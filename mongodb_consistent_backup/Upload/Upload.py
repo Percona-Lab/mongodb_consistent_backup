@@ -1,5 +1,5 @@
-from mongodb_consistent_backup.Upload.Gs import Gs
-from mongodb_consistent_backup.Upload.S3 import S3
+from mongodb_consistent_backup.Upload.Gs import Gs  # NOQA
+from mongodb_consistent_backup.Upload.S3 import S3  # NOQA
 from mongodb_consistent_backup.Pipeline import Stage
 
 

@@ -6,7 +6,7 @@ from pymongo import DESCENDING, CursorType, MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure, ServerSelectionTimeoutError
 from time import sleep
 
-from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError, Error, OperationError
+from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError, Error
 
 
 class DB:
@@ -31,8 +31,9 @@ class DB:
         try:
             if self.do_replset:
                 self.replset = self.uri.replset
-            logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s)" % 
-                         (self.uri, self.replset, self.read_pref))
+            logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s)" % (
+                self.uri, self.replset, self.read_pref
+            ))
             conn = MongoClient(
                 connect=self.do_connect,
                 host=self.uri.hosts(),
@@ -44,7 +45,7 @@ class DB:
                 w="majority"
             )
             if self.do_connect:
-                conn['admin'].command({"ping":1})
+                conn['admin'].command({"ping": 1})
         except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
             logging.error("Unable to connect to %s! Error: %s" % (self.uri, e))
             raise DBConnectionError(e)
@@ -134,7 +135,7 @@ class DB:
         comment = "%s:%s;%s:%i" % (caller.__name__, frame.function, frame.filename, frame.lineno)
         if not ts:
             ts = self.get_oplog_tail_ts()
-        query = {'ts':{'$gte':ts}}
+        query = {'ts': {'$gte': ts}}
         logging.debug("Querying oplog on %s with query: %s" % (self.uri, query))
         # http://api.mongodb.com/python/current/examples/tailable.html
         return self.get_oplog_rs().find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True).comment(comment)

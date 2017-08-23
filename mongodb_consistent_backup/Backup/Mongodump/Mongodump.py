@@ -1,14 +1,13 @@
-import os, sys
+import os
 import logging
-import signal
+import sys
 
 from math import floor
-from multiprocessing import cpu_count
 from subprocess import check_output
 from time import sleep
 
 from mongodb_consistent_backup.Common import MongoUri, config_to_string
-from mongodb_consistent_backup.Errors import Error, OperationError
+from mongodb_consistent_backup.Errors import OperationError
 from mongodb_consistent_backup.Oplog import OplogState
 from mongodb_consistent_backup.Pipeline import Task
 
@@ -82,8 +81,6 @@ class Mongodump(Task):
     def get_summaries(self):
         for shard in self.states:
             state = self.states[shard]
-            host  = state.get('host')
-            port  = state.get('port')
             self._summary[shard] = state.get().copy()
 
     def wait(self):

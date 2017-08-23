@@ -1,2 +1,1 @@
-from Resolver import Resolver
-
+from Resolver import Resolver  # NOQA

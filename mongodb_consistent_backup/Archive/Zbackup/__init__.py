@@ -1,4 +1,4 @@
-from Zbackup import Zbackup
+from Zbackup import Zbackup  # NOQA
 
 
 def config(parser):

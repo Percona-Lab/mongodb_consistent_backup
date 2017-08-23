@@ -1,4 +1,4 @@
-from mongodb_consistent_backup.Backup.Mongodump import Mongodump
+from mongodb_consistent_backup.Backup.Mongodump import Mongodump  # NOQA
 from mongodb_consistent_backup.Pipeline import Stage
 
 

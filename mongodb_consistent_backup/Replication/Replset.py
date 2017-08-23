@@ -1,11 +1,12 @@
 import logging
+import pymongo.errors
 
-from bson.timestamp import Timestamp
 from math import ceil
-from time import mktime, time
+from time import mktime
 
 from mongodb_consistent_backup.Common import DB, MongoUri
-from mongodb_consistent_backup.Errors import OperationError
+from mongodb_consistent_backup.Errors import Error, OperationError
+
 
 class Replset:
     def __init__(self, config, db):
@@ -104,8 +105,9 @@ class Replset:
         return op_lag
 
     def get_repl_lag(self, rs_member):
-        rs_status         = self.get_rs_status(False, True)
-        rs_primary        = self.find_primary(False, True)
+        rs_status = self.get_rs_status(False, True)
+        self.find_primary(False, True)
+
         member_optime_ts  = rs_member['optime']
         primary_optime_ts = self.primary_optime(False, True)
         if isinstance(rs_member['optime'], dict) and 'ts' in rs_member['optime']:
@@ -120,7 +122,7 @@ class Replset:
         electable = []
         rs_config = self.get_rs_config(force, True)
         for member in rs_config['members']:
-            if 'arbiterOnly' in member and member['arbiterOnly'] == True:
+            if 'arbiterOnly' in member and member['arbiterOnly'] is True:
                 continue
             elif 'priority' in member and member['priority'] == 0:
                 continue
@@ -139,33 +141,35 @@ class Replset:
 
     def find_primary(self, force=False, quiet=False):
         if force or not self.primary:
-             rs_status = self.get_rs_status(force, quiet)
-             rs_name   = rs_status['set']
-             for member in rs_status['members']:
-                 if member['stateStr'] == 'PRIMARY' and member['health'] > 0:
-                     member_uri = MongoUri(member['name'], 27017, rs_name)
-                     optime_ts  = member['optime']
-                     if isinstance(member['optime'], dict) and 'ts' in member['optime']:
-                         optime_ts = member['optime']['ts']
-                     if quiet == False or not self.primary:
-                         logging.info("Found PRIMARY: %s with optime %s" % (
-                             member_uri,
-                             str(optime_ts)
-                         )) 
-                     self.primary = {
-                         'uri': member_uri,
-                         'optime': optime_ts
-                     }
-                     self.replset_summary['primary'] = { "member": member, "uri": member_uri.str() }
-             if self.primary is None:
-                 logging.error("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
-                 raise OperationError("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
+            rs_status = self.get_rs_status(force, quiet)
+            rs_name   = rs_status['set']
+            for member in rs_status['members']:
+                if member['stateStr'] == 'PRIMARY' and member['health'] > 0:
+                    member_uri = MongoUri(member['name'], 27017, rs_name)
+                    optime_ts  = member['optime']
+                    if isinstance(member['optime'], dict) and 'ts' in member['optime']:
+                        optime_ts = member['optime']['ts']
+                    if quiet is False or not self.primary:
+                        logging.info("Found PRIMARY: %s with optime %s" % (
+                            member_uri,
+                            str(optime_ts)
+                        ))
+                    self.primary = {
+                        'uri': member_uri,
+                        'optime': optime_ts
+                    }
+                    self.replset_summary['primary'] = {"member": member, "uri": member_uri.str()}
+            if self.primary is None:
+                logging.error("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
+                raise OperationError("Unable to locate a PRIMARY member for replset %s, giving up" % rs_name)
         return self.primary
 
     def find_secondary(self, force=False, quiet=False):
         rs_status = self.get_rs_status(force, quiet)
-        rs_config = self.get_rs_config(force, quiet)
-        db_config = self.get_mongo_config(force, quiet)
+
+        self.get_rs_config(force, quiet)
+        self.get_mongo_config(force, quiet)
+
         quorum    = self.get_rs_quorum()
         rs_name   = rs_status['set']
 
@@ -198,11 +202,11 @@ class Replset:
                     if member_config['priority'] > 1:
                         score -= priority - 1
                     elif member_config['priority'] == 0:
-                        score += (score * self.pri0_weight)            
+                        score += (score * self.pri0_weight)
                     if priority < self.min_priority or priority > self.max_priority:
                         logging.info("Found SECONDARY %s with out-of-bounds priority! Skipping" % member_uri)
                         continue
-                elif self.hidden_only and not 'hidden' in log_data:
+                elif self.hidden_only and 'hidden' not in log_data:
                     logging.info("Found SECONDARY %s that is non-hidden and hidden-only mode is enabled! Skipping" % member_uri)
                     continue
 
@@ -227,7 +231,7 @@ class Replset:
                 log_data['optime'] = optime_ts
                 log_data['score']  = int(score)
                 logging.info("%s: %s" % (log_msg, str(log_data)))
-                self.replset_summary['secondary'] = { "member": member, "uri": member_uri.str(), "data": log_data }
+                self.replset_summary['secondary'] = {"member": member, "uri": member_uri.str(), "data": log_data}
         if self.secondary is None or electable_count < quorum:
             logging.error("Not enough valid secondaries in replset %s to take backup! Num replset electable members: %i, required quorum: %i" % (
                 rs_name,

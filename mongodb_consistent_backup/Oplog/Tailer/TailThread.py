@@ -95,7 +95,7 @@ class TailThread(Process):
         try:
             logging.info("Tailing oplog on %s for changes" % self.uri)
             self.timer.start(self.timer_name)
-    
+
             self.state.set('running', True)
             self.connect()
             oplog = self.oplog()
@@ -109,11 +109,11 @@ class TailThread(Process):
                             if self.last_ts and self.last_ts >= doc['ts']:
                                 continue
                             oplog.add(doc)
-    
+
                             # update states
                             self.count  += 1
                             self.last_ts = doc['ts']
-                            if self.first_ts == None:
+                            if self.first_ts is None:
                                 self.first_ts = self.last_ts
                             update = {
                                 'count':    self.count,
@@ -121,7 +121,7 @@ class TailThread(Process):
                                 'last_ts':  self.last_ts
                             }
                             self.state.set(None, update, True)
-    
+
                             # print status report every N seconds
                             self.status()
                         except NotMasterError:
@@ -154,7 +154,7 @@ class TailThread(Process):
             logging.error("Tailer %s encountered an unexpected error: %s" % (self.uri, e))
             self.exit_code = 1
             self.backup_stop.set()
-            raise e 
+            raise e
         finally:
             if self._cursor:
                 logging.debug("Stopping oplog cursor on %s" % self.uri)
@@ -171,5 +171,5 @@ class TailThread(Process):
                 log_msg_extra = "%s, end ts: %s" % (log_msg_extra, self.last_ts)
             logging.info("Done tailing oplog on %s, %s" % (self.uri, log_msg_extra))
             self.state.set('completed', True)
- 
+
         sys.exit(self.exit_code)

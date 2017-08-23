@@ -9,7 +9,7 @@ from multiprocessing import current_process, Event, Manager
 from Archive import Archive
 from Backup import Backup
 from Common import Config, DB, Lock, MongoUri, Timer
-from Errors import Error, NotifyError, OperationError
+from Errors import NotifyError, OperationError
 from Logger import Logger
 from Notify import Notify
 from Oplog import Tailer, Resolver
@@ -360,7 +360,7 @@ class MongodbConsistentBackup(object):
                     self.timer,
                     self.backup_root_subdirectory,
                     self.backup_directory,
-                    self.replsets, 
+                    self.replsets,
                     self.backup_stop,
                     self.sharding
                 )

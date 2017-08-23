@@ -1,5 +1,3 @@
-import logging
-
 from mongodb_consistent_backup.Errors import Error
 
 

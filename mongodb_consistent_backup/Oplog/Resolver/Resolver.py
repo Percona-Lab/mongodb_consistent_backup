@@ -5,11 +5,10 @@ import logging
 from bson.timestamp import Timestamp
 from copy_reg import pickle
 from multiprocessing import Pool, TimeoutError
-from time import sleep
 from types import MethodType
 
 from ResolverThread import ResolverThread
-from mongodb_consistent_backup.Common import MongoUri, parse_method
+from mongodb_consistent_backup.Common import MongoUri
 from mongodb_consistent_backup.Errors import Error, OperationError
 from mongodb_consistent_backup.Oplog import OplogState
 from mongodb_consistent_backup.Pipeline import Task
@@ -21,6 +20,7 @@ def _reduce_method(m):
         return getattr, (m.im_class, m.im_func.func_name)
     else:
         return getattr, (m.im_self, m.im_func.func_name)
+
 
 pickle(MethodType, _reduce_method)
 
@@ -48,11 +48,11 @@ class Resolver(Task):
             raise Error(e)
 
     def close(self, code=None, frame=None):
-       if self._pool and not self.stopped:
-           logging.debug("Stopping all oplog resolver threads")
-           self._pool.terminate()
-           logging.info("Stopped all oplog resolver threads")
-           self.stopped = True
+        if self._pool and not self.stopped:
+            logging.debug("Stopping all oplog resolver threads")
+            self._pool.terminate()
+            logging.info("Stopped all oplog resolver threads")
+            self.stopped = True
 
     def get_backup_end_max_ts(self):
         end_ts = None
@@ -84,7 +84,7 @@ class Resolver(Task):
         else:
             raise OperationError("Unexpected response from resolver thread: %s" % done_uri)
 
-    def wait(self, max_wait_secs=6*3600, poll_secs=2):
+    def wait(self, max_wait_secs=6 * 3600, poll_secs=2):
         if len(self._pooled) > 0:
             waited_secs = 0
             self._pool.close()
@@ -98,7 +98,7 @@ class Resolver(Task):
                     if waited_secs < max_wait_secs:
                         waited_secs += poll_secs
                     else:
-                        raise OperationError("Waited more than %i seconds for Oplog resolver! I will assume there is a problem and exit") 
+                        raise OperationError("Waited more than %i seconds for Oplog resolver! I will assume there is a problem and exit")
             self._pool.terminate()
             logging.debug("Stopped all oplog resolver threads")
             self.stopped = True
@@ -109,14 +109,13 @@ class Resolver(Task):
             logging.info("Resolving oplogs (options: threads=%s, compression=%s)" % (self.threads(), self.compression()))
             self.timer.start(self.timer_name)
             self.running = True
-    
+
             for shard in self.backup_oplogs:
                 backup_oplog = self.backup_oplogs[shard]
                 self.resolver_state[shard] = OplogState(self.manager, None, backup_oplog['file'])
                 uri = MongoUri(backup_oplog['uri']).get()
                 if shard in self.tailed_oplogs:
                     tailed_oplog = self.tailed_oplogs[shard]
-                    tailed_oplog_file = tailed_oplog['file']
                     if backup_oplog['last_ts'] is None and tailed_oplog['last_ts'] is None:
                         logging.info("No oplog changes to resolve for %s" % uri)
                     elif backup_oplog['last_ts'] > tailed_oplog['last_ts']:

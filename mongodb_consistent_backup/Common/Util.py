@@ -11,6 +11,7 @@ def config_to_string(config):
         config_pairs.append("%s=%s" % (key, config[key]))
     return ", ".join(config_pairs)
 
+
 def is_datetime(string):
     try:
         parser.parse(string)
@@ -18,8 +19,10 @@ def is_datetime(string):
     except:
         return False
 
+
 def parse_method(method):
     return method.rstrip().lower()
+
 
 def validate_hostname(hostname):
     try:
