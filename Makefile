@@ -40,6 +40,7 @@ rpm: bin/mongodb-consistent-backup
 
 docker: bin/mongodb-consistent-backup
 	docker build --no-cache --tag $(DOCKER_TAG) --build-arg "RELEASE=$(VERSION)" .
+	docker tag $(DOCKER_TAG) $(NAME):latest
 
 clean:
 	rm -rf bin build $(NAME).egg-info tmp 2>/dev/null

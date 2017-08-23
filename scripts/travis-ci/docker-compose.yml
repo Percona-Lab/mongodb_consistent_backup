@@ -1,0 +1,44 @@
+version: '2'
+services:
+  mongo-rs0-1:
+    image: "percona/percona-server-mongodb:${MONGO_VERSION}"
+    command: mongod --port=27017 --replSet=rs0 --dbpath=/data/db ${DATA_MONGOD_FLAGS}
+  mongo-rs0-2:
+    image: "percona/percona-server-mongodb:${MONGO_VERSION}"
+    command: mongod --port=27017 --replSet=rs0 --dbpath=/data/db ${DATA_MONGOD_FLAGS}
+  mongo-rs0-3:
+    image: "percona/percona-server-mongodb:${MONGO_VERSION}"
+    command: mongod --port=27017 --replSet=rs0 --dbpath=/data/db ${DATA_MONGOD_FLAGS}
+  mongo-cs-1:
+    image: "percona/percona-server-mongodb:${MONGO_VERSION}"
+    command: mongod --port=27017 --configsvr --dbpath=/data/db ${CONFIGSVR_FLAGS}
+  mongo-cs-2:
+    image: "percona/percona-server-mongodb:${MONGO_VERSION}"
+    command: mongod --port=27017 --configsvr --dbpath=/data/db ${CONFIGSVR_FLAGS}
+  mongo-cs-3:
+    image: "percona/percona-server-mongodb:${MONGO_VERSION}"
+    command: mongod --port=27017 --configsvr --dbpath=/data/db ${CONFIGSVR_FLAGS}
+  mongo-mongos:
+    image: "percona/percona-server-mongodb:${MONGO_VERSION}"
+    command: mongos --port=27017 --configdb=${MONGOS_CONFIGDB}
+    depends_on:
+    - mongo-rs0-1
+    - mongo-rs0-2
+    - mongo-rs0-3
+    - mongo-cs-1
+    - mongo-cs-2
+    - mongo-cs-3
+  backup-cluster:
+    image: mongodb_consistent_backup:latest
+    entrypoint: mongodb-consistent-backup
+    command: --backup.location=/tmp --backup.name=test-cluster --host=${MONGOS_CONFIGDB} --replication.max_lag_secs=15 ${MCB_EXTRA}
+    depends_on:
+    - mongo-mongos
+  backup-replset:
+    image: mongodb_consistent_backup:latest
+    entrypoint: mongodb-consistent-backup
+    command: --backup.location=/tmp --backup.name=test-replset --host=rs0/mongo-rs0-1:27017,mongo-rs0-2:27017,mongo-rs0-3:27017 --replication.max_lag_secs=15 ${MCB_EXTRA}
+    depends_on:
+    - mongo-rs0-1
+    - mongo-rs0-2
+    - mongo-rs0-3

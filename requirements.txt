@@ -7,3 +7,4 @@ boto==2.47.0
 filechunkio==1.8
 python-dateutil==2.2
 yconf==0.3.4
+google_compute_engine

@@ -1,0 +1,72 @@
+language: python
+python:
+  - "2.7"
+cache:
+  pip: true
+  directories: 
+    - $TRAVIS_BUILD_DIR/docker
+    - $TRAVIS_BUILD_DIR/tmp/pex
+    - $TRAVIS_BUILD_DIR/tmp/pip
+services:
+  - docker
+install: 'pip install virtualenv'
+jobs:
+  include:
+#    - stage: flake8
+#      script:
+#        - pip install flake8
+#        - make flake8
+    - stage: build
+      script:
+        - make docker
+        - docker run --rm -it mongodb_consistent_backup:latest --version
+        - mkdir -p $TRAVIS_BUILD_DIR/docker
+        - docker save mongodb_consistent_backup:latest >$TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+    - stage: test-cluster-3.4
+      script:
+        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.4
+    - stage: test-replset-3.4
+      script:
+        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4
+    - stage: test-cluster-3.2
+      script:
+        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.2
+#    - stage: test-cluster-3.2-sccc
+#      script:
+#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.2
+    - stage: test-replset-3.2
+      script:
+        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.2
+#    - stage: test-cluster-3.0
+#      script:
+#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.0 SCCC
+    - stage: test-replset-3.0
+      script:
+        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.0
+    - stage: test-archive-none
+      script:
+        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --archive.method=none
+    - stage: test-archive-zbackup
+      script:
+        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --archive.method=zbackup
+#    - stage: test-upload-gs
+#      script:
+#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --upload.method=gs
+#    - stage: test-upload-rsync
+#      script:
+#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --upload.method=rsync
+#    - stage: test-upload-s3
+#      script:
+#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --upload.method=s3
