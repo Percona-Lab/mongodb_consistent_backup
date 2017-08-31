@@ -64,6 +64,7 @@ class Stage(object):
     def is_compressed(self):
         if self.has_task() and hasattr(self._task, "is_compressed"):
             return self._task.is_compressed()
+        return False
 
     def compression(self, task=None):
         if self.has_task() and hasattr(self._task, "compression"):

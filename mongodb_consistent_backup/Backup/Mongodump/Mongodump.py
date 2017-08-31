@@ -57,16 +57,16 @@ class Mongodump(Task):
         raise OperationError("Could not parse mongodump --version output!")
 
     def choose_compression(self):
-        if self.can_gzip():
+        if self.can_compress():
             if self.compression() == 'auto':
                 logging.info("Mongodump binary supports gzip compression, auto-enabling gzip compression")
                 self.compression('gzip')
         elif self.compression() == 'gzip':
             raise OperationError("mongodump gzip compression requested on binary that does not support gzip!")
 
-    def can_gzip(self):
+    def can_compress(self):
         if os.path.isfile(self.binary) and os.access(self.binary, os.X_OK):
-            logging.debug("Mongodump binary supports gzip")
+            logging.debug("Mongodump binary supports gzip compression")
             if tuple("3.2.0".split(".")) <= tuple(self.version.split(".")):
                 return True
             return False
