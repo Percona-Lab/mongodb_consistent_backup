@@ -41,7 +41,7 @@ class Task(object):
     def is_compressed(self):
         if self.compression() == 'auto' and hasattr(self, "can_compress"):
             return self.can_compress()
-        if self.compression() != 'none':
+        elif self.compression() != 'none':
             return True
         return False
 
