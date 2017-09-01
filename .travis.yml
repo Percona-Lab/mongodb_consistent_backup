@@ -12,10 +12,10 @@ services:
 install: 'pip install virtualenv'
 jobs:
   include:
-#    - stage: flake8
-#      script:
-#        - pip install flake8
-#        - make flake8
+    - stage: flake8
+      script:
+        - pip install flake8
+        - make flake8
     - stage: build
       script:
         - make docker
