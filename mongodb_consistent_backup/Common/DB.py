@@ -27,7 +27,6 @@ class DB:
         self.ssl_ca_file          = config.ssl.ca_file
         self.ssl_crl_file         = config.ssl.crl_file
         self.ssl_client_cert_file = config.ssl.client_cert_file
-        self.ssl_client_key_file  = config.ssl.client_key_file
 
         self.replset    = None
         self._conn      = None
@@ -63,7 +62,6 @@ class DB:
                     "ssl_ca_certs":  self.ssl_ca_file,
                     "ssl_crlfile":   self.ssl_crl_file,
                     "ssl_certfile":  self.ssl_client_cert_file,
-                    "ssl_keyfile":   self.ssl_client_key_file,
                     "ssl_cert_reqs": ssl.CERT_REQUIRED,
                 })
                 if not self.ssl_validate:

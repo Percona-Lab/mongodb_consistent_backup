@@ -25,10 +25,15 @@ class MongodumpThread(Process):
         self.threads   = threads
         self.dump_gzip = dump_gzip
 
-        self.user     = self.config.username
-        self.password = self.config.password
-        self.authdb   = self.config.authdb
-        self.binary   = self.config.backup.mongodump.binary
+        self.user                 = self.config.username
+        self.password             = self.config.password
+        self.authdb               = self.config.authdb
+        self.ssl_enabled          = self.config.ssl.enabled
+        self.ssl_validate         = self.config.ssl.validate
+        self.ssl_ca_file          = self.config.ssl.ca_file
+        self.ssl_crl_file         = self.config.ssl.crl_file
+        self.ssl_client_cert_file = self.config.ssl.client_cert_file
+        self.binary               = self.config.backup.mongodump.binary
 
         self.timer_name        = "%s-%s" % (self.__class__.__name__, self.uri.replset)
         self.exit_code         = 1
@@ -133,6 +138,16 @@ class MongodumpThread(Process):
             else:
                 logging.warning("Mongodump is too old to set password securely! Upgrade to mongodump >= 3.0.2 to resolve this")
                 mongodump_flags.extend(["-u", self.user, "-p", self.password])
+        if self.ssl_enabled:
+            mongodump_flags.append("--ssl")
+            if self.ssl_ca_file:
+                mongodump_flags.extend(["--sslCAFile", self.ssl_ca_file])
+            if self.ssl_crl_file:
+                mongodump_flags.extend(["--sslCRLFile", self.ssl_crl_file])
+            if self.client_cert_file:
+                mongodump_flags.extend(["--sslPEMKeyFile", self.ssl_cert_file])
+            if not self.ssl_validate:
+                mongodump_flags.extend(["--sslAllowInvalidCertificates", "--sslAllowInvalidHostnames"])
         mongodump_cmd.extend(mongodump_flags)
         return mongodump_cmd
 
