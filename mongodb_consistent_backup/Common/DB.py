@@ -13,20 +13,21 @@ from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnection
 class DB:
     def __init__(self, uri, config, do_replset=False, read_pref='primaryPreferred', do_connect=True, conn_timeout=5000, retries=5):
         self.uri          = uri
-        self.username     = config.username
-        self.password     = config.password
-        self.authdb       = config.authdb
+        self.config       = config
         self.do_replset   = do_replset
         self.read_pref    = read_pref
         self.do_connect   = do_connect
         self.conn_timeout = conn_timeout
         self.retries      = retries
 
-        self.ssl_enabled          = config.ssl.enabled
-        self.ssl_validate         = config.ssl.validate
-        self.ssl_ca_file          = config.ssl.ca_file
-        self.ssl_crl_file         = config.ssl.crl_file
-        self.ssl_client_cert_file = config.ssl.client_cert_file
+        self.username             = self.config.username
+        self.password             = self.config.password
+        self.authdb               = self.config.authdb
+        self.ssl_enabled          = self.config.ssl.enabled
+        self.ssl_validate         = self.config.ssl.validate
+        self.ssl_ca_file          = self.config.ssl.ca_file
+        self.ssl_crl_file         = self.config.ssl.crl_file
+        self.ssl_client_cert_file = self.config.ssl.client_cert_file
 
         self.replset    = None
         self._conn      = None
