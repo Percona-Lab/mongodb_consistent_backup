@@ -1,4 +1,5 @@
 import logging
+import ssl
 
 from bson.codec_options import CodecOptions
 from inspect import currentframe, getframeinfo
@@ -21,29 +22,59 @@ class DB:
         self.conn_timeout = conn_timeout
         self.retries      = retries
 
+        self.ssl_enabled          = config.ssl.enabled
+        self.ssl_validate         = config.ssl.validate
+        self.ssl_ca_file          = config.ssl.ca_file
+        self.ssl_crl_file         = config.ssl.crl_file
+        self.ssl_client_cert_file = config.ssl.client_cert_file
+        self.ssl_client_key_file  = config.ssl.client_key_file
+
         self.replset    = None
         self._conn      = None
         self._is_master = None
         self.connect()
         self.auth_if_required()
 
+    def do_ssl(self):
+        if self.ssl_enabled:
+            return True
+        return False
+
     def connect(self):
         try:
+            opts = {
+                "connect":                  self.do_connect,
+                "host":                     self.uri.hosts(),
+                "connectTimeoutMS":         self.conn_timeout,
+                "serverSelectionTimeoutMS": self.conn_timeout,
+                "maxPoolSize":              1,
+            }
             if self.do_replset:
                 self.replset = self.uri.replset
-            logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s)" % (
-                self.uri, self.replset, self.read_pref
+                opts.update({
+                    "replicaSet":     self.replset,
+                    "readPreference": self.read_pref,
+                    "w":              "majority"
+                })
+            if self.do_ssl():
+                logging.debug("Enabling SSL security on database connection")
+                opts.update({
+                    "ssl":           True,
+                    "ssl_ca_certs":  self.ssl_ca_file,
+                    "ssl_crlfile":   self.ssl_crl_file,
+                    "ssl_certfile":  self.ssl_client_cert_file,
+                    "ssl_keyfile":   self.ssl_client_key_file,
+                    "ssl_cert_reqs": ssl.CERT_REQUIRED,
+                })
+                if not self.ssl_validate:
+                    opts.update({
+                        "ssl_cert_reqs": ssl.CERT_NONE
+                    })
+            conn = MongoClient(opts)
+            logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s, ssl=%s)" % (
+                self.uri, self.replset, self.read_pref, self.do_ssl()
             ))
-            conn = MongoClient(
-                connect=self.do_connect,
-                host=self.uri.hosts(),
-                replicaSet=self.replset,
-                readPreference=self.read_pref,
-                connectTimeoutMS=self.conn_timeout,
-                serverSelectionTimeoutMS=self.conn_timeout,
-                maxPoolSize=1,
-                w="majority"
-            )
+            conn = MongoClient(opts)
             if self.do_connect:
                 conn['admin'].command({"ping": 1})
         except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
