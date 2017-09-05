@@ -77,6 +77,7 @@ To build an CentOS/RedHat RPM of the tool *(recommended)*:
 ::
 
     $ cd /path/to/mongodb_consistent_backup
+    $ sudo yum install -y rpm-build
     $ make rpm
 
 To build and install from source *(to default '/usr/local/bin/mongodb-consistent-backup')*:
