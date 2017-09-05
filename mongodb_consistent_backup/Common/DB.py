@@ -24,7 +24,7 @@ class DB:
         self.password             = self.config.password
         self.authdb               = self.config.authdb
         self.ssl_enabled          = self.config.ssl.enabled
-        self.ssl_validate         = self.config.ssl.validate
+        self.ssl_insecure         = self.config.ssl.insecure
         self.ssl_ca_file          = self.config.ssl.ca_file
         self.ssl_crl_file         = self.config.ssl.crl_file
         self.ssl_client_cert_file = self.config.ssl.client_cert_file
@@ -60,7 +60,7 @@ class DB:
                     "ssl_certfile":  self.ssl_client_cert_file,
                     "ssl_cert_reqs": ssl.CERT_REQUIRED,
                 })
-                if not self.ssl_validate:
+                if self.ssl_insecure:
                     opts.update({
                         "ssl_cert_reqs": ssl.CERT_NONE
                     })

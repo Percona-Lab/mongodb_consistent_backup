@@ -29,7 +29,7 @@ class MongodumpThread(Process):
         self.password             = self.config.password
         self.authdb               = self.config.authdb
         self.ssl_enabled          = self.config.ssl.enabled
-        self.ssl_validate         = self.config.ssl.validate
+        self.ssl_insecure         = self.config.ssl.insecure
         self.ssl_ca_file          = self.config.ssl.ca_file
         self.ssl_crl_file         = self.config.ssl.crl_file
         self.ssl_client_cert_file = self.config.ssl.client_cert_file
@@ -146,7 +146,7 @@ class MongodumpThread(Process):
                 mongodump_flags.extend(["--sslCRLFile", self.ssl_crl_file])
             if self.client_cert_file:
                 mongodump_flags.extend(["--sslPEMKeyFile", self.ssl_cert_file])
-            if not self.ssl_validate:
+            if self.ssl_insecure:
                 mongodump_flags.extend(["--sslAllowInvalidCertificates", "--sslAllowInvalidHostnames"])
         mongodump_cmd.extend(mongodump_flags)
         return mongodump_cmd
