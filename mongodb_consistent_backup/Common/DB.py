@@ -1,10 +1,10 @@
 import logging
-import ssl
 
 from bson.codec_options import CodecOptions
 from inspect import currentframe, getframeinfo
 from pymongo import DESCENDING, CursorType, MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure, ServerSelectionTimeoutError
+from ssl import CERT_REQUIRED, CERT_NONE
 from time import sleep
 
 from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError, Error
@@ -58,11 +58,11 @@ class DB:
                 "ssl_ca_certs":  self.ssl_ca_file,
                 "ssl_crlfile":   self.ssl_crl_file,
                 "ssl_certfile":  self.ssl_client_cert_file,
-                "ssl_cert_reqs": ssl.CERT_REQUIRED,
+                "ssl_cert_reqs": CERT_REQUIRED,
             })
             if self.ssl_insecure:
                 opts.update({
-                    "ssl_cert_reqs": ssl.CERT_NONE
+                    "ssl_cert_reqs": CERT_NONE
                 })
         return opts
 
