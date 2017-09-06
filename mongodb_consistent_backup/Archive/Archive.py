@@ -1,3 +1,5 @@
+from mongodb_consistent_backup.Archive.Tar import Tar  # NOQA
+from mongodb_consistent_backup.Archive.Zbackup import Zbackup  # NOQA
 from mongodb_consistent_backup.Pipeline import Stage
 
 
