@@ -64,11 +64,10 @@ class DB:
                     opts.update({
                         "ssl_cert_reqs": ssl.CERT_NONE
                     })
-            conn = MongoClient(opts)
             logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s, ssl=%s)" % (
-                self.uri, self.replset, self.read_pref, self.do_ssl()
+                self.uri, self.replset, self.read_pref, self.ssl_enabled
             ))
-            conn = MongoClient(opts)
+            conn = MongoClient(**opts)
             if self.do_connect:
                 conn['admin'].command({"ping": 1})
         except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
