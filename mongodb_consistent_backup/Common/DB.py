@@ -74,7 +74,7 @@ class DB:
     def connect(self):
         try:
             logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s, ssl=%s)" % (
-                self.uri, self.replset, self.read_pref, self.ssl_enabled
+                self.uri, self.replset, self.read_pref, self.do_ssl()
             ))
             conn = MongoClient(**self.client_opts())
             if self.do_connect:
