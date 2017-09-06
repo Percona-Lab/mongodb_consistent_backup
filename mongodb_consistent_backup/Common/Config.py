@@ -15,9 +15,9 @@ def parse_config_bool(item):
         elif isinstance(item, str):
             if item.rstrip().lower() is "true":
                 return True
+        return False
     except:
         return False
-    return False
 
 
 class PrintVersions(Action):
