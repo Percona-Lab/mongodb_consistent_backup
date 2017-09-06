@@ -54,7 +54,7 @@ class ConfigParser(BaseConfiguration):
         parser.add_argument("-u", "--user", "--username", dest="username", help="MongoDB Authentication Username (for optional auth)", type=str)
         parser.add_argument("-p", "--password", dest="password", help="MongoDB Authentication Password (for optional auth)", type=str)
         parser.add_argument("-a", "--authdb", dest="authdb", help="MongoDB Auth Database (for optional auth - default: admin)", default='admin', type=str)
-        parser.add_argument("--ssl.enabled", dest="ssl.enabled", help="Use an SSL secured database connection (default: false)", default=False, action="store_true")
+        parser.add_argument("--ssl.enabled", dest="ssl.enabled", help="Use SSL secured database connections to MongoDB hosts (default: false)", default=False, action="store_true")
         parser.add_argument("--ssl.insecure", dest="ssl.insecure", help="Do not validate the SSL certificate and hostname of the server (default: false)", default=False, action="store_true")
         parser.add_argument("--ssl.ca_file", dest="ssl.ca_file", help="Path to SSL Certificate Authority file in PEM format", default=None, type=str)
         parser.add_argument("--ssl.crl_file", dest="ssl.crl_file", help="Path to SSL Certificate Revocation List file in PEM or DER format (for optional cert revocation)", default=None, type=str)
