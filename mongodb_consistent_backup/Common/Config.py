@@ -8,6 +8,18 @@ from yconf import BaseConfiguration
 from yconf.util import NestedDict
 
 
+def parse_config_bool(item):
+    try:
+        if isinstance(item, bool):
+            return item
+        elif isinstance(item, str):
+            if item.rstrip().lower() is "true":
+                return True
+    except:
+        return False
+    return False
+
+
 class PrintVersions(Action):
     def __init__(self, option_strings, dest, nargs=0, **kwargs):
         super(PrintVersions, self).__init__(option_strings=option_strings, dest=dest, nargs=nargs, **kwargs)

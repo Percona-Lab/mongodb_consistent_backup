@@ -7,6 +7,7 @@ from pymongo.errors import ConnectionFailure, OperationFailure, ServerSelectionT
 from ssl import CERT_REQUIRED, CERT_NONE
 from time import sleep
 
+from mongodb_consistent_backup.Common import parse_config_bool
 from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError, Error
 
 
@@ -37,11 +38,10 @@ class DB:
         self.auth_if_required()
 
     def do_ssl(self):
-        if isinstance(self.ssl_enabled, bool):
-            return self.ssl_enabled
-        elif isinstance(self.ssl_enabled, str) and self.ssl_enabled.rstrip().lower() is "true":
-            return True
-        return False
+        return parse_config_bool(self.ssl_enabled)
+
+    def do_ssl_insecure(self):
+        return parse_config_bool(self.ssl_insecure)
 
     def client_opts(self):
         opts = {
@@ -67,7 +67,7 @@ class DB:
                 "ssl_certfile":  self.ssl_client_cert_file,
                 "ssl_cert_reqs": CERT_REQUIRED,
             })
-            if self.ssl_insecure:
+            if self.do_ssl_insecure():
                 opts["ssl_cert_reqs"] = CERT_NONE
         return opts
 

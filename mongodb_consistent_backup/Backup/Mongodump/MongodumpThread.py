@@ -8,7 +8,7 @@ from shutil import rmtree
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from subprocess import Popen, PIPE
 
-from mongodb_consistent_backup.Common import is_datetime
+from mongodb_consistent_backup.Common import is_datetime, parse_config_bool
 from mongodb_consistent_backup.Oplog import Oplog
 
 
@@ -58,11 +58,10 @@ class MongodumpThread(Process):
         sys.exit(self.exit_code)
 
     def do_ssl(self):
-        if isinstance(self.ssl_enabled, bool):
-            return self.ssl_enabled
-        elif isinstance(self.ssl_enabled, str) and self.ssl_enabled.rstrip().lower() is "true":
-            return True
-        return False
+        return parse_config_bool(self.ssl_enabled)
+
+    def do_ssl_insecure(self):
+        return parse_config_bool(self.ssl_insecure)
 
     def parse_mongodump_line(self, line):
         try:
@@ -153,7 +152,7 @@ class MongodumpThread(Process):
                 mongodump_flags.extend(["--sslCRLFile", self.ssl_crl_file])
             if self.client_cert_file:
                 mongodump_flags.extend(["--sslPEMKeyFile", self.ssl_cert_file])
-            if self.ssl_insecure:
+            if self.do_ssl_insecure():
                 mongodump_flags.extend(["--sslAllowInvalidCertificates", "--sslAllowInvalidHostnames"])
         mongodump_cmd.extend(mongodump_flags)
         return mongodump_cmd
