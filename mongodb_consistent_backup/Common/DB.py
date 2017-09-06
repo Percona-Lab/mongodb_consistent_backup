@@ -61,9 +61,7 @@ class DB:
                 "ssl_cert_reqs": CERT_REQUIRED,
             })
             if self.ssl_insecure:
-                opts.update({
-                    "ssl_cert_reqs": CERT_NONE
-                })
+                opts["ssl_cert_reqs"] = CERT_NONE
         return opts
 
     def connect(self):
