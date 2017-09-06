@@ -1,6 +1,7 @@
 import socket
 
 from dateutil import parser
+from select import select
 
 from mongodb_consistent_backup.Errors import OperationError
 
@@ -31,3 +32,23 @@ def validate_hostname(hostname):
         socket.getaddrinfo(hostname, None)
     except socket.error, e:
         raise OperationError("Could not resolve host '%s', error: %s" % (hostname, e))
+
+
+def wait_popen(process, stderr_callback, stdout_callback):
+    try:
+        while not process.returncode:
+            poll = select([process.stderr.fileno(), process.stdout.fileno()], [], [])
+            if len(poll) >= 1:
+                for fd in poll[0]:
+                    if process.stderr and fd == process.stderr.fileno():
+                        stderr_callback(process.stderr.readline().rstrip())
+                    if process.stdout and fd == process.stdout.fileno():
+                        stdout_callback(process.stdout.readline().rstrip())
+            if process.poll() is not None:
+                break
+        stderr, stdout = process.communicate()
+        stderr_callback(stderr.rstrip())
+        stdout_callback(stdout.rstrip())
+    except Exception, e:
+        raise e
+    return True
