@@ -153,7 +153,7 @@ Run as Docker Container
 
 To persist logs, configs and backup data 3 directories should be mapped to be inside the Docker containter.
 
-The -v/--volume flags in the examples below map container paths to paths on your Docker host. The example below assumes there is a path on the Docker host named *'/data/mongobackup'* with *'data'*, *'conf'* and *'logs'* subdirectories mapped to inside the container. Replace any instance of *'/data/mongobackup'* below to a different path if necessary.
+The 'docker run' command -v/--volume flags in the examples below map container paths to paths on your Docker host. The example below assumes there is a path on the Docker host named *'/data/mongobackup'* with *'data'*, *'conf'* and *'logs'* subdirectories mapped to inside the container. Replace any instance of *'/data/mongobackup'* below to a different path if necessary.
 
 *Note: store a copy of your mongodb-consistent-backup.conf in the 'conf' directory and pass it's container path as the --config= flag if you wish to use config files.*
 
