@@ -88,7 +88,13 @@ class Config(object):
             try:
                 self._get(key)
             except:
-                raise mongodb_consistent_backup.Errors.OperationError('Field "%s" must be set via command-line or config file!' % key)
+                raise mongodb_consistent_backup.Errors.OperationError(
+                    'Field "%s" (config file field: "%s.%s") must be set via command-line or config file!' % (
+                        key,
+                        self._config.environment,
+                        key
+                    )
+                )
 
     def parse(self):
         self._config.parse(self.cmdline)
