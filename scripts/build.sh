@@ -2,7 +2,7 @@
 
 set -x
 
-name=mongodb-consistent-backup
+name=${BIN_NAME:-mongodb-consistent-backup}
 mod_name=mongodb_consistent_backup
 rootdir=$(readlink -f $(dirname $0)/..)
 srcdir=${rootdir}/${mod_name}
@@ -15,6 +15,7 @@ venvdir=${builddir}/venv
 output_file=${bindir}/${name}
 require_file=${builddir}/requirements.txt
 version_file=${builddir}/VERSION
+git_commit=${GIT_COMMIT:-unknown}
 
 python_bin=${PYTHON_BIN}
 if [ -z "$python_bin" ]; then
@@ -73,7 +74,6 @@ if [ -d ${srcdir} ]; then
 		exit 1
 	fi
 
-	git_commit=$(git show 2>/dev/null | awk 'NR==1{print $2}')
 	if [ -z "$git_commit" ]; then
 		echo "Warning: cannot find git commit hash!"
 	else
