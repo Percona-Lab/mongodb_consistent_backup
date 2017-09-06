@@ -163,7 +163,7 @@ The 'docker run' command -v/--volume flags in the examples below map container p
 
     $ mkdir -p /data/mongobackup/{conf,data,logs}
     $ cp -f /path/to/mongodb-consistent-backup.conf /data/mongobackup/conf
-    $ docker run --rm -it \
+    $ docker run -it \
         -v "/data/mongobackup/conf:/conf:Z" \
         -v "/data/mongobackup/data:/var/lib/mongodb-consistent-backup:Z" \
         -v "/data/mongobackup/logs:/var/log/mongodb-consistent-backup:Z" \
@@ -177,7 +177,7 @@ The 'docker run' command -v/--volume flags in the examples below map container p
     $ make docker
     $ mkdir -p /data/mongobackup/{conf,data,logs}
     $ cp -f /path/to/mongodb-consistent-backup.conf /data/mongobackup/conf
-    $ docker run --rm -it \
+    $ docker run -it \
         -v "/data/mongobackup/conf:/conf:Z" \
         -v "/data/mongobackup/data:/var/lib/mongodb-consistent-backup:Z" \
         -v "/data/mongobackup/logs:/var/log/mongodb-consistent-backup:Z" \
