@@ -36,39 +36,42 @@ class DB:
         self.connect()
         self.auth_if_required()
 
+    def client_opts(self):
+        opts = {
+            "connect":                  self.do_connect,
+            "host":                     self.uri.hosts(),
+            "connectTimeoutMS":         self.conn_timeout,
+            "serverSelectionTimeoutMS": self.conn_timeout,
+            "maxPoolSize":              1,
+        }
+        if self.do_replset:
+            self.replset = self.uri.replset
+            opts.update({
+                "replicaSet":     self.replset,
+                "readPreference": self.read_pref,
+                "w":              "majority"
+            })
+        if self.ssl_enabled:
+            logging.debug("Enabling SSL security on database connection")
+            opts.update({
+                "ssl":           True,
+                "ssl_ca_certs":  self.ssl_ca_file,
+                "ssl_crlfile":   self.ssl_crl_file,
+                "ssl_certfile":  self.ssl_client_cert_file,
+                "ssl_cert_reqs": ssl.CERT_REQUIRED,
+            })
+            if self.ssl_insecure:
+                opts.update({
+                    "ssl_cert_reqs": ssl.CERT_NONE
+                })
+        return opts
+
     def connect(self):
         try:
-            opts = {
-                "connect":                  self.do_connect,
-                "host":                     self.uri.hosts(),
-                "connectTimeoutMS":         self.conn_timeout,
-                "serverSelectionTimeoutMS": self.conn_timeout,
-                "maxPoolSize":              1,
-            }
-            if self.do_replset:
-                self.replset = self.uri.replset
-                opts.update({
-                    "replicaSet":     self.replset,
-                    "readPreference": self.read_pref,
-                    "w":              "majority"
-                })
-            if self.ssl_enabled:
-                logging.debug("Enabling SSL security on database connection")
-                opts.update({
-                    "ssl":           True,
-                    "ssl_ca_certs":  self.ssl_ca_file,
-                    "ssl_crlfile":   self.ssl_crl_file,
-                    "ssl_certfile":  self.ssl_client_cert_file,
-                    "ssl_cert_reqs": ssl.CERT_REQUIRED,
-                })
-                if self.ssl_insecure:
-                    opts.update({
-                        "ssl_cert_reqs": ssl.CERT_NONE
-                    })
             logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s, ssl=%s)" % (
                 self.uri, self.replset, self.read_pref, self.ssl_enabled
             ))
-            conn = MongoClient(**opts)
+            conn = MongoClient(**self.client_opts())
             if self.do_connect:
                 conn['admin'].command({"ping": 1})
         except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
