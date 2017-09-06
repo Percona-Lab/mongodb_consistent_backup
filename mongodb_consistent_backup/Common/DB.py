@@ -57,7 +57,12 @@ class DB:
                 "w":              "majority"
             })
         if self.do_ssl():
-            logging.debug("Enabling SSL security on database connection")
+            logging.debug("Using SSL-secured mongodb connection (ca_cert=%s, client_cert=%s, crl_file=%s, insecure=%s)" % (
+                self.ssl_ca_file,
+                self.ssl_client_cert_file,
+                self.ssl_crl_file,
+                self.do_ssl_insecure()
+            ))
             opts.update({
                 "ssl":           True,
                 "ssl_ca_certs":  self.ssl_ca_file,
@@ -72,7 +77,10 @@ class DB:
     def connect(self):
         try:
             logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s, ssl=%s)" % (
-                self.uri, self.replset, self.read_pref, self.do_ssl()
+                self.uri,
+                self.replset,
+                self.read_pref,
+                self.do_ssl(),
             ))
             conn = MongoClient(**self.client_opts())
             if self.do_connect:
