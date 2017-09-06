@@ -51,7 +51,7 @@ class DB:
                 "readPreference": self.read_pref,
                 "w":              "majority"
             })
-        if self.ssl_enabled:
+        if self.ssl_enabled is True or self.ssl_enabled.rstrip().lower() is "true":
             logging.debug("Enabling SSL security on database connection")
             opts.update({
                 "ssl":           True,
