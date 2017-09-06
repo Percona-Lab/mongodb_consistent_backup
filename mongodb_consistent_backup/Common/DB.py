@@ -32,6 +32,7 @@ class DB:
         self.replset    = None
         self._conn      = None
         self._is_master = None
+
         self.connect()
         self.auth_if_required()
 
