@@ -24,8 +24,6 @@ class DB:
         self.username             = self.config.username
         self.password             = self.config.password
         self.authdb               = self.config.authdb
-        self.ssl_enabled          = self.config.ssl.enabled
-        self.ssl_insecure         = self.config.ssl.insecure
         self.ssl_ca_file          = self.config.ssl.ca_file
         self.ssl_crl_file         = self.config.ssl.crl_file
         self.ssl_client_cert_file = self.config.ssl.client_cert_file
@@ -38,10 +36,10 @@ class DB:
         self.auth_if_required()
 
     def do_ssl(self):
-        return parse_config_bool(self.ssl_enabled)
+        return parse_config_bool(self.config.ssl.enabled)
 
     def do_ssl_insecure(self):
-        return parse_config_bool(self.ssl_insecure)
+        return parse_config_bool(self.config.ssl.insecure)
 
     def client_opts(self):
         opts = {
