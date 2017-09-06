@@ -57,6 +57,13 @@ class MongodumpThread(Process):
             self._command.close()
         sys.exit(self.exit_code)
 
+    def do_ssl(self):
+        if isinstance(self.ssl_enabled, bool):
+            return self.ssl_enabled
+        elif isinstance(self.ssl_enabled, str) and self.ssl_enabled.rstrip().lower() is "true":
+            return True
+        return False
+
     def parse_mongodump_line(self, line):
         try:
             line = line.rstrip()
@@ -138,7 +145,7 @@ class MongodumpThread(Process):
             else:
                 logging.warning("Mongodump is too old to set password securely! Upgrade to mongodump >= 3.0.2 to resolve this")
                 mongodump_flags.extend(["-u", self.user, "-p", self.password])
-        if self.ssl_enabled is True or self.ssl_enabled.rstrip().lower() is "true":
+        if self.do_ssl():
             mongodump_flags.append("--ssl")
             if self.ssl_ca_file:
                 mongodump_flags.extend(["--sslCAFile", self.ssl_ca_file])

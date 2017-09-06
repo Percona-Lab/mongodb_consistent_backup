@@ -36,6 +36,13 @@ class DB:
         self.connect()
         self.auth_if_required()
 
+    def do_ssl(self):
+        if isinstance(self.ssl_enabled, bool):
+            return self.ssl_enabled
+        elif isinstance(self.ssl_enabled, str) and self.ssl_enabled.rstrip().lower() is "true":
+            return True
+        return False
+
     def client_opts(self):
         opts = {
             "connect":                  self.do_connect,
@@ -51,7 +58,7 @@ class DB:
                 "readPreference": self.read_pref,
                 "w":              "majority"
             })
-        if self.ssl_enabled is True or self.ssl_enabled.rstrip().lower() is "true":
+        if self.do_ssl():
             logging.debug("Enabling SSL security on database connection")
             opts.update({
                 "ssl":           True,
