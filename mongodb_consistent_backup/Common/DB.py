@@ -4,46 +4,88 @@ from bson.codec_options import CodecOptions
 from inspect import currentframe, getframeinfo
 from pymongo import DESCENDING, CursorType, MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure, ServerSelectionTimeoutError
+from ssl import CERT_REQUIRED, CERT_NONE
 from time import sleep
 
+from mongodb_consistent_backup.Common import parse_config_bool
 from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError, Error
 
 
 class DB:
     def __init__(self, uri, config, do_replset=False, read_pref='primaryPreferred', do_connect=True, conn_timeout=5000, retries=5):
-        self.uri          = uri
-        self.username     = config.username
-        self.password     = config.password
-        self.authdb       = config.authdb
-        self.do_replset   = do_replset
-        self.read_pref    = read_pref
-        self.do_connect   = do_connect
-        self.conn_timeout = conn_timeout
-        self.retries      = retries
+        self.uri            = uri
+        self.config         = config
+        self.do_replset     = do_replset
+        self.read_pref      = read_pref
+        self.do_connect     = do_connect
+        self.conn_timeout   = conn_timeout
+        self.retries        = retries
+
+        self.username             = self.config.username
+        self.password             = self.config.password
+        self.authdb               = self.config.authdb
+        self.ssl_ca_file          = self.config.ssl.ca_file
+        self.ssl_crl_file         = self.config.ssl.crl_file
+        self.ssl_client_cert_file = self.config.ssl.client_cert_file
+        self.read_pref_tags       = self.config.replication.read_pref_tags.replace(" ", "")
 
         self.replset    = None
         self._conn      = None
         self._is_master = None
+
         self.connect()
         self.auth_if_required()
 
+    def do_ssl(self):
+        return parse_config_bool(self.config.ssl.enabled)
+
+    def do_ssl_insecure(self):
+        return parse_config_bool(self.config.ssl.insecure)
+
+    def client_opts(self):
+        opts = {
+            "connect":                  self.do_connect,
+            "host":                     self.uri.hosts(),
+            "connectTimeoutMS":         self.conn_timeout,
+            "serverSelectionTimeoutMS": self.conn_timeout,
+            "maxPoolSize":              1,
+        }
+        if self.do_replset:
+            self.replset = self.uri.replset
+            opts.update({
+                "replicaSet":         self.replset,
+                "readPreference":     self.read_pref,
+                "readPreferenceTags": self.read_pref_tags,
+                "w":                  "majority"
+            })
+        if self.do_ssl():
+            logging.debug("Using SSL-secured mongodb connection (ca_cert=%s, client_cert=%s, crl_file=%s, insecure=%s)" % (
+                self.ssl_ca_file,
+                self.ssl_client_cert_file,
+                self.ssl_crl_file,
+                self.do_ssl_insecure()
+            ))
+            opts.update({
+                "ssl":           True,
+                "ssl_ca_certs":  self.ssl_ca_file,
+                "ssl_crlfile":   self.ssl_crl_file,
+                "ssl_certfile":  self.ssl_client_cert_file,
+                "ssl_cert_reqs": CERT_REQUIRED,
+            })
+            if self.do_ssl_insecure():
+                opts["ssl_cert_reqs"] = CERT_NONE
+        return opts
+
     def connect(self):
         try:
-            if self.do_replset:
-                self.replset = self.uri.replset
-            logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s)" % (
-                self.uri, self.replset, self.read_pref
+            logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s, readPreferenceTags=%s, ssl=%s)" % (
+                self.uri,
+                self.replset,
+                self.read_pref,
+                self.read_pref_tags,
+                self.do_ssl(),
             ))
-            conn = MongoClient(
-                connect=self.do_connect,
-                host=self.uri.hosts(),
-                replicaSet=self.replset,
-                readPreference=self.read_pref,
-                connectTimeoutMS=self.conn_timeout,
-                serverSelectionTimeoutMS=self.conn_timeout,
-                maxPoolSize=1,
-                w="majority"
-            )
+            conn = MongoClient(**self.client_opts())
             if self.do_connect:
                 conn['admin'].command({"ping": 1})
         except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:

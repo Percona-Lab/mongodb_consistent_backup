@@ -8,6 +8,18 @@ from yconf import BaseConfiguration
 from yconf.util import NestedDict
 
 
+def parse_config_bool(item):
+    try:
+        if isinstance(item, bool):
+            return item
+        elif isinstance(item, str):
+            if item.rstrip().lower() is "true":
+                return True
+        return False
+    except:
+        return False
+
+
 class PrintVersions(Action):
     def __init__(self, option_strings, dest, nargs=0, **kwargs):
         super(PrintVersions, self).__init__(option_strings=option_strings, dest=dest, nargs=nargs, **kwargs)
@@ -54,6 +66,11 @@ class ConfigParser(BaseConfiguration):
         parser.add_argument("-u", "--user", "--username", dest="username", help="MongoDB Authentication Username (for optional auth)", type=str)
         parser.add_argument("-p", "--password", dest="password", help="MongoDB Authentication Password (for optional auth)", type=str)
         parser.add_argument("-a", "--authdb", dest="authdb", help="MongoDB Auth Database (for optional auth - default: admin)", default='admin', type=str)
+        parser.add_argument("--ssl.enabled", dest="ssl.enabled", help="Use SSL secured database connections to MongoDB hosts (default: false)", default=False, action="store_true")
+        parser.add_argument("--ssl.insecure", dest="ssl.insecure", help="Do not validate the SSL certificate and hostname of the server (default: false)", default=False, action="store_true")
+        parser.add_argument("--ssl.ca_file", dest="ssl.ca_file", help="Path to SSL Certificate Authority file in PEM format (default: use OS default CA)", default=None, type=str)
+        parser.add_argument("--ssl.crl_file", dest="ssl.crl_file", help="Path to SSL Certificate Revocation List file in PEM or DER format (for optional cert revocation)", default=None, type=str)
+        parser.add_argument("--ssl.client_cert_file", dest="ssl.client_cert_file", help="Path to Client SSL Certificate file in PEM format (for optional client ssl auth)", default=None, type=str)
         parser.add_argument("-L", "--log-dir", dest="log_dir", help="Path to write log files to (default: disabled)", default='', type=str)
         parser.add_argument("--lock-file", dest="lock_file", help="Location of lock file (default: /tmp/mongodb-consistent-backup.lock)", default='/tmp/mongodb-consistent-backup.lock', type=str)
         parser.add_argument("--sharding.balancer.wait_secs", dest="sharding.balancer.wait_secs", help="Maximum time to wait for balancer to stop, in seconds (default: 300)", default=300, type=int)
