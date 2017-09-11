@@ -56,11 +56,12 @@ class DB:
         if self.do_replset:
             self.replset = self.uri.replset
             opts.update({
-                "replicaSet":         self.replset,
-                "readPreference":     self.read_pref,
-                "readPreferenceTags": self.read_pref_tags,
-                "w":                  "majority"
+                "replicaSet":     self.replset,
+                "readPreference": self.read_pref,
+                "w":              "majority"
             })
+            if self.read_pref_tags:
+                opts["readPreferenceTags"] = self.read_pref_tags
         if self.do_ssl():
             logging.debug("Using SSL-secured mongodb connection (ca_cert=%s, client_cert=%s, crl_file=%s, insecure=%s)" % (
                 self.ssl_ca_file,
