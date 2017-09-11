@@ -33,9 +33,6 @@ class DB:
         self._conn      = None
         self._is_master = None
 
-        if self.read_pref_tags:
-            self.read_pref_tags = self.read_pref_tags.replace(" ", "")
-
         self.connect()
         self.auth_if_required()
 
@@ -61,6 +58,7 @@ class DB:
                 "w":              "majority"
             })
             if self.read_pref_tags:
+                self.read_pref_tags = self.read_pref_tags.replace(" ", "")
                 opts["readPreferenceTags"] = self.read_pref_tags
         if self.do_ssl():
             logging.debug("Using SSL-secured mongodb connection (ca_cert=%s, client_cert=%s, crl_file=%s, insecure=%s)" % (
