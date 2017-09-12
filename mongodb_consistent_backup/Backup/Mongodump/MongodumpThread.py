@@ -73,7 +73,7 @@ class MongodumpThread(Process):
         rp = {"mode": mode}
         if self.read_pref_tags:
             rp["tags"] = parse_read_pref_tags(self.read_pref_tags)
-        return json.dumps(rp)
+        return json.dumps(rp, separators=(',', ':'))
 
     def parse_mongodump_line(self, line):
         try:
