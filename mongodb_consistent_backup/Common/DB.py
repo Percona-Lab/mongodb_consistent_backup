@@ -69,7 +69,10 @@ class DB:
                 "w":              "majority"
             })
             if self.do_rp_tags and self.read_pref_tags:
-                logging.debug("Using read preference tags: %s" % parse_read_pref_tags(self.read_pref_tags))
+                logging.debug("Using read preference mode: %s, tags: %s" % (
+                    self.read_pref,
+                    parse_read_pref_tags(self.read_pref_tags)
+                ))
                 self.read_pref_tags = self.read_pref_tags.replace(" ", "")
                 opts["readPreferenceTags"] = self.read_pref_tags
         if self.do_ssl():
