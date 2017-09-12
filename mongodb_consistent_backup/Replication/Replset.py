@@ -194,7 +194,7 @@ class Replset:
             elif member['state'] == self.state_secondary and member['health'] > 0:
                 log_data    = {}
                 score       = self.max_lag_secs * 10
-                score_scale = 100 / score
+                score_scale = 100.00 / float(score)
                 priority    = 0
                 if 'hidden' in member_config and member_config['hidden']:
                     score += (score * self.hidden_weight)
