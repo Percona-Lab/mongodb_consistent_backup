@@ -11,6 +11,17 @@ from mongodb_consistent_backup.Common import parse_config_bool
 from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError, Error
 
 
+def parse_read_pref(mode="secondary", tags_str=None):
+    rp = {"mode": mode}
+    if tags_str:
+        rp["tags"] = {}
+        for pair in tags_str.replace(" ", "").split(","):
+            if ":" in pair:
+                key, value = pair.split(":")
+                rp["tags"][key] = str(value)
+    return rp
+
+
 class DB:
     def __init__(self, uri, config, do_replset=False, read_pref='primaryPreferred', do_rp_tags=False,
                  do_connect=True, conn_timeout=5000, retries=5):
@@ -60,9 +71,9 @@ class DB:
                 "w":              "majority"
             })
             if self.do_rp_tags and self.read_pref_tags:
+                logging.debug("Using read preference tags: '%s'" % self.read_pref_tags)
                 self.read_pref_tags = self.read_pref_tags.replace(" ", "")
                 opts["readPreferenceTags"] = self.read_pref_tags
-		logging.debug("Using read preference tags: %s" % self.read_pref_tags)
         if self.do_ssl():
             logging.debug("Using SSL-secured mongodb connection (ca_cert=%s, client_cert=%s, crl_file=%s, insecure=%s)" % (
                 self.ssl_ca_file,

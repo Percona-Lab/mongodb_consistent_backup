@@ -9,7 +9,7 @@ from shutil import rmtree
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from subprocess import Popen, PIPE
 
-from mongodb_consistent_backup.Common import is_datetime, parse_config_bool
+from mongodb_consistent_backup.Common import is_datetime, parse_config_bool, parse_read_pref
 from mongodb_consistent_backup.Oplog import Oplog
 
 
@@ -68,16 +68,6 @@ class MongodumpThread(Process):
             if tuple(compare.split(".")) <= tuple(self.version.split(".")):
                 return True
         return False
-
-    def parse_read_pref(self, mode="secondary"):
-        rp = {"mode": mode}
-        if self.read_pref_tags:
-            rp["tags"] = {}
-            for pair in self.read_pref_tags.replace(" ", "").split(","):
-                if ":" in pair:
-                    key, value = pair.split(":")
-                    rp["tags"][key] = str(value)
-        return json.dumps(rp)
 
     def parse_mongodump_line(self, line):
         try:
@@ -159,9 +149,9 @@ class MongodumpThread(Process):
 
         # --readPreference
         if self.is_version_gte("3.2.0"):
-            read_pref = self.parse_read_pref()
+            read_pref = parse_read_pref("secondary", self.read_pref_tags)
             if read_pref:
-                mongodump_flags.append("--readPreference=%s" % read_pref)
+                mongodump_flags.append("--readPreference=%s" % json.dumps(read_pref))
         elif self.read_pref_tags:
             logging.fatal("Mongodump must be >= 3.2.0 to set read preference!")
             sys.exit(1)
