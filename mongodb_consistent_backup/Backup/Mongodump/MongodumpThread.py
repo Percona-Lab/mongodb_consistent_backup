@@ -1,3 +1,4 @@
+import json
 import os
 import logging
 import sys
@@ -31,6 +32,7 @@ class MongodumpThread(Process):
         self.ssl_ca_file          = self.config.ssl.ca_file
         self.ssl_crl_file         = self.config.ssl.crl_file
         self.ssl_client_cert_file = self.config.ssl.client_cert_file
+        self.read_pref_tags       = self.config.replication.read_pref_tags
         self.binary               = self.config.backup.mongodump.binary
 
         self.timer_name        = "%s-%s" % (self.__class__.__name__, self.uri.replset)
@@ -60,6 +62,22 @@ class MongodumpThread(Process):
 
     def do_ssl_insecure(self):
         return parse_config_bool(self.config.ssl.insecure)
+
+    def is_version_gte(self, compare):
+        if os.path.isfile(self.binary) and os.access(self.binary, os.X_OK):
+            if tuple(compare.split(".")) <= tuple(self.version.split(".")):
+                return True
+        return False
+
+    def parse_read_pref(self, mode="secondary"):
+        rp = {"mode": mode}
+        if self.read_pref_tags:
+            rp["tags"] = {}
+            for pair in self.read_pref_tags.replace(" ", "").split(","):
+                if ":" in pair:
+                    key, value = pair.split(":")
+                    rp["tags"][key] = str(value)
+        return json.dumps(rp)
 
     def parse_mongodump_line(self, line):
         try:
@@ -125,33 +143,59 @@ class MongodumpThread(Process):
         mongodump_uri   = self.uri.get()
         mongodump_cmd   = [self.binary]
         mongodump_flags = ["--host", mongodump_uri.host, "--port", str(mongodump_uri.port), "--oplog", "--out", "%s/dump" % self.backup_dir]
+
+        # --numParallelCollections
         if self.threads > 0:
-            mongodump_flags.extend(["--numParallelCollections=" + str(self.threads)])
+            mongodump_flags.append("--numParallelCollections=%s" % str(self.threads))
+
+        # --gzip
         if self.dump_gzip:
-            mongodump_flags.extend(["--gzip"])
-        if tuple("3.4.0".split(".")) <= tuple(self.version.split(".")):
-            mongodump_flags.extend(["--readPreference=secondary"])
+            mongodump_flags.append("--gzip")
+
+        # --readPreference
+        if self.is_version_gte("3.2.0"):
+            read_pref = self.parse_read_pref()
+            if read_pref:
+                mongodump_flags.append("--readPreference='%s'" % read_pref)
+        elif self.read_pref_tags:
+            logging.fatal("Mongodump must be >= 3.4.0 to set read preference!")
+            sys.exit(1)
+
+        # --username/--password/--authdb
         if self.authdb and self.authdb != "admin":
             logging.debug("Using database %s for authentication" % self.authdb)
-            mongodump_flags.extend(["--authenticationDatabase", self.authdb])
+            mongodump_flags.append("--authenticationDatabase=%s" % self.authdb)
         if self.user and self.password:
             # >= 3.0.2 supports password input via stdin to mask from ps
-            if tuple(self.version.split(".")) >= tuple("3.0.2".split(".")):
-                mongodump_flags.extend(["-u", self.user, "-p", '""'])
+            if self.is_version_gte("3.0.2"):
+                mongodump_flags.extend([
+                    "--username=%s" % self.user,
+                    "--password=\"\""
+                ])
                 self.do_stdin_passwd = True
             else:
                 logging.warning("Mongodump is too old to set password securely! Upgrade to mongodump >= 3.0.2 to resolve this")
-                mongodump_flags.extend(["-u", self.user, "-p", self.password])
+                mongodump_flags.extend([
+                    "--username=%s" % self.user,
+                    "--password=%s" % self.password
+                ])
+
+        # --ssl
         if self.do_ssl():
-            mongodump_flags.append("--ssl")
-            if self.ssl_ca_file:
-                mongodump_flags.extend(["--sslCAFile", self.ssl_ca_file])
-            if self.ssl_crl_file:
-                mongodump_flags.extend(["--sslCRLFile", self.ssl_crl_file])
-            if self.client_cert_file:
-                mongodump_flags.extend(["--sslPEMKeyFile", self.ssl_cert_file])
-            if self.do_ssl_insecure():
-                mongodump_flags.extend(["--sslAllowInvalidCertificates", "--sslAllowInvalidHostnames"])
+            if self.is_version_gte("2.6.0"):
+                mongodump_flags.append("--ssl")
+                if self.ssl_ca_file:
+                    mongodump_flags.extend(["--sslCAFile", self.ssl_ca_file])
+                if self.ssl_crl_file:
+                    mongodump_flags.extend(["--sslCRLFile", self.ssl_crl_file])
+                if self.client_cert_file:
+                    mongodump_flags.extend(["--sslPEMKeyFile", self.ssl_cert_file])
+                if self.do_ssl_insecure():
+                    mongodump_flags.extend(["--sslAllowInvalidCertificates", "--sslAllowInvalidHostnames"])
+            else:
+                logging.fatal("Mongodump must be >= 2.6.0 to enable SSL!")
+                sys.exit(1)
+
         mongodump_cmd.extend(mongodump_flags)
         return mongodump_cmd
 
