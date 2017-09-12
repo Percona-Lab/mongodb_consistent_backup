@@ -12,11 +12,13 @@ from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnection
 
 
 class DB:
-    def __init__(self, uri, config, do_replset=False, read_pref='primaryPreferred', do_connect=True, conn_timeout=5000, retries=5):
+    def __init__(self, uri, config, do_replset=False, read_pref='primaryPreferred', do_rp_tags=False,
+                 do_connect=True, conn_timeout=5000, retries=5):
         self.uri            = uri
         self.config         = config
         self.do_replset     = do_replset
         self.read_pref      = read_pref
+        self.do_rp_tags     = do_rp_tags
         self.do_connect     = do_connect
         self.conn_timeout   = conn_timeout
         self.retries        = retries
@@ -57,7 +59,7 @@ class DB:
                 "readPreference": self.read_pref,
                 "w":              "majority"
             })
-            if self.read_pref_tags:
+            if self.do_rp_tags and self.read_pref_tags:
                 self.read_pref_tags = self.read_pref_tags.replace(" ", "")
                 opts["readPreferenceTags"] = self.read_pref_tags
         if self.do_ssl():

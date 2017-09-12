@@ -88,7 +88,7 @@ class TailThread(Process):
 
     def connect(self):
         if not self.db:
-            self.db = DB(self.uri, self.config, True, 'secondary')
+            self.db = DB(self.uri, self.config, True, 'secondary', True)
         return self.db.connection()
 
     def run(self):
