@@ -142,7 +142,12 @@ class MongodumpThread(Process):
     def mongodump_cmd(self):
         mongodump_uri   = self.uri.get()
         mongodump_cmd   = [self.binary]
-        mongodump_flags = ["--host", mongodump_uri.host, "--port", str(mongodump_uri.port), "--oplog", "--out", "%s/dump" % self.backup_dir]
+        mongodump_flags = [
+            "--host=%s" % mongodump_uri.host,
+            "--port=%s" % str(mongodump_uri.port),
+            "--oplog",
+            "--out=%s/dump" % self.backup_dir
+        ]
 
         # --numParallelCollections
         if self.threads > 0:
@@ -185,15 +190,15 @@ class MongodumpThread(Process):
             if self.is_version_gte("2.6.0"):
                 mongodump_flags.append("--ssl")
                 if self.ssl_ca_file:
-                    mongodump_flags.extend(["--sslCAFile", self.ssl_ca_file])
+                    mongodump_flags.append("--sslCAFile=%s" % self.ssl_ca_file)
                 if self.ssl_crl_file:
-                    mongodump_flags.extend(["--sslCRLFile", self.ssl_crl_file])
+                    mongodump_flags.append("--sslCRLFile=%s" % self.ssl_crl_file)
                 if self.client_cert_file:
-                    mongodump_flags.extend(["--sslPEMKeyFile", self.ssl_cert_file])
+                    mongodump_flags.append("--sslPEMKeyFile=%s" % self.ssl_cert_file)
                 if self.do_ssl_insecure():
                     mongodump_flags.extend(["--sslAllowInvalidCertificates", "--sslAllowInvalidHostnames"])
             else:
-                logging.fatal("Mongodump must be >= 2.6.0 to enable SSL!")
+                logging.fatal("Mongodump must be >= 2.6.0 to enable SSL encryption!")
                 sys.exit(1)
 
         mongodump_cmd.extend(mongodump_flags)
