@@ -62,6 +62,7 @@ class DB:
             if self.do_rp_tags and self.read_pref_tags:
                 self.read_pref_tags = self.read_pref_tags.replace(" ", "")
                 opts["readPreferenceTags"] = self.read_pref_tags
+		logging.debug("Using read preference tags: %s" % self.read_pref_tags)
         if self.do_ssl():
             logging.debug("Using SSL-secured mongodb connection (ca_cert=%s, client_cert=%s, crl_file=%s, insecure=%s)" % (
                 self.ssl_ca_file,
@@ -86,7 +87,7 @@ class DB:
                 self.uri,
                 self.replset,
                 self.read_pref,
-                self.read_pref_tags,
+                self.do_rp_tags,
                 self.do_ssl(),
             ))
             conn = MongoClient(**self.client_opts())

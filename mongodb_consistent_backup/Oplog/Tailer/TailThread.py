@@ -3,7 +3,7 @@ import sys
 
 # noinspection PyPackageRequirements
 from multiprocessing import Process
-from pymongo.errors import AutoReconnect, ConnectionFailure, CursorNotFound, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout, NotMasterError
+from pymongo.errors import AutoReconnect, ConnectionFailure, CursorNotFound, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout, NotMasterError, ServerSelectionTimeoutError
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from time import sleep, time
 
@@ -144,9 +144,16 @@ class TailThread(Process):
                             continue
                     sleep(1)
                 finally:
-                    self._cursor.close()
+                    if self._cursor:
+                        logging.debug("Stopping oplog cursor on %s" % self.uri)
+                        self._cursor.close()
         except OperationError, e:
             logging.error("Tailer %s encountered error: %s" % (self.uri, e))
+            self.exit_code = 1
+            self.backup_stop.set()
+            raise OperationError(e)
+        except ServerSelectionTimeoutError, e:
+            logging.error("Tailer %s could not connect: %s" % (self.uri, e))
             self.exit_code = 1
             self.backup_stop.set()
             raise OperationError(e)
@@ -156,9 +163,6 @@ class TailThread(Process):
             self.backup_stop.set()
             raise e
         finally:
-            if self._cursor:
-                logging.debug("Stopping oplog cursor on %s" % self.uri)
-                self._cursor.close()
             oplog.flush()
             oplog.close()
             self.stopped = True
