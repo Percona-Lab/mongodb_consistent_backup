@@ -212,7 +212,7 @@ class MongodumpThread(Process):
             if os.path.isdir(self.dump_dir):
                 rmtree(self.dump_dir)
             os.makedirs(self.dump_dir)
-            logging.debug("Running mongodump cmd: %s" % mongodump_cmd)
+            logging.debug("Running mongodump cmd: %s" % " ".join(mongodump_cmd))
             self._process = Popen(mongodump_cmd, stdin=PIPE, stderr=PIPE)
             self.wait()
             self.exit_code = self._process.returncode

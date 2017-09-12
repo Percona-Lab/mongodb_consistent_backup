@@ -209,7 +209,10 @@ class Replset:
 
                 if self.read_pref_tags:
                     if not self.has_read_pref_tags(member_config):
-                        logging.info("Found SECONDARY %s without required read preference tags, skipping" % member_uri)
+                        logging.info("Found SECONDARY %s without read preference tags: %s, skipping" % (
+                            member_uri,
+                            parse_read_pref_tags(self.read_pref_tags)
+                        ))
                         continue
 
                 if 'hidden' in member_config and member_config['hidden']:
