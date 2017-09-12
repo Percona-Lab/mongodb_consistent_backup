@@ -12,9 +12,9 @@ class Replset:
     def __init__(self, config, db):
         self.config       = config
         self.db           = db
-        self.max_lag_secs = int(self.config.replication.max_lag_secs)
-        self.min_priority = int(self.config.replication.min_priority)
-        self.max_priority = int(self.config.replication.max_priority)
+        self.max_lag_secs = self.config.replication.max_lag_secs
+        self.min_priority = self.config.replication.min_priority
+        self.max_priority = self.config.replication.max_priority
         self.hidden_only  = self.config.replication.hidden_only
 
         self.state_primary   = 1
