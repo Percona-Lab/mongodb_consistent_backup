@@ -158,7 +158,7 @@ class MongodumpThread(Process):
             if read_pref:
                 mongodump_flags.append("--readPreference=%s" % read_pref)
         elif self.read_pref_tags:
-            logging.fatal("Mongodump must be >= 3.4.0 to set read preference!")
+            logging.fatal("Mongodump must be >= 3.2.0 to set read preference!")
             sys.exit(1)
 
         # --username/--password/--authdb
