@@ -11,15 +11,13 @@ from mongodb_consistent_backup.Common import parse_config_bool
 from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError, Error
 
 
-def parse_read_pref(mode="secondary", tags_str=None):
-    rp = {"mode": mode}
-    if tags_str:
-        rp["tags"] = {}
-        for pair in tags_str.replace(" ", "").split(","):
-            if ":" in pair:
-                key, value = pair.split(":")
-                rp["tags"][key] = str(value)
-    return rp
+def parse_read_pref_tags(tags_str):
+    tags = {}
+    for pair in tags_str.replace(" ", "").split(","):
+        if ":" in pair:
+            key, value = pair.split(":")
+            tags[key] = str(value)
+    return tags
 
 
 class DB:

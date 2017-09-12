@@ -1,5 +1,5 @@
 from Config import Config, parse_config_bool  # NOQA
-from DB import DB, parse_read_pref  # NOQA
+from DB import DB, parse_read_pref_tags  # NOQA
 from LocalCommand import LocalCommand  # NOQA
 from Lock import Lock  # NOQA
 from MongoUri import MongoUri  # NOQA
