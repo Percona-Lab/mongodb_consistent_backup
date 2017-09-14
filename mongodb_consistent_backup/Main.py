@@ -92,8 +92,6 @@ class MongodbConsistentBackup(object):
 
     def set_backup_dirs(self):
         self.backup_root_directory    = os.path.join(self.config.backup.location, self.config.backup.name)
-        self.backup_latest_symlink    = os.path.join(self.backup_root_directory, "latest")
-        self.backup_previous_symlink  = os.path.join(self.backup_root_directory, "previous")
         self.backup_root_subdirectory = os.path.join(self.config.backup.name, self.backup_time)
         self.backup_directory         = os.path.join(self.config.backup.location, self.backup_root_subdirectory)
 
@@ -153,25 +151,10 @@ class MongodbConsistentBackup(object):
         self.timer.stop(self.timer_name)
         self.state.set('timers', self.timer.dump())
 
-    def read_symlink_latest(self):
-        if os.path.islink(self.backup_latest_symlink):
-            return os.readlink(self.backup_latest_symlink)
-
-    def update_symlinks(self):
-        latest = self.read_symlink_latest()
-        if latest:
-            logging.info("Updating %s previous symlink to: %s" % (self.config.backup.name, latest))
-            if os.path.islink(self.backup_previous_symlink):
-                os.remove(self.backup_previous_symlink)
-            os.symlink(latest, self.backup_previous_symlink)
-        if os.path.islink(self.backup_latest_symlink):
-            os.remove(self.backup_latest_symlink)
-        logging.info("Updating %s latest symlink to: %s" % (self.config.backup.name, self.backup_directory))
-        return os.symlink(self.backup_directory, self.backup_latest_symlink)
-
     def rotate_backups(self):
-        rotater = Rotate(self.config, self.state_root)
-        rotater.run()
+        rotater = Rotate(self.config, self.state_root, self.state)
+        rotater.rotate()
+        rotater.symlink()
 
     # TODO Rename class to be more exact as this assumes something went wrong
     # noinspection PyUnusedLocal
@@ -473,7 +456,6 @@ class MongodbConsistentBackup(object):
             self.notify.close()
             self.exception("Problem running Notifier! Error: %s" % e, e)
 
-        self.update_symlinks()
         self.rotate_backups()
 
         self.logger.rotate()

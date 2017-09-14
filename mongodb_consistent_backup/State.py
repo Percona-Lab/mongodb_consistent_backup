@@ -53,6 +53,14 @@ class StateBase(object):
             if f:
                 f.close()
 
+    def get(self, key):
+        if key in self.state:
+            return self.state[key]
+
+    def set(self, name, summary):
+        self.state[name] = summary
+        self.write(True)
+
     def write(self, do_merge=False):
         f = None
         try:
@@ -120,10 +128,6 @@ class StateBackup(StateBase):
 
     def init(self):
         logging.info("Initializing backup state directory: %s" % self.base_dir)
-
-    def set(self, name, summary):
-        self.state[name] = summary
-        self.write(True)
 
 
 class StateRoot(StateBase):

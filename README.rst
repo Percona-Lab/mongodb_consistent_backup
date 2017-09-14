@@ -34,6 +34,7 @@ Features
 -  `Nagios NSCA <https://sourceforge.net/p/nagios/nsca>`__ push
    notification support (*optional*)
 -  Modular backup, archiving, upload and notification components
+-  Rotation of backups by time or count
 -  Multi-threaded, single executable
 -  Auto-scales to number of available CPUs by default
 
