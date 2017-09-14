@@ -55,7 +55,7 @@ class Rotate(object):
         if self.max_days == 0 and self.max_backups == 0:
             logging.info("Backup rotation is disabled, skipping")
             return
-        logging.info("Rotating backups (max_num=%i, max_days=%.2f)" % (self.max_backups, self.max_days))
+        logging.info("Rotating backups (max_backups=%i, max_days=%.2f)" % (self.max_backups, self.max_days))
         kept_backups = 1
         now = int(time())
         for ts in sorted(self.backups.iterkeys(), reverse=True):
