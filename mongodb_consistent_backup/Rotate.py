@@ -67,7 +67,7 @@ class Rotate(object):
                     logging.info("Backup %s exceeds max age %.2f days, removing backup" % (backup["name"], self.max_days))
                     self.remove(ts)
                     continue
-                logging.info("Keeping backup %s" % backup["name"])
+                logging.info("Keeping previous backup %s" % backup["name"])
                 kept_backups += 1
             else:
                 logging.info("Backup %s exceeds max backup count %i, removing backup" % (backup["name"], self.max_backups))
