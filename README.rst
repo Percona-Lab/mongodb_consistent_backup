@@ -34,6 +34,7 @@ Features
 -  `Nagios NSCA <https://sourceforge.net/p/nagios/nsca>`__ push
    notification support (*optional*)
 -  Modular backup, archiving, upload and notification components
+-  Support for MongoDB Authentication and SSL database connections
 -  Multi-threaded, single executable
 -  Auto-scales to number of available CPUs by default
 
@@ -220,7 +221,6 @@ Roadmap
 -  Backup retention/rotation *(eg: delete old backups)*
 -  Support more notification methods *(Prometheus, PagerDuty, etc)*
 -  Support more upload methods *(Rsync, etc)*
--  Support SSL MongoDB connections
 -  Documentation for running under Docker with persistent volumes
 -  Python unit tests
 
