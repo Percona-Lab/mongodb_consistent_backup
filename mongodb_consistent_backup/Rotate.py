@@ -17,7 +17,7 @@ class Rotate(object):
         self.max_backups = self.config.rotate.max_backups
         self.max_days    = self.config.rotate.max_days
 
-        self.latest   = state_bkp.get("name")
+        self.latest   = state_bkp.state
         self.previous = None
         self.backups  = self.backups_by_unixts()
 
@@ -41,13 +41,12 @@ class Rotate(object):
     def remove(self, ts):
         if ts in self.backups:
             backup = self.backups[ts]
-            path   = os.path.join(self.base_dir, backup["name"])
-            if os.path.isdir(path):
-                logging.debug("Removing backup path: %s" % path)
-                rmtree(path)
+            if os.path.isdir(backup["path"]):
+                logging.debug("Removing backup path: %s" % backup["path"])
+                rmtree(backup["path"])
             else:
-                raise OperationError("Backup path %s does not exist!" % path)
-            if self.previous == backup["name"]:
+                raise OperationError("Backup path %s does not exist!" % backup["path"])
+            if self.previous == backup:
                 self.previous = None
             del self.backups[ts]
 
@@ -61,7 +60,7 @@ class Rotate(object):
         for ts in sorted(self.backups.iterkeys(), reverse=True):
             backup = self.backups[ts]
             if not self.previous:
-                self.previous = backup["name"]
+                self.previous = backup
             if self.max_backups == 0 or kept_backups < self.max_backups:
                 if self.max_secs > 0 and (now - ts) > self.max_secs:
                     logging.info("Backup %s exceeds max age %.2f days, removing backup" % (backup["name"], self.max_days))
@@ -77,16 +76,14 @@ class Rotate(object):
         try:
             if os.path.islink(self.latest_symlink):
                 os.remove(self.latest_symlink)
-            latest = os.path.join(self.base_dir, self.latest)
-            logging.info("Updating %s latest symlink to current backup path: %s" % (self.backup_name, latest))
-            os.symlink(latest, self.latest_symlink)
+            logging.info("Updating %s latest symlink to current backup path: %s" % (self.backup_name, self.latest["path"]))
+            os.symlink(self.latest["path"], self.latest_symlink)
 
             if os.path.islink(self.previous_symlink):
                 os.remove(self.previous_symlink)
             if self.previous:
-                previous = os.path.join(self.base_dir, self.previous)
-                logging.info("Updating %s previous symlink to: %s" % (self.backup_name, previous))
-                os.symlink(previous, self.previous_symlink)
+                logging.info("Updating %s previous symlink to: %s" % (self.backup_name, self.previous["path"]))
+                os.symlink(self.previous["path"], self.previous_symlink)
         except Exception, e:
             logging.error("Error creating backup symlinks: %s" % e)
             raise OperationError(e)
