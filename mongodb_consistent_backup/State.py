@@ -53,9 +53,10 @@ class StateBase(object):
             if f:
                 f.close()
 
-    def get(self, key):
+    def get(self, key=None):
         if key in self.state:
             return self.state[key]
+        return self.state
 
     def set(self, name, summary):
         self.state[name] = summary
