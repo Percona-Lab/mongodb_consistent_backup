@@ -14,8 +14,8 @@ class Rotate(object):
         self.state_root  = state_root
         self.state_bkp   = state_bkp
         self.backup_name = self.config.backup.name
-        self.max_days    = self.config.rotate.max_backup_days
         self.max_backups = self.config.rotate.max_backups
+        self.max_days    = self.config.rotate.max_days
 
         self.latest   = state_bkp.get("name")
         self.previous = None
