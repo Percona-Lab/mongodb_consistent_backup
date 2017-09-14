@@ -37,10 +37,12 @@ class StateBase(object):
         merged.update(new)
         return merged
 
-    def load(self, load_one=False):
+    def load(self, load_one=False, filename=None):
         f = None
+        if not filename:
+            filename = self.state_file
         try:
-            f = open(self.state_file, "r")
+            f = open(filename, "r")
             data = decode_all(f.read())
             if load_one and len(data) > 0:
                 return data[0]
@@ -94,6 +96,7 @@ class StateBackup(StateBase):
         StateBase.__init__(self, base_dir, config)
         self.base_dir            = base_dir
         self.state['backup']     = True
+        self.state['completed']  = False
         self.state['name']       = backup_time
         self.state['method']     = config.backup.method
         self.state['path']       = base_dir
@@ -128,6 +131,8 @@ class StateRoot(StateBase):
         StateBase.__init__(self, base_dir, config)
         self.base_dir = base_dir
         self.state['root'] = True
+        self.backups = {}
+        self.completed_backups = 0
 
         self.init()
 
@@ -136,7 +141,6 @@ class StateRoot(StateBase):
         self.load_backups()
 
     def load_backups(self):
-        backups = []
         if os.path.isdir(self.base_dir):
             for subdir in os.listdir(self.base_dir):
                 try:
@@ -145,16 +149,10 @@ class StateRoot(StateBase):
                         continue
                     state_path = os.path.join(bkp_path, self.meta_name)
                     state_file = os.path.join(state_path, "meta.bson")
-                    done_path  = os.path.join(state_path, "done.bson")
-                    if os.path.isdir(state_path) and os.path.isfile(state_file) and os.path.isfile(done_path):
-                        backups.append(state_file)
+                    self.backups[subdir] = self.load(True, state_file)
+                    if self.backups[subdir]["completed"]:
+                        self.completed_backups += 1
                 except:
                     continue
-            logging.info("Found %i existing completed backups for set" % len(backups))
-        return backups
-
-
-class StateDoneStamp(StateBase):
-    def __init__(self, base_dir, config):
-        StateBase.__init__(self, base_dir, config, "done.bson")
-        self.state = {'done': True}
+            logging.info("Found %i existing completed backups for set" % self.completed_backups)
+        return self.backups

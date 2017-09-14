@@ -14,8 +14,9 @@ from Logger import Logger
 from Notify import Notify
 from Oplog import Tailer, Resolver
 from Replication import Replset, ReplsetSharded
+from Rotate import Rotate
 from Sharding import Sharding
-from State import StateRoot, StateBackup, StateBackupReplset, StateDoneStamp, StateOplog
+from State import StateRoot, StateBackup, StateBackupReplset, StateOplog
 from Upload import Upload
 
 
@@ -97,8 +98,9 @@ class MongodbConsistentBackup(object):
         self.backup_directory         = os.path.join(self.config.backup.location, self.backup_root_subdirectory)
 
     def setup_state(self):
-        StateRoot(self.backup_root_directory, self.config).write(True)
-        self.state = StateBackup(self.backup_directory, self.config, self.backup_time, self.uri, sys.argv)
+        self.state_root = StateRoot(self.backup_root_directory, self.config)
+        self.state      = StateBackup(self.backup_directory, self.config, self.backup_time, self.uri, sys.argv)
+        self.state_root.write(True)
         self.state.write()
 
     def setup_notifier(self):
@@ -166,6 +168,10 @@ class MongodbConsistentBackup(object):
             os.remove(self.backup_latest_symlink)
         logging.info("Updating %s latest symlink to: %s" % (self.config.backup.name, self.backup_directory))
         return os.symlink(self.backup_directory, self.backup_latest_symlink)
+
+    def rotate_backups(self):
+        rotater = Rotate(self.config, self.state_root)
+        rotater.run()
 
     # TODO Rename class to be more exact as this assumes something went wrong
     # noinspection PyUnusedLocal
@@ -451,6 +457,7 @@ class MongodbConsistentBackup(object):
 
         # stop timer
         self.stop_timer()
+        self.state.set("completed", True)
 
         # send notifications of backup state
         try:
@@ -466,8 +473,8 @@ class MongodbConsistentBackup(object):
             self.notify.close()
             self.exception("Problem running Notifier! Error: %s" % e, e)
 
-        StateDoneStamp(self.backup_directory, self.config).write()
         self.update_symlinks()
+        self.rotate_backups()
 
         self.logger.rotate()
         logging.info("Completed %s in %.2f sec" % (self.program_name, self.timer.duration(self.timer_name)))
