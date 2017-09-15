@@ -72,7 +72,7 @@ class Rotate(object):
             else:
                 remove_backups[name] = ts
         if len(remove_backups) > 0:
-            logging.info("Backup(s) exceeds max backup count or age, removing: %s" % remove_backups.keys())
+            logging.info("Backup(s) exceeds max backup count or age, removing: %s" % sorted(remove_backups.keys()))
             for name in remove_backups:
                 self.remove(remove_backups[name])
 
