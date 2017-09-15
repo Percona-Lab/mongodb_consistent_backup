@@ -59,18 +59,22 @@ class Rotate(object):
         logging.info("Rotating backups (max_backups=%i, max_days=%.2f)" % (self.max_backups, self.max_days))
         kept_backups = 1
         now = int(time())
+        remove_backups = {}
         for ts in sorted(self.backups.iterkeys(), reverse=True):
             backup = self.backups[ts]
+            name   = backup["name"].encode("ascii", "ignore")
             if self.max_backups == 0 or kept_backups < self.max_backups:
                 if self.max_secs > 0 and (now - ts) > self.max_secs:
-                    logging.info("Backup %s exceeds max age %.2f days, removing backup" % (backup["name"], self.max_days))
-                    self.remove(ts)
+                    remove_backups[name] = ts
                     continue
-                logging.info("Keeping previous backup %s" % backup["name"])
+                logging.debug("Keeping previous backup %s" % name)
                 kept_backups += 1
             else:
-                logging.info("Backup %s exceeds max backup count %i, removing backup" % (backup["name"], self.max_backups))
-                self.remove(ts)
+                remove_backups[name] = ts
+        if len(remove_backups) > 0:
+            logging.info("Backup(s) exceeds max backup count or age, removing: %s" % remove_backups.keys())
+            for name in remove_backups:
+                self.remove(remove_backups[name])
 
     def symlink(self):
         try:
