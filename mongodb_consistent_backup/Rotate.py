@@ -87,3 +87,7 @@ class Rotate(object):
         except Exception, e:
             logging.error("Error creating backup symlinks: %s" % e)
             raise OperationError(e)
+
+    def run(self):
+        self.rotate()
+        self.symlink()

@@ -153,8 +153,7 @@ class MongodbConsistentBackup(object):
 
     def rotate_backups(self):
         rotater = Rotate(self.config, self.state_root, self.state)
-        rotater.rotate()
-        rotater.symlink()
+        rotater.run()
 
     # TODO Rename class to be more exact as this assumes something went wrong
     # noinspection PyUnusedLocal
