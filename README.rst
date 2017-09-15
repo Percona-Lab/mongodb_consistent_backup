@@ -72,12 +72,12 @@ To build on CentOS/RedHat, you will need the following packages installed:
 
     $ yum install python python-devel python-virtualenv gcc git make libffi-devel openssl-devel
 
-To build an CentOS/RedHat RPM of the tool *(recommended)*:
+To build an CentOS/RedHat RPM of the tool in Docker *(recommended)*:
 
 ::
 
     $ cd /path/to/mongodb_consistent_backup
-    $ sudo yum install -y rpm-build
+    $ yum install -y docker rpm-build
     $ make rpm
 
 To build and install from source *(to default '/usr/local/bin/mongodb-consistent-backup')*:
