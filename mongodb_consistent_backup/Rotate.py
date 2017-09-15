@@ -17,9 +17,9 @@ class Rotate(object):
         self.max_backups = self.config.rotate.max_backups
         self.max_days    = self.config.rotate.max_days
 
-        self.latest   = state_bkp.get()
         self.previous = None
         self.backups  = self.backups_by_unixts()
+        self.latest   = state_bkp.get()
 
         self.base_dir         = os.path.join(self.config.backup.location, self.config.backup.name)
         self.latest_symlink   = os.path.join(self.base_dir, "latest")
@@ -36,6 +36,8 @@ class Rotate(object):
             backup      = self.state_root.backups[name]
             backup_time = backup["updated_at"]
             backups[backup_time] = backup
+            if not self.previous or backup_time > self.previous["updated_at"]:
+                self.previous = backup
         return backups
 
     def remove(self, ts):
@@ -59,8 +61,6 @@ class Rotate(object):
         now = int(time())
         for ts in sorted(self.backups.iterkeys(), reverse=True):
             backup = self.backups[ts]
-            if not self.previous:
-                self.previous = backup
             if self.max_backups == 0 or kept_backups < self.max_backups:
                 if self.max_secs > 0 and (now - ts) > self.max_secs:
                     logging.info("Backup %s exceeds max age %.2f days, removing backup" % (backup["name"], self.max_days))
