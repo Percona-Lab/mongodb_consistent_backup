@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 
 import boto.s3.multipart
 from copy_reg import pickle
@@ -107,9 +108,18 @@ class S3(Task):
                     part_count += 1
                 if part_count == chunk_count:
                     self._multipart.complete_upload()
-                    key = self.bucket.get_key(key_name)
                     if self.s3_acl:
-                        key.set_acl(self.s3_acl)
+                        # possible race condition when setting acls on recently completed upload
+                        retries = 3
+                        try:
+                            key = self.bucket.get_key(key_name)
+                            key.set_acl(self.s3_acl)
+                        except Exception as ex:
+                            if retries < 1:
+                                logging.warn("Unable to set ACLs on uploaded key. Exception: {}".format(str(ex)))
+                            else:
+                                retries = retries - 1
+                                time.sleep(9)
                     self._upload_done = True
 
                     if self.remove_uploaded:
