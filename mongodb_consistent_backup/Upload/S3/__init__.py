@@ -7,6 +7,7 @@ def config(parser):
     parser.add_argument("--upload.s3.secret_key", dest="upload.s3.secret_key", help="S3 Uploader AWS Secret Key (required for S3 upload)", type=str)
     parser.add_argument("--upload.s3.bucket_name", dest="upload.s3.bucket_name", help="S3 Uploader destination bucket name", type=str)
     parser.add_argument("--upload.s3.bucket_prefix", dest="upload.s3.bucket_prefix", help="S3 Uploader destination bucket path prefix", type=str)
+    parser.add_argument("--upload.s3.bucket_explicit_key", dest="upload.s3.bucket_explicit_key", help="S3 Uploader explicit storage key within the S3 bucket", type=str)
     parser.add_argument("--upload.s3.chunk_size_mb", dest="upload.s3.chunk_size_mb", help="S3 Uploader upload chunk size, in megabytes (default: 50)", default=50, type=int)
     parser.add_argument("--upload.s3.secure", dest="upload.s3.secure", help="S3 Uploader connect over SSL (default: true)", default=True, action="store_false")
     parser.add_argument("--upload.s3.acl", dest="upload.s3.acl", help="S3 Uploader ACL associated with objects (default: none)", default=None, type=str)
