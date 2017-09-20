@@ -66,17 +66,26 @@ class S3(Task):
                     continue
                 file_size = os.stat(file_path).st_size
                 chunk_count = int(ceil(file_size / float(self.chunk_size)))
+                if chunk_count == 1:
+                    chunk_count        = 2
+                    self.chunk_size    = int(ceil(file_size / float(chunk_count)))
+                    self.chunk_size_mb = self.chunk_size / 1024 / 1024
+                    logging.warning("S3 Multipart chunk size is larger than the file: %s! Defaulting to %i chunks" % (file_path, chunk_count))
+
+                # dont start more threads than chunks
+                if self.thread_count > chunk_count:
+                    self.thread_count = chunk_count
 
                 if self.bucket_prefix == "/":
                     key_name = "/%s/%s" % (self.key_prefix, file_name)
                 else:
                     key_name = "%s/%s/%s" % (self.bucket_prefix, self.key_prefix, file_name)
 
-                logging.info("Starting multipart AWS S3 upload to key: %s%s using %i threads, %imb chunks, %i retries" % (
+                logging.info("Starting multipart AWS S3 upload to key: %s%s using %i threads, %.2fmb chunks, %i retries" % (
                     self.bucket_name,
                     key_name,
                     self.thread_count,
-                    self.chunk_size_mb,
+                    float(self.chunk_size_mb),
                     self.retries
                 ))
                 self._multipart = self.bucket.initiate_multipart_upload(key_name)
