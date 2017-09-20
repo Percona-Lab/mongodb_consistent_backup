@@ -1,6 +1,5 @@
 import os
 import logging
-import sys
 
 from math import floor
 from subprocess import check_output
@@ -71,8 +70,7 @@ class Mongodump(Task):
                 return True
             return False
         else:
-            logging.fatal("Cannot find or execute the mongodump binary file %s!" % self.binary)
-            sys.exit(1)
+            raise OperationError("Cannot find or execute the mongodump binary file %s!" % self.binary)
 
     def summary(self):
         return self._summary
