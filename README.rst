@@ -31,9 +31,11 @@ Features
    archiving method (*optional*)
 -  `AWS S3 <https://aws.amazon.com/s3/>`__ Secure Multipart backup uploads (*optional*)
 -  `Google Cloud Storage <https://cloud.google.com/storage/>`__ Secure backup uploads (*optional*)
+-  Rsync (over SSH) secure backup uploads (*optional*)
 -  `Nagios NSCA <https://sourceforge.net/p/nagios/nsca>`__ push
    notification support (*optional*)
 -  Modular backup, archiving, upload and notification components
+-  Support for MongoDB Authentication and SSL database connections
 -  Multi-threaded, single executable
 -  Auto-scales to number of available CPUs by default
 
@@ -77,6 +79,7 @@ To build an CentOS/RedHat RPM of the tool *(recommended)*:
 ::
 
     $ cd /path/to/mongodb_consistent_backup
+    $ sudo yum install -y rpm-build
     $ make rpm
 
 To build and install from source *(to default '/usr/local/bin/mongodb-consistent-backup')*:
@@ -148,16 +151,26 @@ The backups are `mongorestore <https://docs.mongodb.com/manual/reference/program
     ...
     $ mongorestore --host mongod12.example.com --port 27017 -u admin -p 123456 --oplogReplay --dir /var/lib/mongodb-consistent-backup/default/20170424_0000/rs0/dump
 
-Run as Docker Container (Experimental)
+Run as Docker Container
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Note: you need to use persistent volumes to store backups and/or config files long-term when using Docker. Data in Docker containers is destroyed when the container is deleted. See `scripts/docker-persistent.sh <scripts/docker-persistent.sh>`__ and `scripts/docker-persistent.example.conf <scripts/docker-persistent.example.conf>`__ as an example/demo of how to implement persistence.
+To persist logs, configs and backup data 3 directories should be mapped to be inside the Docker containter.
+
+The 'docker run' command -v/--volume flags in the examples below map container paths to paths on your Docker host. The example below assumes there is a path on the Docker host named *'/data/mongobackup'* with *'data'*, *'conf'* and *'logs'* subdirectories mapped to inside the container. Replace any instance of *'/data/mongobackup'* below to a different path if necessary.
+
+*Note: store a copy of your mongodb-consistent-backup.conf in the 'conf' directory and pass it's container path as the --config= flag if you wish to use config files.*
 
 **Via Docker Hub**
 
 ::
 
-    $ docker run -i timvaillancourt/mongodb_consistent_backup <mongodb_consistent_backup-flags>
+    $ mkdir -p /data/mongobackup/{conf,data,logs}
+    $ cp -f /path/to/mongodb-consistent-backup.conf /data/mongobackup/conf
+    $ docker run -it \
+        -v "/data/mongobackup/conf:/conf:Z" \
+        -v "/data/mongobackup/data:/var/lib/mongodb-consistent-backup:Z" \
+        -v "/data/mongobackup/logs:/var/log/mongodb-consistent-backup:Z" \
+      timvaillancourt/mongodb_consistent_backup:latest --config=/conf/mongodb-consistent-backup.conf
 
 **Build and Run Docker Image**
 
@@ -165,8 +178,13 @@ Note: you need to use persistent volumes to store backups and/or config files lo
 
     $ cd /path/to/mongodb_consistent_backup
     $ make docker
-    $ docker run -t mongodb_consistent_backup <mongodb_consistent_backup-flags>
-
+    $ mkdir -p /data/mongobackup/{conf,data,logs}
+    $ cp -f /path/to/mongodb-consistent-backup.conf /data/mongobackup/conf
+    $ docker run -it \
+        -v "/data/mongobackup/conf:/conf:Z" \
+        -v "/data/mongobackup/data:/var/lib/mongodb-consistent-backup:Z" \
+        -v "/data/mongobackup/logs:/var/log/mongodb-consistent-backup:Z" \
+      mongodb_consistent_backup --config=/conf/mongodb-consistent-backup.conf
 
 ZBackup Archiving (Optional)
 ~~~~~~~

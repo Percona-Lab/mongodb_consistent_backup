@@ -1,10 +1,10 @@
 multiprocessing
-Fabric==1.13.2
-pymongo==3.4.0
+Fabric==1.14.0
+pymongo==3.5.1
 pynsca==1.5
 PyYAML==3.12
-boto==2.47.0
+boto==2.48.0
 filechunkio==1.8
-python-dateutil==2.2
+python-dateutil==2.6.1
 yconf==0.3.4
-google_compute_engine
+google_compute_engine==2.6.0

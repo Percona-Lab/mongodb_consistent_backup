@@ -8,7 +8,7 @@ from shutil import rmtree
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from subprocess import Popen, PIPE
 
-from mongodb_consistent_backup.Common import is_datetime
+from mongodb_consistent_backup.Common import is_datetime, parse_config_bool
 from mongodb_consistent_backup.Oplog import Oplog
 
 
@@ -25,10 +25,13 @@ class MongodumpThread(Process):
         self.threads   = threads
         self.dump_gzip = dump_gzip
 
-        self.user     = self.config.username
-        self.password = self.config.password
-        self.authdb   = self.config.authdb
-        self.binary   = self.config.backup.mongodump.binary
+        self.user                 = self.config.username
+        self.password             = self.config.password
+        self.authdb               = self.config.authdb
+        self.ssl_ca_file          = self.config.ssl.ca_file
+        self.ssl_crl_file         = self.config.ssl.crl_file
+        self.ssl_client_cert_file = self.config.ssl.client_cert_file
+        self.binary               = self.config.backup.mongodump.binary
 
         self.timer_name        = "%s-%s" % (self.__class__.__name__, self.uri.replset)
         self.exit_code         = 1
@@ -51,6 +54,18 @@ class MongodumpThread(Process):
             del frame
             self._command.close()
         sys.exit(self.exit_code)
+
+    def do_ssl(self):
+        return parse_config_bool(self.config.ssl.enabled)
+
+    def do_ssl_insecure(self):
+        return parse_config_bool(self.config.ssl.insecure)
+
+    def is_version_gte(self, compare):
+        if os.path.isfile(self.binary) and os.access(self.binary, os.X_OK):
+            if tuple(compare.split(".")) <= tuple(self.version.split(".")):
+                return True
+        return False
 
     def parse_mongodump_line(self, line):
         try:
@@ -118,21 +133,40 @@ class MongodumpThread(Process):
         mongodump_flags = ["--host", mongodump_uri.host, "--port", str(mongodump_uri.port), "--oplog", "--out", "%s/dump" % self.backup_dir]
         if self.threads > 0:
             mongodump_flags.extend(["--numParallelCollections=" + str(self.threads)])
+
         if self.dump_gzip:
             mongodump_flags.extend(["--gzip"])
-        if tuple("3.4.0".split(".")) <= tuple(self.version.split(".")):
+
+        if self.is_version_gte("3.4.0"):
             mongodump_flags.extend(["--readPreference=secondary"])
+
         if self.authdb and self.authdb != "admin":
             logging.debug("Using database %s for authentication" % self.authdb)
             mongodump_flags.extend(["--authenticationDatabase", self.authdb])
         if self.user and self.password:
             # >= 3.0.2 supports password input via stdin to mask from ps
-            if tuple(self.version.split(".")) >= tuple("3.0.2".split(".")):
+            if self.is_version_gte("3.0.2"):
                 mongodump_flags.extend(["-u", self.user, "-p", '""'])
                 self.do_stdin_passwd = True
             else:
                 logging.warning("Mongodump is too old to set password securely! Upgrade to mongodump >= 3.0.2 to resolve this")
                 mongodump_flags.extend(["-u", self.user, "-p", self.password])
+
+        if self.do_ssl():
+            if self.is_version_gte("2.6.0"):
+                mongodump_flags.append("--ssl")
+                if self.ssl_ca_file:
+                    mongodump_flags.extend(["--sslCAFile", self.ssl_ca_file])
+                if self.ssl_crl_file:
+                    mongodump_flags.extend(["--sslCRLFile", self.ssl_crl_file])
+                if self.client_cert_file:
+                    mongodump_flags.extend(["--sslPEMKeyFile", self.ssl_cert_file])
+                if self.do_ssl_insecure():
+                    mongodump_flags.extend(["--sslAllowInvalidCertificates", "--sslAllowInvalidHostnames"])
+            else:
+                logging.fatal("Mongodump must be >= 2.6.0 to enable SSL encryption!")
+                sys.exit(1)
+
         mongodump_cmd.extend(mongodump_flags)
         return mongodump_cmd
 

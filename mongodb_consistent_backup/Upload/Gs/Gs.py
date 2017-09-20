@@ -27,12 +27,13 @@ class Gs(Task):
         super(Gs, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir, **kwargs)
         self.backup_location = self.config.backup.location
         self.remove_uploaded = self.config.upload.remove_uploaded
+        self.retries         = self.config.upload.retries
         self.project_id      = self.config.upload.gs.project_id
         self.access_key      = self.config.upload.gs.access_key
         self.secret_key      = self.config.upload.gs.secret_key
         self.bucket          = self.config.upload.gs.bucket
 
-        self.threads(self.config.upload.gs.threads)
+        self.threads(self.config.upload.threads)
         self._pool = Pool(processes=self.threads())
 
     def close(self):
@@ -69,7 +70,8 @@ class Gs(Task):
                     self.project_id,
                     self.access_key,
                     self.secret_key,
-                    self.remove_uploaded
+                    self.remove_uploaded,
+                    self.retries
                 ).run)
             self._pool.close()
             self._pool.join()

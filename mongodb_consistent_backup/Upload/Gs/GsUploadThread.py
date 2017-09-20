@@ -7,7 +7,7 @@ from mongodb_consistent_backup.Errors import OperationError
 
 
 class GsUploadThread:
-    def __init__(self, backup_dir, file_path, gs_path, bucket, project_id, access_key, secret_key, remove_uploaded=False):
+    def __init__(self, backup_dir, file_path, gs_path, bucket, project_id, access_key, secret_key, remove_uploaded=False, retries=5):
         self.backup_dir      = backup_dir
         self.file_path       = file_path
         self.gs_path         = gs_path
@@ -16,6 +16,7 @@ class GsUploadThread:
         self.access_key      = access_key
         self.secret_key      = secret_key
         self.remove_uploaded = remove_uploaded
+        self.retries         = retries
 
         self.path          = "%s/%s" % (self.bucket, self.gs_path)
         self.meta_data_dir = "mongodb_consistent_backup-META"
@@ -76,10 +77,21 @@ class GsUploadThread:
                 logging.debug("Path %s does not exist, uploading" % self.path)
 
             try:
-                f   = open(self.file_path, 'r')
-                uri = self.get_uri()
-                logging.info("Uploading %s to Google Cloud Storage" % self.path)
-                uri.new_key().set_contents_from_file(f)
+                f     = open(self.file_path, 'r')
+                uri   = self.get_uri()
+                retry = 0
+                error = None
+                while retry < self.retries:
+                    try:
+                        logging.info("Uploading %s to Google Cloud Storage (attempt %i/%i)" % (self.path, retry, self.retries))
+                        uri.new_key().set_contents_from_file(f)
+                    except Exception, e:
+                        logging.error("Received error for Google Cloud Storage upload of %s: %s" % (self.path, e))
+                        error  = e
+                        retry += 1
+                        continue
+                if retry >= self.retries and error:
+                    raise error
             finally:
                 if f:
                     f.close()
