@@ -31,13 +31,13 @@ class Rsync(Task):
         self.backup_location = self.config.backup.location
         self.backup_name     = self.config.backup.name
         self.remove_uploaded = self.config.upload.remove_uploaded
+        self.retries         = self.config.upload.retries
+        self.thread_count    = self.config.upload.threads
         self.rsync_path      = self.config.upload.rsync.path
         self.rsync_user      = self.config.upload.rsync.user
         self.rsync_host      = self.config.upload.rsync.host
         self.rsync_port      = self.config.upload.rsync.port
         self.rsync_ssh_key   = self.config.upload.rsync.ssh_key
-        self.retries         = self.config.upload.rsync.retries
-        self.thread_count    = self.config.upload.rsync.threads
         self.rsync_binary    = "rsync"
 
         self.rsync_flags   = ["--archive", "--compress"]
