@@ -31,6 +31,7 @@ Features
    archiving method (*optional*)
 -  `AWS S3 <https://aws.amazon.com/s3/>`__ Secure Multipart backup uploads (*optional*)
 -  `Google Cloud Storage <https://cloud.google.com/storage/>`__ Secure backup uploads (*optional*)
+-  Rsync (over SSH) secure backup uploads (*optional*)
 -  `Nagios NSCA <https://sourceforge.net/p/nagios/nsca>`__ push
    notification support (*optional*)
 -  Modular backup, archiving, upload and notification components
@@ -78,6 +79,7 @@ To build an CentOS/RedHat RPM of the tool *(recommended)*:
 ::
 
     $ cd /path/to/mongodb_consistent_backup
+    $ sudo yum install -y rpm-build
     $ make rpm
 
 To build and install from source *(to default '/usr/local/bin/mongodb-consistent-backup')*:
@@ -221,6 +223,7 @@ Roadmap
 -  Backup retention/rotation *(eg: delete old backups)*
 -  Support more notification methods *(Prometheus, PagerDuty, etc)*
 -  Support more upload methods *(Rsync, etc)*
+-  Support SSL MongoDB connections
 -  Documentation for running under Docker with persistent volumes
 -  Python unit tests
 
