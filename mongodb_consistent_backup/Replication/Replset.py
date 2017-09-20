@@ -18,8 +18,11 @@ class Replset:
         self.max_priority   = self.config.replication.max_priority
         self.hidden_only    = self.config.replication.hidden_only
 
-        self.hidden_weight = 0.20
-        self.pri0_weight   = 0.10
+        self.state_primary   = 1
+        self.state_secondary = 2
+        self.state_arbiter   = 7
+        self.hidden_weight   = 0.20
+        self.pri0_weight     = 0.10
 
         self.replset      = True
         self.rs_config    = None
@@ -157,7 +160,7 @@ class Replset:
             rs_status = self.get_rs_status(force, quiet)
             rs_name   = rs_status['set']
             for member in rs_status['members']:
-                if member['stateStr'] == 'PRIMARY' and member['health'] > 0:
+                if member['state'] == self.state_primary and member['health'] > 0:
                     member_uri = MongoUri(member['name'], 27017, rs_name)
                     optime_ts  = member['optime']
                     if isinstance(member['optime'], dict) and 'ts' in member['optime']:
@@ -197,14 +200,14 @@ class Replset:
             if self.is_member_electable(member_config):
                 electable_count += 1
 
-            if member['state'] == 7:
+            if member['state'] == self.state_arbiter:
                 logging.info("Found ARBITER %s, skipping" % member_uri)
-            elif member['state'] > 2:
+            elif member['state'] > self.state_secondary:
                 logging.warning("Found down or unhealthy SECONDARY %s with state: %s" % (member_uri, member['stateStr']))
-            elif member['state'] == 2 and member['health'] > 0:
+            elif member['state'] == self.state_secondary and member['health'] > 0:
                 log_data    = {}
                 score       = self.max_lag_secs * 10
-                score_scale = 100 / score
+                score_scale = 100.00 / float(score)
                 priority    = 0
 
                 if self.read_pref_tags and not self.has_read_pref_tags(member_config):
@@ -244,6 +247,10 @@ class Replset:
                     log_msg = "Found SECONDARY %s" % member_uri
                 else:
                     log_msg = "Found SECONDARY %s with too high replication lag! Skipping" % member_uri
+
+                if self.secondary['score'] == 0:
+                    logging.error("Chosen SECONDARY %s has a score of zero/0! This is unexpected, exiting" % member_uri)
+                    raise OperationError("Chosen SECONDARY %s has a score of zero/0!" % member_uri)
 
                 if 'configsvr' in rs_status and rs_status['configsvr']:
                     log_data['configsvr'] = True
