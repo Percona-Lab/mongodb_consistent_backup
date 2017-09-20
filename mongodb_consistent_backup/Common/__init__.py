@@ -1,4 +1,4 @@
-from Config import Config  # NOQA
+from Config import Config, parse_config_bool  # NOQA
 from DB import DB  # NOQA
 from LocalCommand import LocalCommand  # NOQA
 from Lock import Lock  # NOQA
