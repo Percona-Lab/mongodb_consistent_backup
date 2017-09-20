@@ -39,7 +39,9 @@ class Task(object):
         return parse_method(self.compression_method)
 
     def is_compressed(self):
-        if self.compression() != 'none':
+        if self.compression() == 'auto' and hasattr(self, "can_compress"):
+            return self.can_compress()
+        elif self.compression() != 'none':
             return True
         return False
 
