@@ -40,6 +40,13 @@ class DB:
         self.ssl_client_cert_file = self.config.ssl.client_cert_file
         self.read_pref_tags       = self.config.replication.read_pref_tags
 
+        self.username             = self.config.username
+        self.password             = self.config.password
+        self.authdb               = self.config.authdb
+        self.ssl_ca_file          = self.config.ssl.ca_file
+        self.ssl_crl_file         = self.config.ssl.crl_file
+        self.ssl_client_cert_file = self.config.ssl.client_cert_file
+
         self.replset    = None
         self._conn      = None
         self._is_master = None
