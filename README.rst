@@ -37,6 +37,7 @@ Features
 -  Modular backup, archiving, upload and notification components
 -  Rotation of backups by time or count
 -  Support for MongoDB Authentication and SSL database connections
+-  Rotation of backups by time or count
 -  Multi-threaded, single executable
 -  Auto-scales to number of available CPUs by default
 
@@ -155,7 +156,7 @@ The backups are `mongorestore <https://docs.mongodb.com/manual/reference/program
 Run as Docker Container
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-To persist logs, configs and backup data 3 directories should be mapped to be inside the Docker containter.
+To persist logs, configs and backup data 3 directories should be mapped to be inside the Docker container.
 
 The 'docker run' command -v/--volume flags in the examples below map container paths to paths on your Docker host. The example below assumes there is a path on the Docker host named *'/data/mongobackup'* with *'data'*, *'conf'* and *'logs'* subdirectories mapped to inside the container. Replace any instance of *'/data/mongobackup'* below to a different path if necessary.
 
@@ -236,11 +237,7 @@ Roadmap
 -  More testing: this project has many flows that probably need more in-depth testing. Please submit any bugs and/or bugfixes!
 -  "Distributed Mode" for running backup on remote hosts *(vs. only on one host)*
 -  Upload compatibility for ZBackup archive phase *(upload unsupported today)*
--  Backup retention/rotation *(eg: delete old backups)*
 -  Support more notification methods *(Prometheus, PagerDuty, etc)*
--  Support more upload methods *(Rsync, etc)*
--  Support SSL MongoDB connections
--  Documentation for running under Docker with persistent volumes
 -  Python unit tests
 
 Submitting Code
