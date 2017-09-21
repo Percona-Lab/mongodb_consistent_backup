@@ -73,6 +73,8 @@ class ConfigParser(BaseConfiguration):
         parser.add_argument("--ssl.client_cert_file", dest="ssl.client_cert_file", help="Path to Client SSL Certificate file in PEM format (for optional client ssl auth)", default=None, type=str)
         parser.add_argument("-L", "--log-dir", dest="log_dir", help="Path to write log files to (default: disabled)", default='', type=str)
         parser.add_argument("--lock-file", dest="lock_file", help="Location of lock file (default: /tmp/mongodb-consistent-backup.lock)", default='/tmp/mongodb-consistent-backup.lock', type=str)
+        parser.add_argument("--rotate.max_backups", dest="rotate.max_backups", help="Maximum number of backups to keep in backup directory (default: unlimited)", default=0, type=int)
+        parser.add_argument("--rotate.max_days", dest="rotate.max_days", help="Maximum age in days for backups in backup directory (default: unlimited)", default=0, type=float)
         parser.add_argument("--sharding.balancer.wait_secs", dest="sharding.balancer.wait_secs", help="Maximum time to wait for balancer to stop, in seconds (default: 300)", default=300, type=int)
         parser.add_argument("--sharding.balancer.ping_secs", dest="sharding.balancer.ping_secs", help="Interval to check balancer state, in seconds (default: 3)", default=3, type=int)
         return self.makeParserLoadSubmodules(parser)
