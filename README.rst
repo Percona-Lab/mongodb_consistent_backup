@@ -35,7 +35,6 @@ Features
 -  `Nagios NSCA <https://sourceforge.net/p/nagios/nsca>`__ push
    notification support (*optional*)
 -  Modular backup, archiving, upload and notification components
--  Rotation of backups by time or count
 -  Support for MongoDB Authentication and SSL database connections
 -  Support for Read Preference Tags for selecting specific nodes for backup
 -  Rotation of backups by time or count
