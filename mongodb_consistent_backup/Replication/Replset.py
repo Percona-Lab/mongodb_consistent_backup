@@ -4,18 +4,19 @@ import pymongo.errors
 from math import ceil
 from time import mktime
 
-from mongodb_consistent_backup.Common import DB, MongoUri
+from mongodb_consistent_backup.Common import DB, MongoUri, parse_read_pref_tags
 from mongodb_consistent_backup.Errors import Error, OperationError
 
 
 class Replset:
     def __init__(self, config, db):
-        self.config       = config
-        self.db           = db
-        self.max_lag_secs = self.config.replication.max_lag_secs
-        self.min_priority = self.config.replication.min_priority
-        self.max_priority = self.config.replication.max_priority
-        self.hidden_only  = self.config.replication.hidden_only
+        self.config         = config
+        self.db             = db
+        self.read_pref_tags = self.config.replication.read_pref_tags
+        self.max_lag_secs   = self.config.replication.max_lag_secs
+        self.min_priority   = self.config.replication.min_priority
+        self.max_priority   = self.config.replication.max_priority
+        self.hidden_only    = self.config.replication.hidden_only
 
         self.state_primary   = 1
         self.state_secondary = 2
@@ -142,6 +143,18 @@ class Replset:
                 return True
         return False
 
+    def has_read_pref_tags(self, member_config):
+        if "tags" not in member_config:
+            raise OperationError("Member config has no 'tags' field!")
+        tags = parse_read_pref_tags(self.read_pref_tags)
+        member_tags = member_config["tags"]
+        for key in tags:
+            if key not in member_tags:
+                return False
+            if member_tags[key] != tags[key]:
+                return False
+        return True
+
     def find_primary(self, force=False, quiet=False):
         if force or not self.primary:
             rs_status = self.get_rs_status(force, quiet)
@@ -173,8 +186,8 @@ class Replset:
         self.get_rs_config(force, quiet)
         self.get_mongo_config(force, quiet)
 
-        quorum    = self.get_rs_quorum()
-        rs_name   = rs_status['set']
+        quorum  = self.get_rs_quorum()
+        rs_name = rs_status['set']
 
         if self.secondary and not force:
             return self.secondary
@@ -196,6 +209,14 @@ class Replset:
                 score       = self.max_lag_secs * 10
                 score_scale = 100.00 / float(score)
                 priority    = 0
+
+                if self.read_pref_tags and not self.has_read_pref_tags(member_config):
+                    logging.info("Found SECONDARY %s without read preference tags: %s, skipping" % (
+                        member_uri,
+                        parse_read_pref_tags(self.read_pref_tags)
+                    ))
+                    continue
+
                 if 'hidden' in member_config and member_config['hidden']:
                     score += (score * self.hidden_weight)
                     log_data['hidden'] = True
