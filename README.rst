@@ -36,6 +36,7 @@ Features
    notification support (*optional*)
 -  Modular backup, archiving, upload and notification components
 -  Support for MongoDB Authentication and SSL database connections
+-  Support for Read Preference Tags for selecting specific nodes for backup
 -  Rotation of backups by time or count
 -  Multi-threaded, single executable
 -  Auto-scales to number of available CPUs by default
@@ -80,7 +81,7 @@ To build an CentOS/RedHat RPM of the tool *(recommended)*:
 ::
 
     $ cd /path/to/mongodb_consistent_backup
-    $ sudo yum install -y rpm-build
+    $ yum install -y rpm-build
     $ make rpm
 
 To build and install from source *(to default '/usr/local/bin/mongodb-consistent-backup')*:
@@ -235,7 +236,9 @@ Roadmap
 
 -  More testing: this project has many flows that probably need more in-depth testing. Please submit any bugs and/or bugfixes!
 -  "Distributed Mode" for running backup on remote hosts *(vs. only on one host)*
+-  Binary backup methods *(createBackup/Hot Backup, LVM and EBS snapshots, etc)*
 -  Upload compatibility for ZBackup archive phase *(upload unsupported today)*
+-  Support Upload with Backup Rotation *(rotated backups are not deleted on upload destination)*
 -  Support more notification methods *(Prometheus, PagerDuty, etc)*
 -  Python unit tests
 
