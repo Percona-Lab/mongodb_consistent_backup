@@ -11,15 +11,34 @@ from mongodb_consistent_backup.Common import parse_config_bool
 from mongodb_consistent_backup.Errors import DBAuthenticationError, DBConnectionError, DBOperationError, Error
 
 
+def parse_read_pref_tags(tags_str):
+    tags = {}
+    for pair in tags_str.replace(" ", "").split(","):
+        if ":" in pair:
+            key, value = pair.split(":")
+            tags[key] = str(value)
+    return tags
+
+
 class DB:
-    def __init__(self, uri, config, do_replset=False, read_pref='primaryPreferred', do_connect=True, conn_timeout=5000, retries=5):
-        self.uri          = uri
-        self.config       = config
-        self.do_replset   = do_replset
-        self.read_pref    = read_pref
-        self.do_connect   = do_connect
-        self.conn_timeout = conn_timeout
-        self.retries      = retries
+    def __init__(self, uri, config, do_replset=False, read_pref='primaryPreferred', do_rp_tags=False,
+                 do_connect=True, conn_timeout=5000, retries=5):
+        self.uri            = uri
+        self.config         = config
+        self.do_replset     = do_replset
+        self.read_pref      = read_pref
+        self.do_rp_tags     = do_rp_tags
+        self.do_connect     = do_connect
+        self.conn_timeout   = conn_timeout
+        self.retries        = retries
+
+        self.username             = self.config.username
+        self.password             = self.config.password
+        self.authdb               = self.config.authdb
+        self.ssl_ca_file          = self.config.ssl.ca_file
+        self.ssl_crl_file         = self.config.ssl.crl_file
+        self.ssl_client_cert_file = self.config.ssl.client_cert_file
+        self.read_pref_tags       = self.config.replication.read_pref_tags
 
         self.username             = self.config.username
         self.password             = self.config.password
@@ -56,6 +75,14 @@ class DB:
                 "readPreference": self.read_pref,
                 "w":              "majority"
             })
+            if self.do_rp_tags and self.read_pref_tags:
+                logging.debug("Using read preference mode: %s, tags: %s" % (
+                    self.read_pref,
+                    parse_read_pref_tags(self.read_pref_tags)
+                ))
+                self.read_pref_tags = self.read_pref_tags.replace(" ", "")
+                opts["readPreferenceTags"] = self.read_pref_tags
+
         if self.do_ssl():
             logging.debug("Using SSL-secured mongodb connection (ca_cert=%s, client_cert=%s, crl_file=%s, insecure=%s)" % (
                 self.ssl_ca_file,
@@ -76,10 +103,11 @@ class DB:
 
     def connect(self):
         try:
-            logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s, ssl=%s)" % (
+            logging.debug("Getting MongoDB connection to %s (replicaSet=%s, readPreference=%s, readPreferenceTags=%s, ssl=%s)" % (
                 self.uri,
                 self.replset,
                 self.read_pref,
+                self.do_rp_tags,
                 self.do_ssl(),
             ))
             conn = MongoClient(**self.client_opts())
