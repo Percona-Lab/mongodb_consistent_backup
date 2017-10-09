@@ -32,9 +32,10 @@ flake8:
 
 rpm: bin/$(BIN_NAME)
 	mkdir -p $(MAKE_DIR)/build/rpm/SOURCES
-	cp -f $(MAKE_DIR)/{LICENSE,README.rst} build/rpm/SOURCES
-	cp -f $(MAKE_DIR)/bin/$(BIN_NAME) build/rpm/SOURCES/mongodb-consistent-backup
-	cp -f $(MAKE_DIR)/conf/mongodb-consistent-backup.example.conf build/rpm/SOURCES/mongodb-consistent-backup.conf
+	ln -f $(MAKE_DIR)/LICENSE build/rpm/SOURCES
+	ln -f $(MAKE_DIR)/README.rst build/rpm/SOURCES
+	ln -f $(MAKE_DIR)/bin/$(BIN_NAME) build/rpm/SOURCES/mongodb-consistent-backup
+	ln -f $(MAKE_DIR)/conf/mongodb-consistent-backup.example.conf build/rpm/SOURCES/mongodb-consistent-backup.conf
 	rpmbuild -D "_topdir $(MAKE_DIR)/build/rpm" -D "version $(VERSION)" -bb $(MAKE_DIR)/scripts/$(NAME).spec
 
 uninstall:
@@ -111,7 +112,6 @@ debian9: bin/mongodb-consistent-backup.debian9.$(ARCH)
 docker: build/rpm/RPMS/$(ARCH)/$(NAME)-$(VERSION)-1.el7.centos.$(ARCH).rpm
 	docker build --no-cache --tag $(DOCKER_TAG) .
 	docker tag $(DOCKER_TAG) $(NAME):latest
-	docker run --rm -it $(DOCKER_TAG) --version
 
 release: centos7 debian8 debian9 docker
 
