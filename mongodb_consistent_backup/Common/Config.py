@@ -16,7 +16,7 @@ def parse_config_bool(item):
             if item.rstrip().lower() is "true":
                 return True
         return False
-    except:
+    except Exception:
         return False
 
 
@@ -121,7 +121,7 @@ class Config(object):
         for key in required:
             try:
                 self._get(key)
-            except:
+            except Exception:
                 raise mongodb_consistent_backup.Errors.OperationError(
                     'Field "%s" (config file field: "%s.%s") must be set via command-line or config file!' % (
                         key,
@@ -160,5 +160,5 @@ class Config(object):
         try:
             return self._config.get(key)
         # TODO-timv What can we do to make this better?
-        except:
+        except Exception:
             return None
