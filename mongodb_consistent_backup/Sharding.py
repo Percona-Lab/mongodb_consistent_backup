@@ -117,7 +117,8 @@ class Sharding:
     def set_balancer(self, value):
         try:
             if self.is_gte_34():
-                # 3.4+ configsvrs dont have balancerStart/Stop, even though they're the balancer! Use self.get_mongos() to get a mongos connection for now
+                # 3.4+ configsvrs dont have balancerStart/Stop, even though they're the balancer!
+                # Use self.get_mongos() to get a mongos connection for now
                 if value is True:
                     self.get_mongos().admin_command("balancerStart")
                 else:

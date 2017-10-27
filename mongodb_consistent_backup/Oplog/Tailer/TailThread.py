@@ -3,7 +3,8 @@ import sys
 
 # noinspection PyPackageRequirements
 from multiprocessing import Process
-from pymongo.errors import AutoReconnect, ConnectionFailure, CursorNotFound, ExceededMaxWaiters, ExecutionTimeout, NetworkTimeout, NotMasterError, ServerSelectionTimeoutError
+from pymongo.errors import AutoReconnect, ConnectionFailure, CursorNotFound, ExceededMaxWaiters
+from pymongo.errors import ExecutionTimeout, NetworkTimeout, NotMasterError, ServerSelectionTimeoutError
 from signal import signal, SIGINT, SIGTERM, SIG_IGN
 from time import sleep, time
 
