@@ -85,7 +85,7 @@ class MongodumpThread(Process):
             elif is_datetime(line):
                 return None
             return "%s:\t%s" % (self.uri, line)
-        except:
+        except Exception:
             return None
 
     def is_password_prompt(self, line):

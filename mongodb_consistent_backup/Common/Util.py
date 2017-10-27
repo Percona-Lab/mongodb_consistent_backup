@@ -17,7 +17,7 @@ def is_datetime(string):
     try:
         parser.parse(string)
         return True
-    except:
+    except Exception:
         return False
 
 
