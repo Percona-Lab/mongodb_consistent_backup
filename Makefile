@@ -27,8 +27,8 @@ install: bin/$(BIN_NAME)
 	install -m 0644 README.rst $(SHAREDIR)/$(NAME)/README.rst
 
 flake8:
-	# Ignore long-lines and space-aligned = and : for now
-	flake8 --ignore E221,E241,E501 $(PWD)/$(NAME)
+	# Ignore space-aligned = and : for now, use 160 for max-line-length
+	flake8 --count --max-line-length=160 --show-source --ignore E221,E241 $(PWD)/$(NAME)
 
 rpm: bin/$(BIN_NAME)
 	mkdir -p $(MAKE_DIR)/build/rpm/SOURCES

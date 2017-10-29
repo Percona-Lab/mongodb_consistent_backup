@@ -89,7 +89,11 @@ class Stage(object):
                 self.running = False
                 self.timers.stop(self.stage)
                 if self._task.completed:
-                    logging.info("Completed running stage %s with task %s in %.2f seconds" % (self.stage, self.task.capitalize(), self.timers.duration(self.stage)))
+                    logging.info("Completed running stage %s with task %s in %.2f seconds" % (
+                        self.stage,
+                        self.task.capitalize(),
+                        self.timers.duration(self.stage))
+                    )
                     self.completed = True
                 else:
                     logging.error("Stage %s did not complete!" % self.stage)
