@@ -107,9 +107,11 @@ class S3(Task):
                     part_count += 1
                 if part_count == chunk_count:
                     self._multipart.complete_upload()
-                    key = self.bucket.get_key(key_name)
                     if self.s3_acl:
-                        key.set_acl(self.s3_acl)
+                        try:
+                            self.bucket.set_acl(self.s3_acl, key_name)
+                        except Exception:
+                            logging.exception("Unable to set ACLs on uploaded key: {}.".format(key_name))
                     self._upload_done = True
 
                     if self.remove_uploaded:
