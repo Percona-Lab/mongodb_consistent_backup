@@ -85,7 +85,7 @@ class MongodumpThread(Process):
             elif is_datetime(line):
                 return None
             return "%s:\t%s" % (self.uri, line)
-        except:
+        except Exception:
             return None
 
     def is_password_prompt(self, line):
@@ -189,8 +189,8 @@ class MongodumpThread(Process):
                     mongodump_flags.append("--sslCAFile=%s" % self.ssl_ca_file)
                 if self.ssl_crl_file:
                     mongodump_flags.append("--sslCRLFile=%s" % self.ssl_crl_file)
-                if self.client_cert_file:
-                    mongodump_flags.append("--sslPEMKeyFile=%s" % self.ssl_cert_file)
+                if self.ssl_client_cert_file:
+                    mongodump_flags.append("--sslPEMKeyFile=%s" % self.ssl_client_cert_file)
                 if self.do_ssl_insecure():
                     mongodump_flags.extend(["--sslAllowInvalidCertificates", "--sslAllowInvalidHostnames"])
             else:

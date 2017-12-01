@@ -26,7 +26,7 @@ class StateBase(object):
             # try normal mkdir first, fallback to recursive mkdir if there is an exception
             try:
                 os.mkdir(self.state_dir)
-            except:
+            except Exception:
                 try:
                     os.makedirs(self.state_dir)
                 except Exception, e:
@@ -157,7 +157,7 @@ class StateRoot(StateBase):
                     self.backups[subdir] = self.load(True, state_file)
                     if self.backups[subdir]["completed"]:
                         self.completed_backups += 1
-                except:
+                except Exception:
                     continue
             logging.info("Found %i existing completed backups for set" % self.completed_backups)
         return self.backups

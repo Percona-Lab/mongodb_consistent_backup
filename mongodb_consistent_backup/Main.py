@@ -169,7 +169,7 @@ class MongodbConsistentBackup(object):
                 submodule = getattr(self, submodule_name)
                 if submodule:
                     submodule.close()
-            except:
+            except Exception:
                 continue
 
         if self.manager:

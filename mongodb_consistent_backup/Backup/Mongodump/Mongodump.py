@@ -187,7 +187,7 @@ class Mongodump(Task):
                     thread.terminate()
             try:
                 self.timer.stop(self.timer_name)
-            except:
+            except Exception:
                 pass
             logging.info("Stopped all mongodump threads")
             self.stopped = True

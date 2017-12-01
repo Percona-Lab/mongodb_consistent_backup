@@ -100,7 +100,12 @@ class Oplog:
 
     def autoflush(self):
         if self._oplog and self.do_flush():
-            logging.debug("Fsyncing %s (secs_since=%.2f, changes=%i, ts=%s)" % (self.oplog_file, self.secs_since_flush(), self._writes_unflushed, self.last_ts()))
+            logging.debug("Fsyncing %s (secs_since=%.2f, changes=%i, ts=%s)" % (
+                self.oplog_file,
+                self.secs_since_flush(),
+                self._writes_unflushed,
+                self.last_ts())
+            )
             return self.fsync()
 
     def close(self):

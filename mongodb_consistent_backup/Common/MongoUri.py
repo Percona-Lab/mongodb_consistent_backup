@@ -71,7 +71,7 @@ class MongoUri:
                 if incr_idx:
                     self.addr_idx += 1
                 return addr
-        except:
+        except Exception:
             pass
         return None
 
