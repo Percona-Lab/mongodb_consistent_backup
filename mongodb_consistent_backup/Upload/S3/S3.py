@@ -110,7 +110,7 @@ class S3(Task):
                     if self.s3_acl:
                         try:
                             self.bucket.set_acl(self.s3_acl, key_name)
-                        except Exception as ex:
+                        except Exception:
                             logging.exception("Unable to set ACLs on uploaded key: {}.".format(key_name))
                     self._upload_done = True
 
