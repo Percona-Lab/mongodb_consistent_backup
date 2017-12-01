@@ -111,9 +111,7 @@ class S3(Task):
                         try:
                             self.bucket.set_acl(self.s3_acl, key_name)
                         except Exception as ex:
-                            logging.warn("Unable to set ACLs on uploaded key. Exception: {}".format(str(ex)))
-                            import traceback
-                            logging.warn(traceback.print_exc())
+                            logging.exception("Unable to set ACLs on uploaded key: {}.".format(key_name))
                     self._upload_done = True
 
                     if self.remove_uploaded:
