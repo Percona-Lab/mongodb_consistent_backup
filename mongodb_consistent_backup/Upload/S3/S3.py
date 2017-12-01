@@ -28,19 +28,20 @@ pickle(MethodType, _reduce_method)
 class S3(Task):
     def __init__(self, manager, config, timer, base_dir, backup_dir, **kwargs):
         super(S3, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir, **kwargs)
-        self.remove_uploaded = self.config.upload.remove_uploaded
-        self.retries         = self.config.upload.retries
-        self.thread_count    = self.config.upload.threads
-        self.region          = self.config.upload.s3.region
-        self.bucket_name     = self.config.upload.s3.bucket_name
-        self.bucket_prefix   = self.config.upload.s3.bucket_prefix
-        self.access_key      = self.config.upload.s3.access_key
-        self.secret_key      = self.config.upload.s3.secret_key
-        self.chunk_size_mb   = self.config.upload.s3.chunk_size_mb
-        self.chunk_size      = self.chunk_size_mb * 1024 * 1024
-        self.secure          = self.config.upload.s3.secure
-        self.s3_acl          = self.config.upload.s3.acl
-        self.key_prefix      = base_dir
+        self.remove_uploaded     = self.config.upload.remove_uploaded
+        self.retries             = self.config.upload.retries
+        self.thread_count        = self.config.upload.threads
+        self.region              = self.config.upload.s3.region
+        self.bucket_name         = self.config.upload.s3.bucket_name
+        self.bucket_prefix       = self.config.upload.s3.bucket_prefix
+        self.bucket_explicit_key = self.config.upload.s3.bucket_explicit_key
+        self.access_key          = self.config.upload.s3.access_key
+        self.secret_key          = self.config.upload.s3.secret_key
+        self.chunk_size_mb       = self.config.upload.s3.chunk_size_mb
+        self.chunk_size          = self.chunk_size_mb * 1024 * 1024
+        self.secure              = self.config.upload.s3.secure
+        self.s3_acl              = self.config.upload.s3.acl
+        self.key_prefix          = base_dir
 
         self._pool        = None
         self._multipart   = None
@@ -67,10 +68,13 @@ class S3(Task):
                 file_size = os.stat(file_path).st_size
                 chunk_count = int(ceil(file_size / float(self.chunk_size)))
 
-                if self.bucket_prefix == "/":
-                    key_name = "/%s/%s" % (self.key_prefix, file_name)
+                if self.bucket_explicit_key:
+                    key_name = self.bucket_explicit_key
                 else:
-                    key_name = "%s/%s/%s" % (self.bucket_prefix, self.key_prefix, file_name)
+                    if self.bucket_prefix == "/":
+                        key_name = "/%s/%s" % (self.key_prefix, file_name)
+                    else:
+                        key_name = "%s/%s/%s" % (self.bucket_prefix, self.key_prefix, file_name)
 
                 logging.info("Starting multipart AWS S3 upload to key: %s%s using %i threads, %imb chunks, %i retries" % (
                     self.bucket_name,
