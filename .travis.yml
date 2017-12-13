@@ -10,6 +10,18 @@ cache:
 services:
   - docker
 install: 'pip install virtualenv'
+stages:
+  - flake8
+  - build
+  - test-cluster-3.4
+  - test-cluster-3.2
+  - test-replset-3.4
+  - test-replset-3.2
+  - test-replset-3.0
+  - test-archive-none
+  - test-archive-zbackup
+  - deploy
+    if: branch = master
 jobs:
   include:
     - stage: flake8
@@ -50,14 +62,15 @@ jobs:
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --archive.method=zbackup
-before_deploy:
-  - docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_PASSWORD"
-  - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
-  - VERSION=$(cat VERSION)
-deploy:
-  - provider: script
-    script:
-      - docker push "${DOCKERHUB_PATH}:latest"
-      - docker push "${DOCKERHUB_PATH}:${VERSION}"
-    on:
-      tags: true
+    - stage: deploy
+      script: skip
+      deploy:
+        provider: script
+        script:
+          - docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_PASSWORD"
+          - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+          - VERSION=$(cat VERSION)
+          - docker push "${DOCKERHUB_PATH}:latest"
+          - docker push "${DOCKERHUB_PATH}:${VERSION}"
+        on:
+          tags: true
