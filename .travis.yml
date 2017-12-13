@@ -20,7 +20,9 @@ stages:
 #  - test-replset-3.0
 #  - test-archive-none
 #  - test-archive-zbackup
-  - name: deploy
+  - name: deploy-dockerhub
+    if: branch =~ ^\d+\.\d+\.\d+$ AND tag =~ ^\d+\.\d+\.\d+$
+  - name: deploy-github
     if: branch =~ ^\d+\.\d+\.\d+$ AND tag =~ ^\d+\.\d+\.\d+$
 jobs:
   include:
@@ -62,23 +64,26 @@ jobs:
 #      script:
 #        - docker load -i $TRAVIS_BUILD_DIR/build/docker/mongodb_consistent_backup.tar
 #        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --archive.method=zbackup
-    - stage: deploy
+    - stage: deploy-dockerhub
       script: true
       deploy:
-        - provider: script
-          skip_cleanup: true
-          script:
-            - docker load -i $TRAVIS_BUILD_DIR/build/docker/mongodb_consistent_backup.tar
-            - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
-            - docker push $DOCKERHUB_PATH:latest
-            - docker push $DOCKERHUB_PATH:$TRAVIS_TAG
-          on:
-            tags: true
-        - provider: releases
-          skip_cleanup: true
-          api_key: $GITHUB_OAUTH_TOKEN
-          file:
-            - $TRAVIS_BUILD_DIR/build/rpm/RPMS/x86_64/mongodb_consistent_backup-$TRAVIS_TAG-1.el7.centos.x86_64.rpm"
-            - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup.el7.centos.x86_64
-          on:
-            tags: true
+        provider: script
+        skip_cleanup: true
+        script:
+          - docker load -i $TRAVIS_BUILD_DIR/build/docker/mongodb_consistent_backup.tar
+          - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
+          - docker push $DOCKERHUB_PATH:latest
+          - docker push $DOCKERHUB_PATH:$TRAVIS_TAG
+        on:
+          tags: true
+    - stage: deploy-github
+      script: true
+      deploy:
+        provider: releases
+        skip_cleanup: true
+        api_key: $GITHUB_OAUTH_TOKEN
+        file:
+          - $TRAVIS_BUILD_DIR/build/rpm/RPMS/x86_64/mongodb_consistent_backup-$TRAVIS_TAG-1.el7.centos.x86_64.rpm"
+          - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup.el7.centos.x86_64
+        on:
+          tags: true
