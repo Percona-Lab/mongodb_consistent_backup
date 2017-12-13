@@ -22,6 +22,8 @@ stages:
 #  - test-replset-3.0
 #  - test-archive-none
 #  - test-archive-zbackup
+  - name: build-debian
+    if: branch =~ ^\d+\.\d+\.\d+$ AND tag =~ ^\d+\.\d+\.\d+$
   - name: deploy-dockerhub
     if: branch =~ ^\d+\.\d+\.\d+$ AND tag =~ ^\d+\.\d+\.\d+$
   - name: deploy-github
@@ -66,6 +68,10 @@ jobs:
 #      script:
 #        - docker load -i $TRAVIS_BUILD_DIR/build/docker/mongodb_consistent_backup.tar
 #        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --archive.method=zbackup
+    - stage: build-debian
+      script:
+        - make debian8
+        - make debian9
     - stage: deploy-dockerhub
       script: true
       deploy:
@@ -83,5 +89,7 @@ jobs:
         file:
           - $TRAVIS_BUILD_DIR/build/rpm/RPMS/x86_64/mongodb_consistent_backup-$TRAVIS_TAG-1.el7.centos.x86_64.rpm"
           - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup.el7.centos.x86_64
+          - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup.debian8.x86_64
+          - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup.debian9.x86_64
         on:
           tags: true
