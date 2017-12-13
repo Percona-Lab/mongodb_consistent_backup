@@ -21,7 +21,7 @@ stages:
   - test-archive-none
   - test-archive-zbackup
   - name: deploy
-    if: branch =~ ^v?\d+\.\d+\.\d+$
+    if: branch =~ ^\d+\.\d+\.\d+$
 jobs:
   include:
     - stage: flake8
