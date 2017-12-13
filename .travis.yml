@@ -81,13 +81,13 @@ jobs:
         on:
           tags: true
     - stage: deploy-github
-      script: true
+      script: MCB_VERSION=$(cat $TRAVIS_BUILD_DIR/VERSION)
       deploy:
         provider: releases
         skip_cleanup: true
         api_key: $GITHUB_OAUTH_TOKEN
         file:
-          - $TRAVIS_BUILD_DIR/build/rpm/RPMS/x86_64/mongodb_consistent_backup-$TRAVIS_TAG-1.el7.centos.x86_64.rpm"
+          - $TRAVIS_BUILD_DIR/build/rpm/RPMS/x86_64/mongodb_consistent_backup-$MCB_VERSION-1.el7.centos.x86_64.rpm"
           - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup.el7.centos.x86_64
           - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup.debian8.x86_64
           - $TRAVIS_BUILD_DIR/bin/mongodb-consistent-backup.debian9.x86_64
