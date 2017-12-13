@@ -21,7 +21,7 @@ stages:
   - test-archive-none
   - test-archive-zbackup
   - name: deploy
-    if: branch = master
+    if: branch =~ ^\d+\.\d+\.\d+$
 jobs:
   include:
     - stage: flake8
@@ -69,8 +69,7 @@ jobs:
         script:
           - docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_PASSWORD"
           - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
-          - VERSION=$(cat VERSION)
           - docker push "${DOCKERHUB_PATH}:latest"
-          - docker push "${DOCKERHUB_PATH}:${VERSION}"
+          - docker push "${DOCKERHUB_PATH}:$(cat VERSION)"
         on:
           tags: true
