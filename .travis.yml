@@ -34,18 +34,10 @@ jobs:
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.2
-#    - stage: test-cluster-3.2-sccc
-#      script:
-#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
-#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.2
     - stage: test-replset-3.2
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.2
-#    - stage: test-cluster-3.0
-#      script:
-#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
-#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.0 SCCC
     - stage: test-replset-3.0
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
@@ -58,15 +50,14 @@ jobs:
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --archive.method=zbackup
-#    - stage: test-upload-gs
-#      script:
-#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
-#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --upload.method=gs
-#    - stage: test-upload-rsync
-#      script:
-#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
-#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --upload.method=rsync
-#    - stage: test-upload-s3
-#      script:
-#        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
-#        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --upload.method=s3
+before_deploy:
+  - docker login -u "$DOCKERHUB_USERNAME" -p "$DOCKERHUB_PASSWORD"
+  - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+  - VERSION=$(cat VERSION)
+deploy:
+  - provider: script
+    script:
+      - docker push "${DOCKERHUB_PATH}:latest"
+      - docker push "${DOCKERHUB_PATH}:${VERSION}"
+    on:
+      tags: true
