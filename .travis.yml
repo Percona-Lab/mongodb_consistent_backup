@@ -2,9 +2,11 @@ language: python
 python:
   - "2.7"
 cache:
-#  pip: true
+  pip: true
   directories:
+    - $TRAVIS_BUILD_DIR/bin
     - $TRAVIS_BUILD_DIR/build/docker
+    - $TRAVIS_BUILD_DIR/build/rpm/RPMS
     - $TRAVIS_BUILD_DIR/tmp/pex
     - $TRAVIS_BUILD_DIR/tmp/pip
 services:
