@@ -69,7 +69,7 @@ jobs:
       deploy:
         provider: script
         skip_cleanup: true
-        script: docker load -i $TRAVIS_BUILD_DIR/build/docker/mongodb_consistent_backup.tar && docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD && docker push $DOCKERHUB_PATH:latest && docker push $DOCKERHUB_PATH:$TRAVIS_TAG
+        script: docker load -i $TRAVIS_BUILD_DIR/build/docker/mongodb_consistent_backup.tar && docker tag mongodb_consistent_backup $DOCKERHUB_PATH:latest && docker tag mongodb_consistent_backup:latest $DOCKERHUB_PATH:$TRAVIS_TAG && docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD && docker push $DOCKERHUB_PATH:latest && docker push $DOCKERHUB_PATH:$TRAVIS_TAG
         on:
           tags: true
     - stage: deploy-github
