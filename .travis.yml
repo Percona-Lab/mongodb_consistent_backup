@@ -3,7 +3,7 @@ python:
   - "2.7"
 cache:
   pip: true
-  directories: 
+  directories:
     - $TRAVIS_BUILD_DIR/docker
     - $TRAVIS_BUILD_DIR/tmp/pex
     - $TRAVIS_BUILD_DIR/tmp/pip
@@ -20,7 +20,7 @@ stages:
   - test-replset-3.0
   - test-archive-none
   - test-archive-zbackup
-  - deploy
+  - name: deploy
     if: branch = master
 jobs:
   include:
