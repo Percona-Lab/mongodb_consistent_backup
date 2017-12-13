@@ -63,7 +63,7 @@ jobs:
 #        - docker load -i $TRAVIS_BUILD_DIR/build/docker/mongodb_consistent_backup.tar
 #        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.4 --archive.method=zbackup
     - stage: deploy
-      script: skip
+      script: true
       deploy:
         - provider: script
           skip_cleanup: true
