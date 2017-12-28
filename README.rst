@@ -172,7 +172,7 @@ The 'docker run' command -v/--volume flags in the examples below map container p
         -v "/data/mongobackup/conf:/conf:Z" \
         -v "/data/mongobackup/data:/var/lib/mongodb-consistent-backup:Z" \
         -v "/data/mongobackup/logs:/var/log/mongodb-consistent-backup:Z" \
-      timvaillancourt/mongodb_consistent_backup:latest --config=/conf/mongodb-consistent-backup.conf
+      perconalab/mongodb_consistent_backup:latest --config=/conf/mongodb-consistent-backup.conf
 
 **Build and Run Docker Image**
 
@@ -254,6 +254,7 @@ Links
 - https://www.percona.com/blog/2016/07/25/mongodb-consistent-backups/
 - https://www.percona.com/blog/2017/01/09/mongodb-pit-backups-part-2/
 - https://www.percona.com/blog/2017/05/10/percona-lab-mongodb_consistent_backup-1-0-release-explained/
+- https://hub.docker.com/r/perconalab/mongodb_consistent_backup/
 - https://docs.mongodb.com/manual/reference/program/mongodump/
 - https://docs.mongodb.com/manual/reference/program/mongorestore/
 - http://zbackup.org
