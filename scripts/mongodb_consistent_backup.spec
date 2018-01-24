@@ -7,7 +7,7 @@
 
 Name:		mongodb_consistent_backup
 Version:	%{version}
-Release:	1%{?dist}
+Release:	%{release}%{?dist}
 Summary:	MongoDB Consistent Backup Tool
 
 Group:		Software/Database
