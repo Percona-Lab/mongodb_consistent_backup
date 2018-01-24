@@ -38,6 +38,11 @@ class S3Session:
             self._conn.close()
         pass
 
+    def is_forbidden_error(self, e):
+        if 'S3ResponseError: 403 Forbidden' in str(e):
+            return True
+        return False
+
     def connect(self):
         if not self._conn:
             try:
@@ -50,6 +55,12 @@ class S3Session:
                     calling_format=self.calling_format
                 )
                 logging.debug("Successfully connected to AWS S3 with Access Key: %s" % self.access_key)
+            except boto.exception.S3ResponseError, e:
+                if self.is_forbidden_error(e):
+                    logging.error("Not authorized to connect to AWS S3 with Access Key: %s!" % self.access_key)
+                else:
+                    logging.error("Cannot connect to AWS S3 with Access Key: %s!" % self.access_key)
+                return OperationError(e)
             except Exception, e:
                 logging.error("Cannot connect to AWS S3 with Access Key: %s!" % self.access_key)
                 raise OperationError(e)
@@ -59,6 +70,12 @@ class S3Session:
         try:
             logging.debug("Connecting to AWS S3 Bucket: %s" % bucket_name)
             return self._conn.get_bucket(bucket_name)
+        except boto.exception.S3ResponseError, e:
+            if self.is_forbidden_error(e):
+                logging.error("Got forbidden error from AWS S3 for bucket %s! Please check your access/secret key" % bucket_name)
+            else:
+                logging.error("Error with operation on AWS S3 Bucket %s: %s!" % (bucket_name, str(e).rstrip()))
+            raise OperationError(str(e).rstrip())
         except Exception, e:
             logging.error("Cannot connect to AWS S3 Bucket: %s!" % bucket_name)
             raise OperationError(e)

@@ -8,3 +8,4 @@ filechunkio==1.8
 python-dateutil==2.6.1
 yconf==0.3.4
 google_compute_engine==2.7.2
+progress==1.3
