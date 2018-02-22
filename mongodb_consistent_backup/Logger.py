@@ -1,7 +1,16 @@
 import logging
 import os
+import sys
 
 from gzip import GzipFile
+
+
+class StdoutLogFilter(object):
+    def __init__(self, max_level):
+        self.max_level = max_level
+
+    def filter(self, entry):
+        return entry.levelno < self.max_level
 
 
 class Logger:
@@ -10,9 +19,10 @@ class Logger:
         self.backup_name = self.config.backup.name
         self.backup_time = backup_time
 
-        self.log_level = logging.INFO
+        self.stderr_level = logging.ERROR
+        self.stdout_level = logging.INFO
         if self.config.verbose:
-            self.log_level = logging.DEBUG
+            self.stdout_level = logging.DEBUG
 
         self.do_file_log = False
         if self.config.log_dir is not '':
@@ -27,7 +37,20 @@ class Logger:
 
     def start(self):
         try:
-            logging.basicConfig(level=self.log_level, format=self.log_format)
+            logging.getLogger('').setLevel(self.stdout_level)
+
+            # stdout logging: DEBUG/INFO -> WARNING
+            stdout = logging.StreamHandler(sys.stdout)
+            stdout.setLevel(self.stdout_level)
+            stdout.setFormatter(logging.Formatter(self.log_format))
+            stdout.addFilter(StdoutLogFilter(self.stderr_level))
+            logging.getLogger('').addHandler(stdout)
+
+            # sterrr logging: ERROR -> FATAL
+            stderr = logging.StreamHandler(sys.stderr)
+            stderr.setLevel(self.stderr_level)
+            stderr.setFormatter(logging.Formatter(self.log_format))
+            logging.getLogger('').addHandler(stderr)
         except Exception, e:
             print("Could not start logger: %s" % e)
             raise e
@@ -38,7 +61,7 @@ class Logger:
                 self.current_log_file = os.path.join(self.config.log_dir, "backup.%s.log" % self.backup_name)
                 self.backup_log_file  = os.path.join(self.config.log_dir, "backup.%s.%s.log" % (self.backup_name, self.backup_time))
                 self.file_log = logging.FileHandler(self.backup_log_file)
-                self.file_log.setLevel(self.log_level)
+                self.file_log.setLevel(self.stdout_level)
                 self.file_log.setFormatter(logging.Formatter(self.log_format))
                 logging.getLogger('').addHandler(self.file_log)
             except OSError:
