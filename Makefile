@@ -58,7 +58,7 @@ build/rpm/RPMS/$(ARCH)/$(NAME)-$(VERSION)-$(RELEASE).el7.centos.$(ARCH).rpm:
 		-v "$(MAKE_DIR)/LICENSE:/src/LICENSE:Z" \
 		-v "$(MAKE_DIR)/VERSION:/src/VERSION:Z" \
 		-v "$(MAKE_DIR)/build/rpm/RPMS/$(ARCH):/src/build/rpm/RPMS/$(ARCH):Z" \
-		-it centos:centos7 \
+		-i centos:centos7 \
 		/bin/bash -c "yum install -y python-devel python-virtualenv gcc make libffi-devel openssl-devel rpm-build && \
 			make -C /src RELEASE=$(RELEASE) GIT_COMMIT=$(GIT_COMMIT) BIN_NAME=mongodb-consistent-backup.el7.centos.$(ARCH) rpm && \
 			/src/bin/mongodb-consistent-backup.el7.centos.$(ARCH) --version"
@@ -79,7 +79,7 @@ bin/mongodb-consistent-backup.debian8.$(ARCH):
 		-v "$(MAKE_DIR)/README.rst:/src/README.rst:Z" \
 		-v "$(MAKE_DIR)/LICENSE:/src/LICENSE:Z" \
 		-v "$(MAKE_DIR)/VERSION:/src/VERSION:Z" \
-		-it debian:jessie \
+		-i debian:jessie \
 		/bin/bash -c "apt-get update && apt-get install -y python2.7-minimal python2.7-dev python-virtualenv gcc make libffi-dev libssl-dev && \
 			make -C /src RELEASE=$(RELEASE) GIT_COMMIT=$(GIT_COMMIT) BIN_NAME=mongodb-consistent-backup.debian8.$(ARCH).tmp && \
 			mv -vf /src/bin/mongodb-consistent-backup.debian8.$(ARCH).tmp /src/bin/mongodb-consistent-backup.debian8.$(ARCH) && \
@@ -101,7 +101,7 @@ bin/mongodb-consistent-backup.debian9.$(ARCH):
 		-v "$(MAKE_DIR)/README.rst:/src/README.rst:Z" \
 		-v "$(MAKE_DIR)/LICENSE:/src/LICENSE:Z" \
 		-v "$(MAKE_DIR)/VERSION:/src/VERSION:Z" \
-		-it debian:stretch \
+		-i debian:stretch \
 		/bin/bash -c "apt-get update && apt-get install -y python2.7-minimal python2.7-dev python-virtualenv gcc make libffi-dev libssl-dev && \
 			make -C /src RELEASE=$(RELEASE) GIT_COMMIT=$(GIT_COMMIT) BIN_NAME=mongodb-consistent-backup.debian9.$(ARCH).tmp && \
 			mv -vf /src/bin/mongodb-consistent-backup.debian9.$(ARCH).tmp /src/bin/mongodb-consistent-backup.debian9.$(ARCH) && \
@@ -112,7 +112,7 @@ debian9: bin/mongodb-consistent-backup.debian9.$(ARCH)
 docker: build/rpm/RPMS/$(ARCH)/$(NAME)-$(VERSION)-$(RELEASE).el7.centos.$(ARCH).rpm
 	docker build --no-cache --tag $(DOCKER_TAG) .
 	docker tag $(DOCKER_TAG) $(NAME):latest
-	docker run --rm -it $(DOCKER_TAG) --version
+	docker run --rm -i $(DOCKER_TAG) --version
 
 release: centos7 debian8 debian9 docker
 
