@@ -1,6 +1,7 @@
 import socket
 
 from dateutil import parser
+from hashlib import md5
 from select import select
 
 from mongodb_consistent_backup.Errors import OperationError
@@ -52,3 +53,11 @@ def wait_popen(process, stderr_callback, stdout_callback):
     except Exception, e:
         raise e
     return True
+
+
+def file_md5hash(file_path, blocksize=65536):
+    md5hash = md5()
+    with open(file_path, "rb") as f:
+        for block in iter(lambda: f.read(blocksize), b""):
+            md5hash.update(block)
+    return md5hash.hexdigest()

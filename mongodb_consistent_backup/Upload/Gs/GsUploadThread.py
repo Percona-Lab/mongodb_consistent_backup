@@ -1,8 +1,8 @@
 import boto
-import hashlib
 import logging
 import os
 
+from mongodb_consistent_backup.Common.Util import file_md5hash
 from mongodb_consistent_backup.Errors import OperationError
 
 
@@ -34,7 +34,7 @@ class GsUploadThread:
     def get_uri(self):
         return boto.storage_uri(self.path, 'gs')
 
-    def exists(self):
+    def gs_exists(self):
         try:
             self.metadata()
             return True
@@ -52,13 +52,6 @@ class GsUploadThread:
         if hasattr(key, 'etag'):
             return key.etag.strip('"\'')
 
-    def file_md5hash(self, blocksize=65536):
-        md5 = hashlib.md5()
-        with open(self.file_path, "rb") as f:
-            for block in iter(lambda: f.read(blocksize), b""):
-                md5.update(block)
-        return md5.hexdigest()
-
     def success(self):
         if self.remove_uploaded and not self.file_path.startswith(os.path.join(self.backup_dir, self.meta_data_dir)):
             logging.debug("Removing successfully uploaded file: %s" % self.file_path)
@@ -68,8 +61,9 @@ class GsUploadThread:
         f = None
         try:
             self.configure()
-            if self.exists():
-                if self.gs_md5hash() and self.file_md5hash() == self.gs_md5hash():
+            if self.gs_exists():
+                gs_md5hash = self.gs_md5hash()
+                if gs_md5hash and file_md5hash(self.file_path) == gs_md5hash:
                     logging.debug("Path %s already exists with the same checksum (%s), skipping" % (self.path, self.gs_md5hash()))
                     return
                 logging.debug("Path %s checksum and local checksum differ, re-uploading" % self.path)

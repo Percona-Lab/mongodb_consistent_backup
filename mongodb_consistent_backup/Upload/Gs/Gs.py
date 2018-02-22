@@ -1,13 +1,14 @@
 import logging
 import os
 
-
 from copy_reg import pickle
 from multiprocessing import Pool
 from types import MethodType
 
 from mongodb_consistent_backup.Errors import OperationError
 from mongodb_consistent_backup.Pipeline import Task
+from mongodb_consistent_backup.Upload.Util import get_upload_files
+
 from GsUploadThread import GsUploadThread
 
 
@@ -41,17 +42,6 @@ class Gs(Task):
             self._pool.terminate()
             self.stopped = True
 
-    def get_backup_files(self, base_dir=None, files=[]):
-        if not base_dir:
-            base_dir = self.backup_dir
-        for child in os.listdir(base_dir):
-            path = os.path.join(base_dir, child)
-            if os.path.isfile(path):
-                files.append(path)
-            elif os.path.isdir(path):
-                self.get_backup_files(path, files)
-        return files
-
     def run(self):
         if not os.path.isdir(self.backup_dir):
             logging.error("The source directory: %s does not exist or is not a directory! Skipping Google Cloud Storage upload!" % self.backup_dir)
@@ -60,7 +50,7 @@ class Gs(Task):
             self.running = True
             self.timer.start(self.timer_name)
             logging.info("Uploading %s to Google Cloud Storage (bucket=%s, threads=%i)" % (self.base_dir, self.bucket, self.threads()))
-            for file_path in self.get_backup_files():
+            for file_path in get_upload_files():
                 gs_path = os.path.relpath(file_path, self.backup_location)
                 self._pool.apply_async(GsUploadThread(
                     self.backup_dir,
