@@ -46,15 +46,24 @@ class S3Session:
     def connect(self):
         if not self._conn:
             try:
-                logging.debug("Connecting to AWS S3 with Access Key: %s" % self.access_key)
-                self._conn = boto.s3.connect_to_region(
-                    self.region,
-                    aws_access_key_id=self.access_key,
-                    aws_secret_access_key=self.secret_key,
-                    is_secure=self.secure,
-                    calling_format=self.calling_format
-                )
-                logging.debug("Successfully connected to AWS S3 with Access Key: %s" % self.access_key)
+                if (self.access_key is not None and self.secret_key is not None):
+                    logging.debug("Connecting to AWS S3 with Access Key: %s" % self.access_key)
+                    self._conn = boto.s3.connect_to_region(
+                        self.region,
+                        aws_access_key_id=self.access_key,
+                        aws_secret_access_key=self.secret_key,
+                        is_secure=self.secure,
+                        calling_format=self.calling_format
+                    )
+                    logging.debug("Successfully connected to AWS S3 with Access Key: %s" % self.access_key)
+                else:
+                    logging.debug("Connecting to AWS S3 with IAM Role")
+                    self._conn = boto.s3.connect_to_region(
+                        self.region,
+                        is_secure=self.secure,
+                        calling_format=self.calling_format
+                    )
+                    logging.debug("Successfully connected to AWS S3 with IAM Role")
             except boto.exception.S3ResponseError, e:
                 if self.is_forbidden_error(e):
                     logging.error("Not authorized to connect to AWS S3 with Access Key: %s!" % self.access_key)
