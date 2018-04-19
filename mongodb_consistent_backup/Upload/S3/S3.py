@@ -27,7 +27,7 @@ class S3(Task):
 
         self._pool = None
 
-        if None in (self.region):
+        if self.region is None:
             raise OperationError("Invalid or missing AWS S3 region detected!")
 
         self._pool = S3UploadPool(
