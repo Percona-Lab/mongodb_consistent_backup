@@ -22,6 +22,10 @@ jobs:
         - docker run --rm -it mongodb_consistent_backup:latest --version
         - mkdir -p $TRAVIS_BUILD_DIR/docker
         - docker save mongodb_consistent_backup:latest >$TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+    - stage: test-replset-3.6
+      script:
+        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-replset.sh 3.6
     - stage: test-cluster-3.4
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
