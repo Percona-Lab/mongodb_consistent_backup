@@ -34,6 +34,7 @@ Features
 -  Rsync (over SSH) secure backup uploads (*optional*)
 -  `Nagios NSCA <https://sourceforge.net/p/nagios/nsca>`__ push
    notification support (*optional*)
+- `Zabbix <https://www.zabbix.com/>`__ sender notification support (*optional*)
 -  Modular backup, archiving, upload and notification components
 -  Support for MongoDB Authentication and SSL database connections
 -  Support for Read Preference Tags for selecting specific nodes for backup
