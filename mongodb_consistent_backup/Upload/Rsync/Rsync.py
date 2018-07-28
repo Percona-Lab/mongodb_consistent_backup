@@ -73,7 +73,7 @@ class Rsync(Task):
             ssh_mkdir_cmd.extend(["-i", self.rsync_ssh_key])
         ssh_mkdir_cmd.extend([
             "%s@%s" % (self.rsync_user, self.rsync_host),
-            "mkdir", "-p", self.base_dir
+            "mkdir", "-p", self.rsync_path
         ])
 
         # run the mkdir via ssh
