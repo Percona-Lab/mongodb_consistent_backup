@@ -43,7 +43,7 @@ uninstall:
 	rm -rf $(SHAREDIR)/$(NAME)
 
 # Build CentOS7 RPM (in Docker)
-build/rpm/RPMS/$(ARCH)/$(NAME)-$(VERSION)-$(RELEASE).el7.centos.$(ARCH).rpm:
+build/rpm/RPMS/$(ARCH)/$(NAME)-$(VERSION)-$(RELEASE).el7.$(ARCH).rpm:
 	mkdir -p $(MAKE_DIR)/build/rpm/RPMS/$(ARCH)
 	docker run --rm \
 		-v "$(MAKE_DIR)/bin:/src/bin:Z" \
@@ -60,10 +60,10 @@ build/rpm/RPMS/$(ARCH)/$(NAME)-$(VERSION)-$(RELEASE).el7.centos.$(ARCH).rpm:
 		-v "$(MAKE_DIR)/build/rpm/RPMS/$(ARCH):/src/build/rpm/RPMS/$(ARCH):Z" \
 		-i centos:centos7 \
 		/bin/bash -c "yum install -y python-devel python-virtualenv gcc make libffi-devel openssl-devel rpm-build && \
-			make -C /src RELEASE=$(RELEASE) GIT_COMMIT=$(GIT_COMMIT) BIN_NAME=mongodb-consistent-backup.el7.centos.$(ARCH) rpm && \
-			/src/bin/mongodb-consistent-backup.el7.centos.$(ARCH) --version"
+			make -C /src RELEASE=$(RELEASE) GIT_COMMIT=$(GIT_COMMIT) BIN_NAME=mongodb-consistent-backup.el7.$(ARCH) rpm && \
+			/src/bin/mongodb-consistent-backup.el7.$(ARCH) --version"
 
-centos7: build/rpm/RPMS/$(ARCH)/$(NAME)-$(VERSION)-1.el7.centos.$(ARCH).rpm
+centos7: build/rpm/RPMS/$(ARCH)/$(NAME)-$(VERSION)-1.el7.$(ARCH).rpm
 
 # Build Debian8 Binary (in Docker - .deb package soon!)
 bin/mongodb-consistent-backup.debian8.$(ARCH):
@@ -109,7 +109,7 @@ bin/mongodb-consistent-backup.debian9.$(ARCH):
 
 debian9: bin/mongodb-consistent-backup.debian9.$(ARCH)
 
-docker: build/rpm/RPMS/$(ARCH)/$(NAME)-$(VERSION)-$(RELEASE).el7.centos.$(ARCH).rpm
+docker: build/rpm/RPMS/$(ARCH)/$(NAME)-$(VERSION)-$(RELEASE).el7.$(ARCH).rpm
 	docker build --no-cache --tag $(DOCKER_TAG) .
 	docker tag $(DOCKER_TAG) $(NAME):latest
 	docker run --rm -i $(DOCKER_TAG) --version
