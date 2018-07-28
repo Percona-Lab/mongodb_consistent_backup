@@ -27,8 +27,8 @@ class S3(Task):
 
         self._pool = None
 
-        if None in (self.access_key, self.secret_key, self.region):
-            raise OperationError("Invalid or missing AWS S3 access key, secret key or region detected!")
+        if self.region is None:
+            raise OperationError("Invalid or missing AWS S3 region detected!")
 
         self._pool = S3UploadPool(
             self.bucket_name,
