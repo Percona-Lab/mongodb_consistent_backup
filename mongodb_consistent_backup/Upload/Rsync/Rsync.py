@@ -66,6 +66,9 @@ class Rsync(Task):
             return True
         return False
 
+    def get_dest_path(self):
+        return os.path.join(self.rsync_path, self.base_dir)
+
     def prepare_dest_dir(self):
         # mkdir -p the rsync dest path via ssh
         ssh_mkdir_cmd = ["ssh"]
@@ -73,7 +76,7 @@ class Rsync(Task):
             ssh_mkdir_cmd.extend(["-i", self.rsync_ssh_key])
         ssh_mkdir_cmd.extend([
             "%s@%s" % (self.rsync_user, self.rsync_host),
-            "mkdir", "-p", self.rsync_path
+            "mkdir", "-p", self.get_dest_path()
         ])
 
         # run the mkdir via ssh
@@ -100,7 +103,7 @@ class Rsync(Task):
             self.prepare_dest_dir()
 
             rsync_config = {
-                "dest": "%s@%s:%s" % (self.rsync_user, self.rsync_host, self.rsync_path),
+                "dest": "%s@%s:%s" % (self.rsync_user, self.rsync_host, self.get_dest_path()),
                 "threads": self.threads(),
                 "retries": self.retries
             }
