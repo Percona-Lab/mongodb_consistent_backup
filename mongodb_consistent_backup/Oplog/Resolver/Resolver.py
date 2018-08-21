@@ -41,8 +41,11 @@ class Resolver(Task):
         self._pool     = None
         self._pooled   = []
         self._results  = {}
+
+        self.threads(self.config.oplog.resolver.threads)
+
         try:
-            self._pool = Pool(processes=self.threads(None, 2))
+            self._pool = Pool(processes=self.threads())
         except Exception, e:
             logging.fatal("Could not start oplog resolver pool! Error: %s" % e)
             raise Error(e)

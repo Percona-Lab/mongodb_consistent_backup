@@ -18,8 +18,7 @@ class Zbackup(Task):
         self.zbackup_cache_mb    = self.config.archive.zbackup.cache_mb
         self.zbackup_passwd_file = self.config.archive.zbackup.password_file
 
-        if self.config.archive.zbackup.threads and self.config.archive.zbackup.threads > 0:
-            self.threads(self.config.archive.zbackup.threads)
+        self.threads(self.config.archive.zbackup.threads)
 
         # only lzma compression supported (for now)
         self.compression_method    = 'lzma'

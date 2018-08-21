@@ -32,7 +32,6 @@ class Rsync(Task):
         self.backup_name     = self.config.backup.name
         self.remove_uploaded = self.config.upload.remove_uploaded
         self.retries         = self.config.upload.retries
-        self.thread_count    = self.config.upload.threads
         self.rsync_path      = self.config.upload.rsync.path
         self.rsync_user      = self.config.upload.rsync.user
         self.rsync_host      = self.config.upload.rsync.host
@@ -44,6 +43,7 @@ class Rsync(Task):
         self.rsync_version = None
         self._rsync_info   = None
 
+        self.threads(self.config.upload.threads)
         self._pool = Pool(processes=self.threads())
 
     def init(self):

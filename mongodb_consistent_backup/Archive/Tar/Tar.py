@@ -31,6 +31,8 @@ class Tar(Task):
         self._pool   = None
         self._pooled = []
 
+        self.threads(self.config.archive.tar.threads)
+
     def done(self, done_dir):
         if done_dir in self._pooled:
             logging.debug("Archiving completed for: %s" % done_dir)
@@ -51,9 +53,8 @@ class Tar(Task):
 
     def run(self):
         try:
-            thread_count = self.threads()
-            self._pool   = Pool(processes=thread_count)
-            logging.info("Archiving backup directories with pool of %i thread(s)" % thread_count)
+            self._pool   = Pool(processes=self.threads())
+            logging.info("Archiving backup directories with pool of %i thread(s)" % self.threads())
         except Exception, e:
             logging.fatal("Could not start pool! Error: %s" % e)
             raise Error(e)

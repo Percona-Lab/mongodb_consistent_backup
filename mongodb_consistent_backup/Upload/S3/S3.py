@@ -13,7 +13,6 @@ class S3(Task):
         super(S3, self).__init__(self.__class__.__name__, manager, config, timer, base_dir, backup_dir, **kwargs)
         self.remove_uploaded     = self.config.upload.remove_uploaded
         self.retries             = self.config.upload.retries
-        self.thread_count        = self.config.upload.threads
         self.region              = self.config.upload.s3.region
         self.bucket_name         = getattr(self.config.upload.s3, 'bucket_name', None)
         self.bucket_prefix       = getattr(self.config.upload.s3, 'bucket_prefix', None)
@@ -25,6 +24,7 @@ class S3(Task):
         self.s3_acl              = self.config.upload.s3.acl
         self.key_prefix          = base_dir
 
+        self.threads(self.config.upload.threads)
         self._pool = None
 
         if self.region is None:
@@ -35,7 +35,7 @@ class S3(Task):
             self.region,
             self.access_key,
             self.secret_key,
-            self.thread_count,
+            self.threads(),
             self.remove_uploaded,
             self.chunk_size,
             self.s3_acl
@@ -59,7 +59,7 @@ class S3(Task):
             self.timer.start(self.timer_name)
             logging.info("Starting AWS S3 upload to %s (%i threads, %imb multipart chunks, %i retries)" % (
                 self.bucket_name,
-                self.thread_count,
+                self.threads(),
                 self.chunk_size_mb,
                 self.retries
             ))
