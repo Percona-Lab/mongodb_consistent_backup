@@ -29,7 +29,6 @@ pickle(MethodType, _reduce_method)
 
 class S3UploadPool():
     def __init__(self, bucket_name, region, access_key, secret_key, threads=4, remove_uploaded=False, chunk_bytes=50 * 1024 * 1024, key_acl=None):
-        self.threads         = threads
         self.bucket_name     = bucket_name
         self.region          = region
         self.access_key      = access_key
