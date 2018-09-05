@@ -32,7 +32,6 @@ class Rsync(Task):
         self.backup_name     = self.config.backup.name
         self.remove_uploaded = self.config.upload.remove_uploaded
         self.retries         = self.config.upload.retries
-        self.thread_count    = self.config.upload.threads
         self.rsync_path      = self.config.upload.rsync.path
         self.rsync_user      = self.config.upload.rsync.user
         self.rsync_host      = self.config.upload.rsync.host
@@ -44,6 +43,7 @@ class Rsync(Task):
         self.rsync_version = None
         self._rsync_info   = None
 
+        self.threads(self.config.upload.threads)
         self._pool = Pool(processes=self.threads())
 
     def init(self):
@@ -66,6 +66,9 @@ class Rsync(Task):
             return True
         return False
 
+    def get_dest_path(self):
+        return os.path.join(self.rsync_path, self.base_dir)
+
     def prepare_dest_dir(self):
         # mkdir -p the rsync dest path via ssh
         ssh_mkdir_cmd = ["ssh"]
@@ -73,7 +76,7 @@ class Rsync(Task):
             ssh_mkdir_cmd.extend(["-i", self.rsync_ssh_key])
         ssh_mkdir_cmd.extend([
             "%s@%s" % (self.rsync_user, self.rsync_host),
-            "mkdir", "-p", self.rsync_path
+            "mkdir", "-p", self.get_dest_path()
         ])
 
         # run the mkdir via ssh
@@ -100,7 +103,7 @@ class Rsync(Task):
             self.prepare_dest_dir()
 
             rsync_config = {
-                "dest": "%s@%s:%s" % (self.rsync_user, self.rsync_host, self.rsync_path),
+                "dest": "%s@%s:%s" % (self.rsync_user, self.rsync_host, self.get_dest_path()),
                 "threads": self.threads(),
                 "retries": self.retries
             }
