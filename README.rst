@@ -263,4 +263,4 @@ Links
 Contact
 ~~~~~~~
 
-[Contact Percona](mailto:mongodb-backup@percona.com)
+`Contact Percona <mailto:mongodb-backup@percona.com>`__
