@@ -263,11 +263,4 @@ Links
 Contact
 ~~~~~~~
 
--  Tim Vaillancourt - `Github <https://github.com/timvaillancourt>`__ /
-   `Email <mailto:tim.vaillancourt@percona.com>`__
--  David Murphy - `Twitter <https://twitter.com/dmurphy_data>`__ /
-   `Github <https://github.com/dbmurphy>`__ /
-   `Email <mailto:david.murphy@percona.com>`__
--  Percona - `Twitter <https://twitter.com/Percona>`__ / `Contact
-   Page <https://www.percona.com/about-percona/contact>`__
-
+[Contact Percona](mailto:mongodb-backup@percona.com)
