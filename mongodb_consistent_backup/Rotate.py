@@ -43,11 +43,11 @@ class Rotate(object):
     def remove(self, ts):
         if ts in self.backups:
             backup = self.backups[ts]
-            if os.path.isdir(backup["path"]):
+            try:
                 logging.debug("Removing backup path: %s" % backup["path"])
                 rmtree(backup["path"])
-            else:
-                raise OperationError("Backup path %s does not exist!" % backup["path"])
+            except Exception, e:
+                raise OperationError("Unable to remove backup path %s. %s" % backup["path"], e)
             if self.previous == backup:
                 self.previous = None
             del self.backups[ts]
