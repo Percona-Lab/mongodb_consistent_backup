@@ -2,6 +2,7 @@ import logging
 
 from mongodb_consistent_backup.Errors import Error, NotifyError
 from mongodb_consistent_backup.Notify.Nsca import Nsca  # NOQA
+from mongodb_consistent_backup.Notify.Zabbix import Zabbix  # NOQA
 from mongodb_consistent_backup.Pipeline import Stage
 
 

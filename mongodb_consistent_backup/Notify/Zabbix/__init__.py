@@ -1,10 +1,11 @@
+from Zabbix import Zabbix  # NOQA
 import socket
 
 
 def config(parser):
     parser.add_argument("--notify.zabbix.use_config", dest="notify.zabbix.use_config",
-                        help="Use Zabbix Agent configuration (default: True)",
-                        default=True, choices=[True, False])
+                        help="Use Zabbix Agent configuration (default: true)",
+                        default='true', type=str)
     parser.add_argument("--notify.zabbix.server", dest="notify.zabbix.server",
                         help="Zabbix Server hostname/ip address, not used if notify.zabbix.use_config is True (default: none)",
                         default='127.0.0.1', type=str)
