@@ -50,8 +50,8 @@ class Resolver(Task):
             logging.fatal("Could not start oplog resolver pool! Error: %s" % e)
             raise Error(e)
 
-    def close(self, code=None, frame=None):
-        if self._pool and not self.stopped:
+    def close(self):
+        if self._pool and self.stopped:
             logging.debug("Stopping all oplog resolver threads")
             self._pool.terminate()
             logging.info("Stopped all oplog resolver threads")
@@ -102,10 +102,6 @@ class Resolver(Task):
                         waited_secs += poll_secs
                     else:
                         raise OperationError("Waited more than %i seconds for Oplog resolver! I will assume there is a problem and exit")
-            self._pool.terminate()
-            logging.debug("Stopped all oplog resolver threads")
-            self.stopped = True
-            self.running = False
 
     def run(self):
         try:
