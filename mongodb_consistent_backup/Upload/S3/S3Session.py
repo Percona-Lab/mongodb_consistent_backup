@@ -8,14 +8,15 @@ from mongodb_consistent_backup.Errors import OperationError
 
 
 class S3Session:
-    def __init__(self, region, access_key, secret_key, bucket_name, secure=True, num_retries=5, socket_timeout=15):
-        self.region         = region
-        self.access_key     = access_key
-        self.secret_key     = secret_key
-        self.secure         = secure
-        self.num_retries    = num_retries
-        self.socket_timeout = socket_timeout
-
+    def __init__(self, region, access_key, secret_key, bucket_name, secure=True, num_retries=5, socket_timeout=15,
+                 **kwargs):
+        self.region          = region
+        self.access_key      = access_key
+        self.secret_key      = secret_key
+        self.secure          = secure
+        self.num_retries     = num_retries
+        self.socket_timeout  = socket_timeout
+        self.validate_bucket = kwargs.get("validate_bucket")
         # monkey patch for bucket_name with dots
         # https://github.com/boto/boto/issues/2836
         if self.secure and '.' in bucket_name:
@@ -77,8 +78,10 @@ class S3Session:
 
     def get_bucket(self, bucket_name):
         try:
-            logging.debug("Connecting to AWS S3 Bucket: %s" % bucket_name)
-            return self._conn.get_bucket(bucket_name)
+            logging.debug("Connecting to AWS S3 Bucket: %s (%s validation)" % (bucket_name,
+                                                                             "with" if self.validate_bucket
+                                                                             else "without"))
+            return self._conn.get_bucket(bucket_name, validate=self.validate_bucket)
         except boto.exception.S3ResponseError, e:
             if self.is_forbidden_error(e):
                 logging.error("Got forbidden error from AWS S3 for bucket %s! Please check your access/secret key" % bucket_name)
