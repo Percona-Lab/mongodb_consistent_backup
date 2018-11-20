@@ -32,13 +32,27 @@ class Tar(Task):
         self._pooled = []
 
         self.threads(self.config.archive.tar.threads)
+        self._all_threads_successful = True
 
-    def done(self, done_dir):
-        if done_dir in self._pooled:
-            logging.debug("Archiving completed for: %s" % done_dir)
-            self._pooled.remove(done_dir)
+    def done(self, result):
+        success   = result["success"]
+        message   = result["message"]
+        error     = result["error"]
+        directory = result["directory"]
+        exit_code = result["exit_code"]
+
+        if success:
+            if directory in self._pooled:
+                logging.debug("Archiving completed for: %s" % directory)
+            else:
+                logging.warning("Tar thread claimed success, but delivered unexpected response %s for directory %s. "
+                                "Assuming failure anyway." % (message, directory))
+                self._all_threads_successful = False
         else:
-            raise OperationError("Unexpected response from tar thread: %s" % done_dir)
+            self._all_threads_successful = False
+            logging.error("Tar thread failed for directory %s: %s; Exit code %s; Error %s)" %
+                          (directory, message, exit_code, error))
+        self._pooled.remove(directory)
 
     def wait(self):
         if len(self._pooled) > 0:
@@ -68,8 +82,10 @@ class Tar(Task):
                         continue
                     output_file = "%s.tar" % subdir_name
                     if self.do_gzip():
-                        output_file  = "%s.tgz" % subdir_name
-                    self._pool.apply_async(TarThread(subdir_name, output_file, self.compression(), self.verbose, self.binary).run, callback=self.done)
+                        output_file = "%s.tgz" % subdir_name
+                    self._pool.apply_async(
+                        TarThread(subdir_name, output_file, self.compression(), self.verbose, self.binary).run,
+                        callback=self.done)
                     self._pooled.append(subdir_name)
             except Exception, e:
                 self._pool.terminate()
@@ -77,7 +93,7 @@ class Tar(Task):
                 raise Error(e)
             finally:
                 self.wait()
-                self.completed = True
+                self.completed = self._all_threads_successful
 
     def close(self, code=None, frame=None):
         if not self.stopped and self._pool is not None:
