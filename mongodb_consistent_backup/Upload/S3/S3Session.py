@@ -79,8 +79,8 @@ class S3Session:
     def get_bucket(self, bucket_name):
         try:
             logging.debug("Connecting to AWS S3 Bucket: %s (%s validation)" % (bucket_name,
-                                                                             "with" if self.validate_bucket
-                                                                             else "without"))
+                                                                               "with" if self.validate_bucket
+                                                                               else "without"))
             return self._conn.get_bucket(bucket_name, validate=self.validate_bucket)
         except boto.exception.S3ResponseError, e:
             if self.is_forbidden_error(e):
