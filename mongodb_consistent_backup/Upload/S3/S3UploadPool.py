@@ -38,6 +38,7 @@ class S3UploadPool():
         self.chunk_bytes     = chunk_bytes
         self.key_acl         = key_acl
         self.validate_bucket = kwargs.get("validate_bucket")
+        self.upload_file_regex = kwargs.get("upload_file_regex")
 
         self.multipart_min_bytes = 5242880
 
