@@ -1,7 +1,7 @@
 import re
 
 from Util import validate_hostname
-from mongodb_consistent_backup.Errors import Error, OperationError
+from mongodb_consistent_backup.Errors import OperationError
 
 
 class MongoAddr:

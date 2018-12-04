@@ -63,8 +63,8 @@ class DB:
     def client_opts(self):
         opts = {
             "connect":                  self.do_connect,
+            "host":                     self.uri.hosts(),
             "connectTimeoutMS":         self.conn_timeout,
-	    "host":                     self.uri.hosts(),
             "serverSelectionTimeoutMS": self.conn_timeout,
             "maxPoolSize":              1,
         }

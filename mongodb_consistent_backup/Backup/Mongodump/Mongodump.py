@@ -1,5 +1,6 @@
 import os
 import logging
+import pprint
 
 from math import floor
 from subprocess import check_output
@@ -123,6 +124,8 @@ class Mongodump(Task):
 
     def run(self):
         self.timer.start(self.timer_name)
+
+	pprint.pprint(self.replsets)
 
         # backup a secondary from each shard:
         for shard in self.replsets:

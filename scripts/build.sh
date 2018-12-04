@@ -91,7 +91,7 @@ if [ -d ${srcdir} ]; then
 	pip_flags="--download-cache=${pipdir}"
 	${venvdir}/bin/python2.7 ${venvdir}/bin/pip --help | grep -q '\-\-cache\-dir'
 	[ $? = 0 ] && pip_flags="--cache-dir=${pipdir}"
-	${venvdir}/bin/python2.7 ${venvdir}/bin/pip install ${pip_flags} pex requests
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pip install ${pip_flags} pex==1.4 requests
 	if [ $? -gt 0 ]; then
 		echo "Failed to install pex utility for building!"
 		exit 1
