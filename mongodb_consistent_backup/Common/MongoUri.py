@@ -1,4 +1,7 @@
+import re
+
 from Util import validate_hostname
+from mongodb_consistent_backup.Errors import Error, OperationError
 
 
 class MongoAddr:
@@ -28,6 +31,8 @@ class MongoUri:
         self.parse()
 
     def hosts(self):
+        if self.srv:
+            return self.url
         if len(self.addrs) > 0:
             hosts = []
             for addr in self.addrs:
@@ -35,6 +40,8 @@ class MongoUri:
             return ",".join(hosts)
 
     def str(self):
+        if self.srv:
+            return self.url
         string = self.hosts()
         if self.replset:
             string = "%s/%s" % (self.replset, string)
@@ -44,8 +51,18 @@ class MongoUri:
         return self.str()
 
     def parse(self):
-        if "/" in self.url:
-            self.replset, self.url = self.url.split("/")
+        # allow mongodb+srv:// URI
+        if self.url.startswith("mongodb+srv://"):
+            if "replicaSet=" not in self.url:
+                raise OperationError("replicaSet=X flag required when using mongodb+srv:// URI")
+            rsSearch = re.search('replicaSet=(\S+)(&.+)?$', self.url, re.IGNORECASE)
+            if not rsSearch:
+                raise OperationError("cannot find required replicaSet=X flag in mongodb+srv:// URI")
+            self.replset = rsSearch.group(1)
+            self.srv = True
+            return True
+
+        self.replset, self.url = self.url.split("/")
         for url in self.url.split(","):
             addr = MongoAddr()
             addr.replset = self.replset
