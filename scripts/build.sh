@@ -2,9 +2,21 @@
 
 set -x
 
+readlink_bin=readlink
+cp_bin=cp
+if [[ "`uname`" =~ "Darwin" ]]; then
+	if [[ -x /usr/local/bin/gcp && -x /usr/local/bin/greadlink ]]; then
+		readlink_bin=greadlink
+		cp_bin=gcp
+	else
+		echo "To run this on macOS, please install coreutils via homebrew first."
+		exit 1
+	fi
+fi
+
 name=${BIN_NAME:-mongodb-consistent-backup}
 mod_name=mongodb_consistent_backup
-rootdir=$(readlink -f $(dirname $0)/..)
+rootdir=$(${readlink_bin} -f $(dirname $0)/..)
 srcdir=${rootdir}/${mod_name}
 bindir=${rootdir}/bin
 builddir=${rootdir}/build
@@ -55,8 +67,8 @@ fi
 if [ -d ${srcdir} ]; then
 	[ -e ${builddir} ] && rm -rf ${builddir}
 	mkdir -p ${builddir}
-	cp -dpR ${rootdir}/${mod_name} ${builddir}/${mod_name}
-	cp -dp ${rootdir}/{setup.py,requirements.txt,README.rst,VERSION} ${builddir}
+	${cp_bin} -dpR ${rootdir}/${mod_name} ${builddir}/${mod_name}
+	${cp_bin} -dp ${rootdir}/{setup.py,requirements.txt,README.rst,VERSION} ${builddir}
 	find ${builddir} -type f -name "*.pyc" -delete
 
 	# Replace version number in setup.py and mongodb_consistent_backup/__init__.py with number in VERSION:
