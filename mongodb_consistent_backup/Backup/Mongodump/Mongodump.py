@@ -1,6 +1,5 @@
 import os
 import logging
-import pprint
 
 from math import floor
 from subprocess import check_output
@@ -125,24 +124,25 @@ class Mongodump(Task):
     def run(self):
         self.timer.start(self.timer_name)
 
-	pprint.pprint(self.replsets)
-
         # backup a secondary from each shard:
         for shard in self.replsets:
-            secondary = self.replsets[shard].find_secondary()
-            mongo_uri = secondary['uri']
-            self.states[shard] = OplogState(self.manager, mongo_uri)
-            thread = MongodumpThread(
-                self.states[shard],
-                mongo_uri,
-                self.timer,
-                self.config,
-                self.backup_dir,
-                self.version,
-                self.threads(),
-                self.do_gzip()
-            )
-            self.dump_threads.append(thread)
+            try:
+                secondary = self.replsets[shard].find_secondary()
+                mongo_uri = secondary['uri']
+                self.states[shard] = OplogState(self.manager, mongo_uri)
+                thread = MongodumpThread(
+                    self.states[shard],
+                    mongo_uri,
+                    self.timer,
+                    self.config,
+                    self.backup_dir,
+                    self.version,
+                    self.threads(),
+                    self.do_gzip()
+                )
+                self.dump_threads.append(thread)
+            except Exception:
+                raise OperationError("Failed to get secondary for shard %s: %s" % (shard, e))
 
         if not len(self.dump_threads) > 0:
             raise OperationError('No backup threads started!')

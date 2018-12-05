@@ -25,6 +25,7 @@ class MongoUri:
         self.default_port = default_port
         self.replset      = replset
 
+        self.srv      = False
         self.addrs    = []
         self.addr_idx = 0
 
@@ -62,7 +63,8 @@ class MongoUri:
             self.srv = True
             return True
 
-        self.replset, self.url = self.url.split("/")
+        if "/" in self.url:
+            self.replset, self.url = self.url.split("/")
         for url in self.url.split(","):
             addr = MongoAddr()
             addr.replset = self.replset

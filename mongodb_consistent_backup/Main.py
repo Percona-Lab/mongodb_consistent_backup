@@ -3,8 +3,6 @@ import os
 import signal
 import sys
 
-import pprint
-
 from datetime import datetime
 from multiprocessing import current_process, Event, Manager
 
@@ -265,23 +263,13 @@ class MongodbConsistentBackup(object):
                     self.db
                 )
                 replset_name = self.replset.get_rs_name()
-
-                # REMOVEME
-                logging.info("replset name: %s" % replset_name)
-
                 replset_dir  = os.path.join(self.backup_directory, replset_name)
-
-                # REMOVEME
-                logging.info("replset dir: %s" % replset_dir)
-
                 self.replsets[replset_name] = self.replset
                 state = StateBackupReplset(replset_dir, self.config, self.backup_time, replset_name)
                 state.load_state(self.replset.summary())
                 state.write()
             except Exception, e:
                 self.exception("Problem getting shard secondaries! Error: %s" % e, e)
-
-            pprint.pprint(self.replsets)
 
             # run backup
             try:
