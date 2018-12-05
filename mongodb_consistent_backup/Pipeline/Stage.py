@@ -84,7 +84,7 @@ class Stage(object):
                 data = self._task.run()
                 self.stopped = True
             except Exception, e:
-		logging.error("State %s returned error: %s" % (self.stage, e))
+                logging.error("State %s returned error: %s" % (self.stage, e))
                 raise OperationError(e)
             finally:
                 self.running = False

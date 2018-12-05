@@ -142,7 +142,8 @@ class Mongodump(Task):
                 )
                 self.dump_threads.append(thread)
             except Exception:
-                raise OperationError("Failed to get secondary for shard %s: %s" % (shard, e))
+                logging.error("Failed to get secondary for shard %s: %s" % (shard, e))
+                raise e
 
         if not len(self.dump_threads) > 0:
             raise OperationError('No backup threads started!')
