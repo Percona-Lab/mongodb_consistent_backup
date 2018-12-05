@@ -141,7 +141,7 @@ class Mongodump(Task):
                     self.do_gzip()
                 )
                 self.dump_threads.append(thread)
-            except Exception:
+            except Exception, e:
                 logging.error("Failed to get secondary for shard %s: %s" % (shard, e))
                 raise e
 
