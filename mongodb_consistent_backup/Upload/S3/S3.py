@@ -23,6 +23,7 @@ class S3(Task):
         self.chunk_size          = self.chunk_size_mb * 1024 * 1024
         self.s3_acl              = self.config.upload.s3.acl
         self.key_prefix          = base_dir
+        self.validate_bucket     = not self.config.upload.s3.skip_bucket_validation
 
         self.threads(self.config.upload.threads)
         self._pool = None
@@ -38,7 +39,8 @@ class S3(Task):
             self.threads(),
             self.remove_uploaded,
             self.chunk_size,
-            self.s3_acl
+            self.s3_acl,
+            validate_bucket=self.validate_bucket
         )
 
     def get_key_name(self, file_path):
