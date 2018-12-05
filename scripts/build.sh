@@ -91,7 +91,14 @@ if [ -d ${srcdir} ]; then
 	pip_flags="--download-cache=${pipdir}"
 	${venvdir}/bin/python2.7 ${venvdir}/bin/pip --help | grep -q '\-\-cache\-dir'
 	[ $? = 0 ] && pip_flags="--cache-dir=${pipdir}"
-	${venvdir}/bin/python2.7 ${venvdir}/bin/pip install ${pip_flags} pex==1.4 requests
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pip install ${pip_flags} "requests"
+	if [ $? -gt 0 ]; then
+		echo "Failed to install 'requests'!"
+		exit 1
+	fi
+
+	# build fails on Pex 1.5+
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pip install ${pip_flags} "pex<=1.4"
 	if [ $? -gt 0 ]; then
 		echo "Failed to install pex utility for building!"
 		exit 1
