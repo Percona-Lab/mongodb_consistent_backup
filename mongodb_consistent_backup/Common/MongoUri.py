@@ -54,7 +54,7 @@ class MongoUri:
     def parse(self):
         # allow mongodb+srv:// URI
         if self.url.startswith("mongodb+srv://"):
-            rsSearch = re.search('replicaSet=(\S+)(&.+)?$', self.url)
+            rsSearch = re.search(r'replicaSet=(\S+)(&.+)?$', self.url)
             if not rsSearch:
                 raise OperationError("replicaSet=X flag required when using mongodb+srv:// URI")
             self.replset = rsSearch.group(1)
