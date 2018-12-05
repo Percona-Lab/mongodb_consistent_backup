@@ -110,7 +110,7 @@ bin/mongodb-consistent-backup.debian9.$(ARCH):
 debian9: bin/mongodb-consistent-backup.debian9.$(ARCH)
 
 docker: build/rpm/RPMS/$(ARCH)/$(NAME)-$(VERSION)-$(RELEASE).el7.$(ARCH).rpm
-	docker build --tag $(DOCKER_TAG) .
+	docker build --no-cache --tag $(DOCKER_TAG) .
 	docker tag $(DOCKER_TAG) $(NAME):latest
 	docker run --rm -i $(DOCKER_TAG) --version
 
