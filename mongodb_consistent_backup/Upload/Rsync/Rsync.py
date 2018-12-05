@@ -56,7 +56,7 @@ class Rsync(Task):
     def rsync_info(self):
         if not self._rsync_info:
             output = check_output([self.rsync_binary, "--version"])
-            search = re.search("^rsync\s+version\s([0-9.-]+)\s+protocol\sversion\s(\d+)", output)
+            search = re.search(r"^rsync\s+version\s([0-9.-]+)\s+protocol\sversion\s(\d+)", output)
             self.rsync_version = search.group(1)
             self._rsync_info   = {"version": self.rsync_version, "protocol_version": int(search.group(2))}
         return self._rsync_info
