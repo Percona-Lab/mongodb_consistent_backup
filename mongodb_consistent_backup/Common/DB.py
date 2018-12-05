@@ -3,7 +3,7 @@ import logging
 from bson.codec_options import CodecOptions
 from inspect import currentframe, getframeinfo
 from pymongo import DESCENDING, CursorType, MongoClient
-from pymongo.errors import ConnectionFailure, OperationFailure, ServerSelectionTimeoutError
+from pymongo.errors import ConfigurationError, ConnectionFailure, OperationFailure, ServerSelectionTimeoutError
 from ssl import CERT_REQUIRED, CERT_NONE
 from time import sleep
 
@@ -113,7 +113,7 @@ class DB:
             conn = MongoClient(**self.client_opts())
             if self.do_connect:
                 conn['admin'].command({"ping": 1})
-        except (ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
+        except (ConfigurationError, ConnectionFailure, OperationFailure, ServerSelectionTimeoutError), e:
             logging.error("Unable to connect to %s! Error: %s" % (self.uri, e))
             raise DBConnectionError(e)
         if conn is not None:
