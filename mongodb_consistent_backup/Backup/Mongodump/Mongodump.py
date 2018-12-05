@@ -126,20 +126,24 @@ class Mongodump(Task):
 
         # backup a secondary from each shard:
         for shard in self.replsets:
-            secondary = self.replsets[shard].find_secondary()
-            mongo_uri = secondary['uri']
-            self.states[shard] = OplogState(self.manager, mongo_uri)
-            thread = MongodumpThread(
-                self.states[shard],
-                mongo_uri,
-                self.timer,
-                self.config,
-                self.backup_dir,
-                self.version,
-                self.threads(),
-                self.do_gzip()
-            )
-            self.dump_threads.append(thread)
+            try:
+                secondary = self.replsets[shard].find_secondary()
+                mongo_uri = secondary['uri']
+                self.states[shard] = OplogState(self.manager, mongo_uri)
+                thread = MongodumpThread(
+                    self.states[shard],
+                    mongo_uri,
+                    self.timer,
+                    self.config,
+                    self.backup_dir,
+                    self.version,
+                    self.threads(),
+                    self.do_gzip()
+                )
+                self.dump_threads.append(thread)
+            except Exception, e:
+                logging.error("Failed to get secondary for shard %s: %s" % (shard, e))
+                raise e
 
         if not len(self.dump_threads) > 0:
             raise OperationError('No backup threads started!')

@@ -138,12 +138,24 @@ class MongodumpThread(Process):
     def mongodump_cmd(self):
         mongodump_uri   = self.uri.get()
         mongodump_cmd   = [self.binary]
-        mongodump_flags = [
-            "--host=%s" % mongodump_uri.host,
-            "--port=%s" % str(mongodump_uri.port),
+        mongodump_flags = []
+
+        # --host/--port (suport mongodb+srv:// too)
+        if self.uri.srv:
+            if not self.is_version_gte("3.6.0"):
+                logging.fatal("Mongodump must be >= 3.6.0 to use mongodb+srv:// URIs")
+                sys.exit(1)
+            mongodump_flags.append("--host=%s" % self.uri.url)
+        else:
+            mongodump_flags.extend([
+                "--host=%s" % mongodump_uri.host,
+                "--port=%s" % str(mongodump_uri.port)
+            ])
+
+        mongodump_flags.extend([
             "--oplog",
             "--out=%s/dump" % self.backup_dir
-        ]
+        ])
 
         # --numParallelCollections
         if self.threads > 0:
