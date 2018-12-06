@@ -3,7 +3,6 @@ import re
 import logging
 
 
-
 def get_upload_files(backup_dir, regex=None):
     upload_files = []
     r = None
