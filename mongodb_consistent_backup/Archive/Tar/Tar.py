@@ -7,7 +7,7 @@ from time import sleep
 from types import MethodType
 
 from TarThread import TarThread
-from mongodb_consistent_backup.Errors import Error
+from mongodb_consistent_backup.Errors import Error, OperationError
 from mongodb_consistent_backup.Pipeline import Task
 
 
