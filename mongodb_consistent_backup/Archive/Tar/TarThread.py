@@ -44,11 +44,20 @@ class TarThread(PoolThread):
                     self._command = LocalCommand(self.binary, cmd_flags, self.verbose)
                     self.exit_code = self._command.run()
                 except Exception, e:
-                    logging.fatal("Failed archiving file: %s! Error: %s" % (self.output_file, e))
+                    return self.result(False, "Failed archiving file: %s!" % self.output_file, e)
                 finally:
                     self.running   = False
                     self.stopped   = True
                     self.completed = True
             else:
-                logging.fatal("Output file: %s already exists!" % self.output_file)
-            return self.backup_dir
+                return self.result(False, "Output file: %s already exists!" % self.output_file, None)
+            return self.result(True, "Archiving successful.", None)
+
+    def result(self, success, message, error):
+        return {
+            "success":   success,
+            "message":   message,
+            "error":     error,
+            "directory": self.backup_dir,
+            "exit_code": self.exit_code
+        }
