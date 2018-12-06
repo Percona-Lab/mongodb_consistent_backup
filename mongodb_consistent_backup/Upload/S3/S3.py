@@ -21,12 +21,13 @@ class S3(Task):
         self.secret_key          = getattr(self.config.upload.s3, 'secret_key', None)
         self.chunk_size_mb       = self.config.upload.s3.chunk_size_mb
         self.chunk_size          = self.chunk_size_mb * 1024 * 1024
-        self.target_bandwidth    = self.config.upload.s3.target_mb_per_second * 1024 * 1024
+        self.target_bandwidth    = None
+        if self.config.upload.s3.target_mb_per_second is not None:
+            self.target_bandwidth    = self.config.upload.s3.target_mb_per_second * 1024 * 1024
         self.s3_acl              = self.config.upload.s3.acl
         self.key_prefix          = base_dir
         self.validate_bucket     = not self.config.upload.s3.skip_bucket_validation
 
-        logging.warning("************************ TARGET BANDWIDTH: %d" % self.target_bandwidth)
         self.threads(self.config.upload.threads)
         self._pool = None
 

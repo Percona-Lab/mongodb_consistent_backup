@@ -48,7 +48,7 @@ class S3UploadThread:
         self.retry_sleep_secs = retry_sleep_secs
         self.do_stop          = False
 
-        if self.target_bandwidth:
+        if self.target_bandwidth is not None:
             logging.debug("Target bandwidth: %.2f" % self.target_bandwidth)
         progress_key_name = self.short_key_name(self.key_name)
         if self.multipart_num and self.multipart_parts:
@@ -85,7 +85,7 @@ class S3UploadThread:
         if update_bytes > 0:
             self._progress.next(float(update_bytes / 1024.00 / 1024.00))
         self._last_bytes = bytes_uploaded
-        if self.target_bandwidth:
+        if self.target_bandwidth is not None:
             self.throttle(update_bytes)
 
     def throttle(self, update_bytes):
@@ -127,7 +127,7 @@ class S3UploadThread:
                                     float(self.byte_count / 1024.00 / 1024.00)
                                 ))
                                 callback_count = 10
-                                if self.target_bandwidth:
+                                if self.target_bandwidth is not None:
                                     # request a callback every 2MB to allow for somewhat decent throttling
                                     callback_count = self.byte_count / 1024 / 1024 / 2
                                 with FileChunkIO(self.file_name, 'r', offset=self.multipart_offset, bytes=self.byte_count) as fp:
@@ -142,7 +142,7 @@ class S3UploadThread:
                             ))
                             key = Key(bucket=self.bucket, name=self.key_name)
                             callback_count = 10
-                            if self.target_bandwidth:
+                            if self.target_bandwidth is not None:
                                 # request a callback every 2MB to allow for somewhat decent throttling
                                 callback_count = self.byte_count / 1024 / 1024 / 2
                             key.set_contents_from_filename(self.file_name, cb=self.status, num_cb=callback_count)
