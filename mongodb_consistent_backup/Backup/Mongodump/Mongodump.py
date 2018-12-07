@@ -5,7 +5,7 @@ from math import floor
 from subprocess import check_output
 from time import sleep
 
-from mongodb_consistent_backup.Common import MongoUri, config_to_string
+from mongodb_consistent_backup.Common import config_to_string
 from mongodb_consistent_backup.Errors import OperationError
 from mongodb_consistent_backup.Oplog import OplogState
 from mongodb_consistent_backup.Pipeline import Task
@@ -154,30 +154,12 @@ class Mongodump(Task):
         }
         options.update(self.version_extra)
         logging.info(
-            "Starting backups using mongodump %s (options: %s)" % (self.version, config_to_string(options)))
+            "Starting backups using mongodump %s (options: %s)" % (self.version, config_to_string(options)),
+        )
+
         for thread in self.dump_threads:
             thread.start()
         self.wait()
-
-        # backup a single sccc/non-replset config server, if exists:
-        if self.sharding:
-            config_server = self.sharding.get_config_server()
-            if config_server and isinstance(config_server, dict):
-                logging.info("Using non-replset backup method for config server mongodump")
-                mongo_uri = MongoUri(config_server['host'], 27019, 'configsvr')
-                self.states['configsvr'] = OplogState(self.manager, mongo_uri)
-                self.dump_threads = [MongodumpThread(
-                    self.states['configsvr'],
-                    mongo_uri,
-                    self.timer,
-                    self.config,
-                    self.backup_dir,
-                    self.version,
-                    self.threads(),
-                    self.do_gzip()
-                )]
-                self.dump_threads[0].start()
-                self.dump_threads[0].join()
 
         self.completed = True
         self.stopped   = True

@@ -192,11 +192,9 @@ class Sharding:
                     logging.debug("Re-using seed connection to config server(s)")
                 else:
                     self.config_db = DB(configdb_uri, self.config, True)
-                if self.config_db.is_replset():
-                    self.config_server = Replset(self.config, self.config_db)
-                else:
-                    self.config_server = {'host': configdb_uri.hosts()}
-                    self.config_db.close()
+                if not self.config_db.is_replset():
+                    raise OperationError("configsvrs must have replication enabled")
+                self.config_server = Replset(self.config, self.config_db)
             except Exception, e:
                 logging.fatal("Unable to locate config servers using %s: %s!" % (self.db.uri, e))
                 raise OperationError(e)
