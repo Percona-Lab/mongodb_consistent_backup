@@ -5,7 +5,7 @@ from math import floor
 from subprocess import check_output
 from time import sleep
 
-from mongodb_consistent_backup.Common import MongoUri, config_to_string
+from mongodb_consistent_backup.Common import config_to_string
 from mongodb_consistent_backup.Errors import OperationError
 from mongodb_consistent_backup.Oplog import OplogState
 from mongodb_consistent_backup.Pipeline import Task
