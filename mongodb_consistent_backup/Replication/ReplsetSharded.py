@@ -45,7 +45,7 @@ class ReplsetSharded:
                 self.replsets[shard_uri.replset] = Replset(self.config, rs_db)
 
         configsvr = self.sharding.get_config_server()
-        if configsvr and isinstance(configsvr, Replset):
+        if configsvr:
             config_rs_name = configsvr.get_rs_name()
             self.replsets[config_rs_name] = configsvr
 
