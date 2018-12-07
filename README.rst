@@ -36,8 +36,9 @@ Features
    notification support (*optional*)
 - `Zabbix <https://www.zabbix.com/>`__ sender notification support (*optional*)
 -  Modular backup, archiving, upload and notification components
--  Support for MongoDB Authentication and SSL database connections
--  Support for Read Preference Tags for selecting specific nodes for backup
+-  Support for `MongoDB Authentication <https://docs.mongodb.com/manual/core/authentication>`__ and `SSL database connections <https://docs.mongodb.com/manual/core/security-transport-encryption/>`__
+-  Support for `Read Preference Tags <https://docs.mongodb.com/manual/core/read-preference/#tag-sets>`__ for selecting specific nodes for backup
+-  `mongodb+srv:// DNS Seedlist <https://docs.mongodb.com/manual/reference/connection-string/#dns-seedlist-connection-format>`__ support
 -  Rotation of backups by time or count
 -  Multi-threaded, single executable
 -  Auto-scales to number of available CPUs by default
@@ -53,6 +54,7 @@ Current Limitations
 Requirements:
 ~~~~~~~~~~~~~
 
+-  MongoDB / Percona Server for MongoDB 3.2 and above with `Replication <https://docs.mongodb.com/manual/replication>`__ enabled *(including config servers)*
 -  Backup consistency depends on consistent server time across all
    hosts! Server time **must be synchronized on all nodes** using ntpd
    and a consistent time source or virtualization guest agent that 
@@ -232,17 +234,6 @@ To remove a backup, first delete the .tar file in 'backups' subdir of the ZBacku
     $ rm -f /mnt/backup/default/mongodb_consistent_backup-zbackup/backups/20170424_0000.tar
     $ zbackup gc full --password-file /etc/zbackup.passwd /mnt/backup/default/mongodb_consistent_backup-zbackup 
     
-Roadmap
-~~~~~~~
-
--  More testing: this project has many flows that probably need more in-depth testing. Please submit any bugs and/or bugfixes!
--  "Distributed Mode" for running backup on remote hosts *(vs. only on one host)*
--  Binary backup methods *(createBackup/Hot Backup, LVM and EBS snapshots, etc)*
--  Upload compatibility for ZBackup archive phase *(upload unsupported today)*
--  Support Upload with Backup Rotation *(rotated backups are not deleted on upload destination)*
--  Support more notification methods *(Prometheus, PagerDuty, etc)*
--  Python unit tests
-
 Submitting Code
 ~~~~~~~~~~~~~~~
 
