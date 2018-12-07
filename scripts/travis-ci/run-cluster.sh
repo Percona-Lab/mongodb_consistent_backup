@@ -7,14 +7,16 @@ function print_usage() {
 	echo "Usage $0: [MONGO_VERSION] [CONFIGSVR_TYPE (CSRS or SCCC)] [mongodb-consistent-backup EXTRA FLAGS...]"
 }
 
-MONGO_VERSION=${1:-3.2}
-CONFIGSVR_TYPE=${2:-CSRS}
-MCB_EXTRA="${@:3}"
+MONGO_VERSION=${1:-3.6}
+DOCKER_TAG=${2:-latest}
+CONFIGSVR_TYPE=${3:-CSRS}
+MCB_EXTRA="${@:4}"
 
 pushd $(dirname $0)
 	source $PWD/func.sh
 
 	export MONGO_VERSION=${MONGO_VERSION}
+	export DOCKER_TAG=${DOCKER_TAG}
 	export DATA_MONGOD_FLAGS="--shardsvr"
 	export MCB_EXTRA=${MCB_EXTRA}
 

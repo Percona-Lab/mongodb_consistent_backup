@@ -3,13 +3,15 @@
 set -e
 set -x
 
-MONGO_VERSION=${1:-3.2}
-MCB_EXTRA="${@:2}"
+MONGO_VERSION=${1:-3.6}
+DOCKER_TAG=${2:-latest}
+MCB_EXTRA="${@:3}"
 
 pushd $(dirname $0)
 	source $PWD/func.sh
 
 	export MONGO_VERSION=${MONGO_VERSION}
+	export DOCKER_TAG=${DOCKER_TAG}
 	export DATA_MONGOD_FLAGS=
 	export MONGOS_CONFIGDB=
 	export CONFIGSVR_FLAGS=

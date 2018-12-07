@@ -15,6 +15,9 @@ DOCKER_TAG?="$(NAME):$(VERSION)"
 DOCKER_BASE_IMAGE?=$(shell awk '/FROM/{print $$2}' Dockerfile)
 MAKE_DIR=$(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 
+PSMDB_VERSION?=3.6
+PSMDB_SHORTVER?=$(shell echo $(PSMDB_VERSION) | tr -d '.')
+
 all: bin/$(BIN_NAME)
 
 bin/$(BIN_NAME): setup.py requirements.txt README.rst VERSION scripts/build.sh $(NAME)/*.py $(NAME)/*/*.py $(NAME)/*/*/*.py
@@ -110,7 +113,7 @@ bin/mongodb-consistent-backup.debian9.$(ARCH):
 debian9: bin/mongodb-consistent-backup.debian9.$(ARCH)
 
 docker: build/rpm/RPMS/$(ARCH)/$(NAME)-$(VERSION)-$(RELEASE).el7.$(ARCH).rpm
-	docker build --no-cache --tag $(DOCKER_TAG) .
+	docker build --no-cache --build-arg PSMDB_SHORTVER=$(PSMDB_SHORTVER) --tag $(DOCKER_TAG) .
 	docker tag $(DOCKER_TAG) $(NAME):latest
 	docker run --rm -i $(DOCKER_TAG) --version
 
