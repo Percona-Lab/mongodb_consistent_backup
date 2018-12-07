@@ -7,7 +7,7 @@ function print_usage() {
 	echo "Usage $0: [MONGO_VERSION] [mongodb-consistent-backup EXTRA FLAGS...]"
 }
 
-MONGO_VERSION=$1:-3.4}
+MONGO_VERSION=${1:-3.4}
 MCB_EXTRA="${@:2}"
 
 pushd $(dirname $0)

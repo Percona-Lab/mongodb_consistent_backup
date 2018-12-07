@@ -46,7 +46,7 @@ Features
 Limitations
 ~~~~~~~~~~~~~~~~~~~
 
--  `MongoDB Replication <https://docs.mongodb.com/manual/replication>`__ is required on all nodes
+-  `MongoDB Replication <https://docs.mongodb.com/manual/replication>`__ is required on all nodes *(sharding config servers included)*
 -  The host running 'mongodb-consistent-backup' must have enough disk,
    network and cpu resources to backup all shards in parallel
 -  When MongoDB authentication is used, the same user/password/authdb
@@ -55,7 +55,7 @@ Limitations
 Requirements:
 ~~~~~~~~~~~~~
 
--  MongoDB / Percona Server for MongoDB 3.2 and above with `Replication <https://docs.mongodb.com/manual/replication>`__ enabled *(sharding config servers included)*
+-  MongoDB / Percona Server for MongoDB 3.2 and above with `Replication <https://docs.mongodb.com/manual/replication>`__ enabled
 -  Backup consistency depends on consistent server time across all
    hosts! Server time **must be synchronized on all nodes** using ntpd
    and a consistent time source or virtualization guest agent that 
