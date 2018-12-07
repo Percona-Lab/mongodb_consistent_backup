@@ -20,6 +20,8 @@ def config(parser):
                         help="S3 Uploader explicit storage key within the S3 bucket")
     parser.add_argument("--upload.s3.chunk_size_mb", dest="upload.s3.chunk_size_mb", default=50, type=int,
                         help="S3 Uploader upload chunk size, in megabytes (default: 50)")
+    parser.add_argument("--upload.s3.target_mb_per_second", dest="upload.s3.target_mb_per_second", default=None,
+                        type=int, help="S3 Uploader target bandwidth in MB/s per upload thread. (default: unlimited)")
     parser.add_argument("--upload.s3.secure", dest="upload.s3.secure", default=True, action="store_false",
                         help="S3 Uploader connect over SSL (default: true)")
     parser.add_argument("--upload.s3.acl", dest="upload.s3.acl", default=None, type=str,
