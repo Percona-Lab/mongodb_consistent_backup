@@ -3,7 +3,6 @@ import os
 import signal
 import sys
 
-from datetime import datetime
 from multiprocessing import current_process, Event, Manager
 
 from Archive import Archive
@@ -47,7 +46,6 @@ class MongodbConsistentBackup(object):
         self.manager                  = Manager()
         self.timer                    = Timer(self.manager)
         self.timer_name               = "%s.%s" % (self.program_name, self.__class__.__name__)
-        self.backup_time              = datetime.now().strftime("%Y%m%d_%H%M")
         self.logger                   = None
         self.current_log_file         = None
         self.backup_log_file          = None
@@ -70,6 +68,7 @@ class MongodbConsistentBackup(object):
     def setup_config(self):
         try:
             self.config = Config()
+            self.backup_time = self.config.backup_time
         except Exception, e:
             print "Error setting up configuration: '%s'!" % e
             sys.exit(1)

@@ -2,6 +2,7 @@ import json
 import mongodb_consistent_backup
 import sys
 
+from datetime import datetime
 from argparse import Action
 from pkgutil import walk_packages
 from yconf import BaseConfiguration
@@ -82,6 +83,9 @@ class ConfigParser(BaseConfiguration):
         parser.add_argument("--ssl.client_cert_file", dest="ssl.client_cert_file", default=None, type=str,
                             help="Path to Client SSL Certificate file in PEM format (for optional client ssl auth)")
         parser.add_argument("-L", "--log-dir", dest="log_dir", help="Path to write log files to (default: disabled)", default='', type=str)
+        parser.add_argument("-T", "--backup-time", dest="backup_time",
+                            default=datetime.now().strftime("%Y%m%d_%H%M"), type=str,
+                            help="Backup timestamp as yyyymmdd_HHMM. (default: current time)")
         parser.add_argument("--lock-file", dest="lock_file", default='/tmp/mongodb-consistent-backup.lock', type=str,
                             help="Location of lock file (default: /tmp/mongodb-consistent-backup.lock)")
         parser.add_argument("--rotate.max_backups", dest="rotate.max_backups", default=0, type=int,
