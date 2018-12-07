@@ -13,4 +13,7 @@ def config(parser):
                         help="Only use hidden secondary members for backup (default: false)")
     parser.add_argument("--replication.read_pref_tags", dest="replication.read_pref_tags", default=None, type=str,
                         help="Only use members that match replication tags in comma-separated key:value format (default: none)")
+    parser.add_argument("--replication.preferred_members", dest="replication.preferred_members", default=None, type=str,
+                        help="Prefer members with these names; comma-separated URIs in rs/host:port format (default: none)")
+
     return parser
