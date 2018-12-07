@@ -54,8 +54,7 @@ Current Limitations
 Requirements:
 ~~~~~~~~~~~~~
 
--  MongoDB / Percona Server for MongoDB 3.2 and above
-    -  `MongoDB Replication <https://docs.mongodb.com/manual/replication>`__ enabled, including sharding config servers
+-  MongoDB / Percona Server for MongoDB 3.2 and above with `Replication <https://docs.mongodb.com/manual/replication>`__ enabled *(sharding config servers included)*
 -  Backup consistency depends on consistent server time across all
    hosts! Server time **must be synchronized on all nodes** using ntpd
    and a consistent time source or virtualization guest agent that 
