@@ -10,4 +10,6 @@ def config(parser):
                         help="Number of times to retry upload attempts (default: 5)")
     parser.add_argument("--upload.threads", dest="upload.threads", default=4, type=int,
                         help="Number of threads to use for upload (default: 4)")
+    parser.add_argument("--upload.file_regex", dest="upload.file_regex", default='none', type=str,
+                        help="Limit uploaded file names to those matching a regular expression. (default: none)")
     return parser
