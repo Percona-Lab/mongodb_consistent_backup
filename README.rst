@@ -43,9 +43,10 @@ Features
 -  Multi-threaded, single executable
 -  Auto-scales to number of available CPUs by default
 
-Current Limitations
+Limitations
 ~~~~~~~~~~~~~~~~~~~
 
+-  `MongoDB Replication <https://docs.mongodb.com/manual/replication>`__ is required on all nodes
 -  The host running 'mongodb-consistent-backup' must have enough disk,
    network and cpu resources to backup all shards in parallel
 -  When MongoDB authentication is used, the same user/password/authdb
