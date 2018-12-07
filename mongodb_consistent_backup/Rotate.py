@@ -47,7 +47,7 @@ class Rotate(object):
                 logging.debug("Removing backup path: %s" % backup["path"])
                 rmtree(backup["path"])
             except Exception, e:
-                raise OperationError("Unable to remove backup path %s. %s" % backup["path"], e)
+                raise OperationError("Unable to remove backup path %s. %s" % (backup["path"], e))
             if self.previous == backup:
                 self.previous = None
             del self.backups[ts]

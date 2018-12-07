@@ -17,6 +17,10 @@ class Replset:
         self.min_priority   = self.config.replication.min_priority
         self.max_priority   = self.config.replication.max_priority
         self.hidden_only    = self.config.replication.hidden_only
+        self.preferred_members = []
+        if self.config.replication.preferred_members:
+            self.preferred_members = self.config.replication.preferred_members.split(",")
+            logging.debug("Preferred members: %s" % self.preferred_members)
 
         self.state_primary   = 1
         self.state_secondary = 2
@@ -233,6 +237,10 @@ class Replset:
                 elif self.hidden_only and 'hidden' not in log_data:
                     logging.info("Found SECONDARY %s that is non-hidden and hidden-only mode is enabled! Skipping" % member_uri)
                     continue
+
+                if member_uri.str() in self.preferred_members:
+                    logging.info("Bumping preferred SECONDARY member %s's score", member_uri)
+                    score = 10000
 
                 rep_lag, optime_ts = self.get_repl_lag(member)
                 score = ceil((score - rep_lag) * score_scale)
