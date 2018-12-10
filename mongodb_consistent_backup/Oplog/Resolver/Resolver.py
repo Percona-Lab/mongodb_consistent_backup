@@ -108,18 +108,25 @@ class Resolver(Task):
             logging.info("Resolving oplogs (options: threads=%s, compression=%s)" % (self.threads(), self.compression()))
             self.timer.start(self.timer_name)
             self.running = True
-
+            consistent_end_ts = self.get_consistent_end_ts()
+            logging.info("Consistent end timestamp for all shards is %s" % consistent_end_ts)
             for shard in self.backup_oplogs:
                 backup_oplog = self.backup_oplogs[shard]
                 self.resolver_state[shard] = OplogState(self.manager, None, backup_oplog['file'])
                 uri = MongoUri(backup_oplog['uri']).get()
                 if shard in self.tailed_oplogs:
                     tailed_oplog = self.tailed_oplogs[shard]
-                    if backup_oplog['last_ts'] is None and tailed_oplog['last_ts'] is None:
+                    backup_last_ts = backup_oplog['last_ts']
+                    if 'last_ts' in tailed_oplog and tailed_oplog['last_ts'] is not None:
+                        tailed_last_ts = tailed_oplog['last_ts']
+                    else:
+                        tailed_last_ts = backup_last_ts
+                    if backup_last_ts is None and tailed_last_ts is None:
                         logging.info("No oplog changes to resolve for %s" % uri)
-                    elif backup_oplog['last_ts'] > tailed_oplog['last_ts']:
+                    elif backup_last_ts > tailed_last_ts:
                         logging.fatal(
-                            "Backup oplog is newer than the tailed oplog! This situation is unsupported. Please retry backup")
+                            "Backup oplog is newer (%s) than the tailed oplog (%s)! This situation is unsupported. Please retry backup" % (
+                                backup_last_ts, tailed_last_ts))
                         raise OperationError("Backup oplog is newer than the tailed oplog!")
                     else:
                         thread_name = uri.str()
@@ -130,18 +137,21 @@ class Resolver(Task):
                             uri,
                             tailed_oplog.copy(),
                             backup_oplog.copy(),
-                            self.get_consistent_end_ts(),
+                            consistent_end_ts,
                             self.compression()
                         ).run, callback=self.done)
                         self._pooled.append(thread_name)
                 else:
                     logging.info("No tailed oplog for host %s" % uri)
-            self.wait()
+            if len(self._pooled) > 0:
+                self.wait()
+                # Shut down the thread pool to avoid spurious exceptions
+                self._pool.join()
             self.completed = True
             logging.info("Oplog resolving completed in %.2f seconds" % self.timer.duration(self.timer_name))
-        except Exception, e:
-            logging.error("Resolver failed for %s: %s" % (uri, e))
-            raise e
+        # except Exception, e:
+        #     logging.error("Resolver failed for %s: %s" % (uri, e))
+        #     raise e
         finally:
             self.timer.stop(self.timer_name)
             self.running = False
