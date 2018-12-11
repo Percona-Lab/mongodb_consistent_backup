@@ -256,7 +256,7 @@ class Replset:
                 else:
                     log_msg = "Found SECONDARY %s with too high replication lag! Skipping" % member_uri
 
-                if self.secondary['score'] == 0:
+                if self.secondary is not None and self.secondary['score'] == 0:
                     logging.error("Chosen SECONDARY %s has a score of zero/0! This is unexpected, exiting" % member_uri)
                     raise OperationError("Chosen SECONDARY %s has a score of zero/0!" % member_uri)
 
