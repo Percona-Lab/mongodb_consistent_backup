@@ -117,22 +117,22 @@ class S3UploadThread:
                     break
                 try:
                     if self.multipart_id and self.multipart_num and self.multipart_parts:
+                        mp_log_info = "s3://%s%s (multipart: %d/%d, size: %.2fmb)" % (
+                            self.bucket_name, self.short_key_name(self.key_name), self.multipart_num,
+                            self.multipart_parts, float(self.byte_count / 1024.00 / 1024.00))
                         for mp in self.bucket.get_all_multipart_uploads():
                             if mp.id == self.multipart_id:
-                                logging.info("Uploading AWS S3 key: s3://%s%s (multipart: %d/%d, size: %.2fmb)" % (
-                                    self.bucket_name,
-                                    self.short_key_name(self.key_name),
-                                    self.multipart_num,
-                                    self.multipart_parts,
-                                    float(self.byte_count / 1024.00 / 1024.00)
-                                ))
+                                logging.info("Uploading AWS S3 key: %s" % mp_log_info)
                                 callback_count = 10
                                 if self.target_bandwidth is not None:
-                                    # request a callback every 2MB to allow for somewhat decent throttling
-                                    callback_count = self.byte_count / 1024 / 1024 / 2
+                                    # request a callback every 0.5MB to allow for somewhat decent throttling
+                                    callback_count = self.byte_count / 1024 / 1024 / 0.5
                                 with FileChunkIO(self.file_name, 'r', offset=self.multipart_offset, bytes=self.byte_count) as fp:
                                     mp.upload_part_from_file(fp=fp, cb=self.status, num_cb=callback_count, part_num=self.multipart_num)
-                            break
+                                break
+                        else:
+                            raise OperationError("Missing multipart upload id %s for %s in S3 response." %
+                                                 (self.multipart_id, mp_log_info))
                     else:
                         key = None
                         try:
@@ -143,8 +143,8 @@ class S3UploadThread:
                             key = Key(bucket=self.bucket, name=self.key_name)
                             callback_count = 10
                             if self.target_bandwidth is not None:
-                                # request a callback every 2MB to allow for somewhat decent throttling
-                                callback_count = self.byte_count / 1024 / 1024 / 2
+                                # request a callback every 0.5MB to allow for somewhat decent throttling
+                                callback_count = self.byte_count / 1024.00 / 1024.00 / 0.5
                             key.set_contents_from_filename(self.file_name, cb=self.status, num_cb=callback_count)
                         finally:
                             if key:
