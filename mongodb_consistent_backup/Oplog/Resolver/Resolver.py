@@ -149,9 +149,9 @@ class Resolver(Task):
                 self._pool.join()
             self.completed = True
             logging.info("Oplog resolving completed in %.2f seconds" % self.timer.duration(self.timer_name))
-        # except Exception, e:
-        #     logging.error("Resolver failed for %s: %s" % (uri, e))
-        #     raise e
+        except Exception, e:
+            logging.error("Resolver failed for %s: %s" % (uri, e))
+            raise e
         finally:
             self.timer.stop(self.timer_name)
             self.running = False
