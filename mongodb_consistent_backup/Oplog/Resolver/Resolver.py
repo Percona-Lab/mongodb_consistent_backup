@@ -78,6 +78,10 @@ class Resolver(Task):
                     end_ts = last_ts
                     if last_ts < bkp_end_ts:
                         end_ts = bkp_end_ts
+        if end_ts is None:
+            # Happens when there were _no_ oplog changes since the backup
+            # end, i. e. when all tailed-oplogs are empty
+            end_ts = bkp_end_ts
         return Timestamp(end_ts.time + 1, 0)
 
     def done(self, done_uri):
@@ -104,6 +108,7 @@ class Resolver(Task):
                         raise OperationError("Waited more than %i seconds for Oplog resolver! I will assume there is a problem and exit")
 
     def run(self):
+        uri = None
         try:
             logging.info("Resolving oplogs (options: threads=%s, compression=%s)" % (self.threads(), self.compression()))
             self.timer.start(self.timer_name)
@@ -150,7 +155,10 @@ class Resolver(Task):
             self.completed = True
             logging.info("Oplog resolving completed in %.2f seconds" % self.timer.duration(self.timer_name))
         except Exception, e:
-            logging.error("Resolver failed for %s: %s" % (uri, e))
+            if uri is not None:
+                logging.error("Resolver failed for %s: %s" % (uri, e))
+            else:
+                logging.error("Resolver failed: %s" % e)
             raise e
         finally:
             self.timer.stop(self.timer_name)
