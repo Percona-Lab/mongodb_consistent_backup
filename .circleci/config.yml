@@ -32,14 +32,11 @@ jobs:
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
 
-      - setup:
-          name: generate version 
+      - run:
+          name: set version and build the rpm
           command: |
             version=$(cat VERSION)
             echo "${version}.${CIRCLE_BUILD_NUM}" > VERSION
-      - run:
-          name: build the rpm
-          command: |
             make rpm
 
       - save_cache:
