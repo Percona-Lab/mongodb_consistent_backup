@@ -38,6 +38,7 @@ jobs:
             version=$(cat VERSION)
             echo "${version}.${CIRCLE_BUILD_NUM}" > VERSION
             make rpm
+            la -ltr /root/repo/build/rpm/RPMS/x86_64/
 
       - save_cache:
           paths:
