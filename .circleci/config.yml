@@ -33,6 +33,10 @@ jobs:
           - v1-dependencies-
 
       - run:
+          name: generate version 
+          command: |
+            version=$(cat VERSION)
+            echo "${version}.${CIRCLE_BUILD_NUM}" > VERSION
           name: build the rpm
           command: |
             make rpm
