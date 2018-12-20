@@ -38,9 +38,14 @@ jobs:
             version=$(cat VERSION)
             echo "${version}.${CIRCLE_BUILD_NUM}" > VERSION
             make rpm
-            git tag -a $(cat VERSION) -m "Tagged by ${CIRCLE_BUILD_URL}" HEAD
-            git push --tags origin
-            ln -s /root/repo/build/rpm/RPMS/x86_64/mongodb_consistent_backup-$(cat VERSION)-1.el7.x86_64.rpm rpm_to_copy
+
+            # git config user.email "dev@objectrocket.com"
+            # git config user.name "objectrocketdev"
+            # git tag -a $(cat VERSION) -m "Tagged by ${CIRCLE_BUILD_URL}" HEAD
+            # git push --tags origin
+            
+            mkdir mongodb_consistent_backup_rpm
+            cp /root/repo/build/rpm/RPMS/x86_64/mongodb_consistent_backup-$(cat VERSION)-1.el7.x86_64.rpm mongodb_consistent_backup_rpm/
 
       - save_cache:
           paths:
@@ -48,6 +53,5 @@ jobs:
           key: v1-dependencies-{{ checksum "requirements.txt" }}
         
       - store_artifacts:
-          path: rpm_to_copy
-          destination: mongodb_consistent_backup/
+          path: mongodb_consistent_backup_rpm
        
