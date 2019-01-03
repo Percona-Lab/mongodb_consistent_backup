@@ -22,7 +22,7 @@ def parse_read_pref_tags(tags_str):
 
 class DB:
     def __init__(self, uri, config, do_replset=False, read_pref='primaryPreferred', do_rp_tags=False,
-                 do_connect=True, conn_timeout=5000, retries=5):
+                 do_connect=True, conn_timeout=60000, retries=5):
         self.uri            = uri
         self.config         = config
         self.do_replset     = do_replset
