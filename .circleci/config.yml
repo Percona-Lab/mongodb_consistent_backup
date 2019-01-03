@@ -32,6 +32,10 @@ jobs:
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
 
+      - add_ssh_keys:
+          fingerprints:
+            - "f3:12:c6:2b:41:37:bd:e3:85:c5:72:f9:3d:8b:8e:e5"
+
       - run:
           name: set version and build the rpm
           command: |
