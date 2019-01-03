@@ -21,8 +21,8 @@ Prefix:		/usr
 
 # Use CentOS SCL python27 (https://www.softwarecollections.org/en/scls/rhscl/python27/) on CentOS 6 (RHEL6 untested)
 # On build host: 'yum install python27-python python27-python-devel python27-python-virtualenv gcc make libffi-devel openssl-devel'
-%{?el6:Requires: python27-python openssl-libs}
-%{?el6:BuildRequires: python27-python python27-python-devel python27-python-virtualenv gcc make libffi-devel openssl-devel}
+#%{?el6:Requires: openssl-libs}
+%{?el6:BuildRequires: gcc make libffi-devel openssl-devel}
 
 # Use base python/virtualenv, which should be 2.7 on CentOS/RHEL 7
 # On build host: 'yum install python python-devel python-virtualenv gcc make libffi-devel openssl-devel'

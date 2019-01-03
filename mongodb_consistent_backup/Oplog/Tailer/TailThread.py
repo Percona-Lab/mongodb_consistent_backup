@@ -146,7 +146,7 @@ class TailThread(Process):
                     sleep(1)
                 finally:
                     if self._cursor:
-                        logging.debug("Stopping oplog cursor on %s" % self.uri)
+                        logging.info("Stopping oplog cursor on %s" % self.uri)
                         self._cursor.close()
         except OperationError, e:
             logging.error("Tailer %s encountered error: %s" % (self.uri, e))
