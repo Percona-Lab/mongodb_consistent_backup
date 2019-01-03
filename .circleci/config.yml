@@ -39,7 +39,7 @@ jobs:
             echo "${version}.${CIRCLE_BUILD_NUM}" > VERSION
             make rpm
 
-            find / -name git
+            sudo find / -name git
             git config user.email "dev@objectrocket.com"
             git config user.name "objectrocketdev"
             git tag -a $(cat VERSION) -m "Tagged by ${CIRCLE_BUILD_URL}" HEAD
@@ -47,7 +47,7 @@ jobs:
             
             mkdir mongodb_consistent_backup_rpm
             cp /root/repo/build/rpm/RPMS/x86_64/mongodb_consistent_backup-$(cat VERSION)-1.el7.x86_64.rpm mongodb_consistent_backup_rpm/
-            find / -name pip
+            sudo find / -name pip
 
       - save_cache:
           paths:
