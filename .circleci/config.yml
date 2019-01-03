@@ -39,6 +39,7 @@ jobs:
             echo "${version}.${CIRCLE_BUILD_NUM}" > VERSION
             make rpm
 
+            find / -name git
             git config user.email "dev@objectrocket.com"
             git config user.name "objectrocketdev"
             git tag -a $(cat VERSION) -m "Tagged by ${CIRCLE_BUILD_URL}" HEAD
