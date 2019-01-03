@@ -35,6 +35,7 @@ jobs:
       - run:
           name: set version and build the rpm
           command: |
+            set -x
             version=$(cat VERSION)
             echo "${version}.${CIRCLE_BUILD_NUM}" > VERSION
             make rpm
