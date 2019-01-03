@@ -44,6 +44,7 @@ jobs:
             git config user.name "objectrocketdev"
             git tag -a $(cat VERSION) -m "Tagged by ${CIRCLE_BUILD_URL}" HEAD
             rpm -qa | grep ssh
+            rpm -ql libssh2-1.4.2-2.el6_7.1.x86_64
             git push --tags origin
             
             mkdir mongodb_consistent_backup_rpm
