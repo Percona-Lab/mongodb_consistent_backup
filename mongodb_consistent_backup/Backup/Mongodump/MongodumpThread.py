@@ -60,6 +60,9 @@ class MongodumpThread(Process):
     def do_ssl(self):
         return parse_config_bool(self.config.ssl.enabled)
 
+    def force_table_scan(self):
+        return parse_config_bool(self.config.backup.mongodump.force_table_scan)
+
     def do_ssl_insecure(self):
         return parse_config_bool(self.config.ssl.insecure)
 
@@ -208,6 +211,10 @@ class MongodumpThread(Process):
             else:
                 logging.fatal("Mongodump must be >= 2.6.0 to enable SSL encryption!")
                 sys.exit(1)
+
+        if self.force_table_scan():
+            logging.info("Enabling mongodump --forceTableScan option")
+            mongodump_flags.append("--forceTableScan")
 
         mongodump_cmd.extend(mongodump_flags)
         return mongodump_cmd
