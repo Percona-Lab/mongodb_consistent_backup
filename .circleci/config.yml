@@ -46,7 +46,7 @@ jobs:
             
             mkdir mongodb_consistent_backup_rpm
             cp /root/repo/build/rpm/RPMS/x86_64/mongodb_consistent_backup-$(cat VERSION)-1.el7.x86_64.rpm mongodb_consistent_backup_rpm/
-            ls -ltr /usr/bin/pip*
+            find / -name pip
 
       - save_cache:
           paths:
