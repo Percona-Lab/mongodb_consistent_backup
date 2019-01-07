@@ -104,11 +104,7 @@ class Tailer(Task):
 
                 # wait for replication to get in sync
                 while state.get('last_ts') and state.get('last_ts') < timestamp:
-                    if self.shards[shard]['thread'].exitcode:
-                      logging.info('Not waiting for %s tailer to reach ts: %s, currrent: %s. Exit code: %i' % (uri, timestamp, state.get('last_ts'),self.shards[shard]['thread'].exitcode))
-                      break
-                    else:  
-                      logging.info('Waiting for %s tailer to reach ts: %s, currrent: %s' % (uri, timestamp, state.get('last_ts')))
+                    logging.info('Waiting for %s tailer to reach ts: %s, currrent: %s' % (uri, timestamp, state.get('last_ts')))
                     sleep(sleep_secs)
 
             # set thread stop event
