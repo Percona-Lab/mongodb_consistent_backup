@@ -169,6 +169,7 @@ class TailThread(Process):
             self.stopped = True
             self.state.set('running', False)
             self.timer.stop(self.timer_name)
+            logging.info("Thread is stopped and marked as stopped %s" % self.uri)
 
         if self.exit_code == 0:
             log_msg_extra = "%i oplog changes" % self.count
