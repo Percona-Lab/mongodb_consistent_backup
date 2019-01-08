@@ -102,8 +102,8 @@ class Tailer(Task):
                     logging.warning("Could not get current optime from PRIMARY! Using now as a stop time")
                     timestamp = Timestamp(int(time()), 0)
 
-                # wait for replication to get in sync
-                while state.get('last_ts') and state.get('last_ts') < timestamp:
+                # wait for replication to get in sync making sure cursor has not been stopped in a race condition
+                while state.get('last_ts') and state.get('last_ts') < timestamp and not self.shards[shard].stopped:
                     logging.info('Waiting for %s tailer to reach ts: %s, currrent: %s' % (uri, timestamp, state.get('last_ts')))
                     sleep(sleep_secs)
 
