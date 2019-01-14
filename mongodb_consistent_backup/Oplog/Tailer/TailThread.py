@@ -89,7 +89,7 @@ class TailThread(Process):
 
     def connect(self):
         if not self.db:
-            self.db = DB(self.uri, self.config, True, 'secondary', True)
+            self.db = DB(self.uri, self.config, False, 'secondary', True)
         return self.db.connection()
 
     def run(self):
@@ -169,6 +169,7 @@ class TailThread(Process):
             self.stopped = True
             self.state.set('running', False)
             self.timer.stop(self.timer_name)
+            logging.info("Thread is stopped and marked as stopped %s" % self.uri)
 
         if self.exit_code == 0:
             log_msg_extra = "%i oplog changes" % self.count

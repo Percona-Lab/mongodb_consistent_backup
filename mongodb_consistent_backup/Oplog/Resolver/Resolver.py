@@ -148,5 +148,7 @@ class Resolver(Task):
             self.stopped = True
 
         for shard in self.resolver_state:
+            logging.info("Getting shard oplog state %s" % (shard))
             self.resolver_summary[shard] = self.resolver_state[shard].get()
+        logging.info("Returning self.resolver_summary")
         return self.resolver_summary
