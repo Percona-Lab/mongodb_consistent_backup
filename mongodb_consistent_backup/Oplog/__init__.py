@@ -2,6 +2,7 @@ from Oplog import Oplog  # NOQA
 from OplogState import OplogState  # NOQA
 from Resolver import Resolver  # NOQA
 from Tailer import Tailer  # NOQA
+from SimpleOplogGetter import SimpleOplogGetter # NOQA
 
 
 def config(parser):
@@ -17,4 +18,7 @@ def config(parser):
                         help="Enable/disable capturing of cluster-consistent oplogs, required for cluster-wide PITR (default: true)")
     parser.add_argument("--oplog.tailer.status_interval", dest="oplog.tailer.status_interval", default=30, type=int,
                         help="Number of seconds to wait between reporting oplog tailer status (default: 30)")
+    parser.add_argument("--oplog.tailer.method", dest="oplog.tailer.method", default='tailer', type=str,
+                        help="Method to use for oplog tailing. [tailer|simple] (default: tailer)")
+
     return parser

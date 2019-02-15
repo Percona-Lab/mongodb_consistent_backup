@@ -2,7 +2,7 @@ import logging
 
 from bson.codec_options import CodecOptions
 from inspect import currentframe, getframeinfo
-from pymongo import DESCENDING, CursorType, MongoClient
+from pymongo import ASCENDING, DESCENDING, CursorType, MongoClient
 from pymongo.errors import ConfigurationError, ConnectionFailure, OperationFailure, ServerSelectionTimeoutError
 from ssl import CERT_REQUIRED, CERT_NONE
 from time import sleep
@@ -194,8 +194,18 @@ class DB:
         return db.oplog.rs.with_options(codec_options=CodecOptions(unicode_decode_error_handler="ignore"))
 
     def get_oplog_tail_ts(self):
-        logging.debug("Gathering oldest 'ts' in %s oplog" % self.uri)
+        logging.debug("Gathering youngest 'ts' in %s oplog" % self.uri)
         return self.get_oplog_rs().find_one(sort=[('$natural', DESCENDING)])['ts']
+
+    def get_oplog_head_ts(self):
+        logging.debug("Gathering oldest 'ts' in %s oplog" % self.uri)
+        return self.get_oplog_rs().find_one(sort=[('$natural', ASCENDING)])['ts']
+
+    def is_ts_covered_by_oplog(self, ts_to_check):
+        oldest_ts = self.get_oplog_head_ts()
+        covered = oldest_ts <= ts_to_check
+        logging.debug("Timestamp %s %s covered in %s oplog" % (ts_to_check, "is" if covered else "is NOT", self.uri))
+        return covered
 
     def get_oplog_cursor_since(self, caller, ts=None):
         frame   = getframeinfo(currentframe().f_back)
@@ -206,6 +216,15 @@ class DB:
         logging.debug("Querying oplog on %s with query: %s" % (self.uri, query))
         # http://api.mongodb.com/python/current/examples/tailable.html
         return self.get_oplog_rs().find(query, cursor_type=CursorType.TAILABLE_AWAIT, oplog_replay=True).comment(comment)
+
+    def get_simple_oplog_cursor_from_to(self, caller, ts_from, ts_to=None):
+        frame   = getframeinfo(currentframe().f_back)
+        comment = "%s:%s;%s:%i" % (caller.__name__, frame.function, frame.filename, frame.lineno)
+        if not ts_to:
+            ts_to = self.get_oplog_tail_ts()
+        query = {'ts': {'$gte': ts_from, '$lte': ts_to}}
+        logging.debug("Querying all oplog changes between %s and %s on %s with query: %s" % (ts_from, ts_to, self.uri, query))
+        return self.get_oplog_rs().find(query, cursor_type=CursorType.NON_TAILABLE, oplog_replay=True).comment(comment)
 
     def close(self):
         if self._conn:

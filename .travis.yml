@@ -26,6 +26,10 @@ jobs:
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
         - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.4
+    - stage: test-cluster-3.4-simple-oplog
+      script:
+        - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar
+        - $TRAVIS_BUILD_DIR/scripts/travis-ci/run-cluster.sh 3.4 --oplog.tailer.method simple
     - stage: test-replset-3.4
       script:
         - docker load -i $TRAVIS_BUILD_DIR/docker/mongodb_consistent_backup.tar

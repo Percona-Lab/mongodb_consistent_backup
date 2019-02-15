@@ -26,6 +26,7 @@ class ResolverThread(PoolThread):
         self.flush_secs = self.config['oplog']['flush']['max_secs']
 
         self.oplogs  = {}
+        self.last_ts = None
         self.changes = 0
         self.stopped = False
 

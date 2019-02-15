@@ -11,7 +11,7 @@ from Common import Config, DB, Lock, MongoUri, Timer
 from Errors import NotifyError, OperationError
 from Logger import Logger
 from Notify import Notify
-from Oplog import Tailer, Resolver
+from Oplog import Tailer, Resolver, SimpleOplogGetter
 from Replication import Replset, ReplsetSharded
 from Rotate import Rotate
 from Sharding import Sharding
@@ -29,6 +29,7 @@ class MongodbConsistentBackup(object):
         self.replset_sharded          = None
         self.notify                   = None
         self.oplogtailer              = None
+        self.oploggetter              = None
         self.resolver                 = None
         self.upload                   = None
         self.lock                     = None
@@ -162,7 +163,7 @@ class MongodbConsistentBackup(object):
         logging.info("Starting cleanup procedure! Stopping running threads")
 
         # TODO Move submodules into self that populates as used?
-        submodules = ['replset', 'sharding', 'backup', 'oplogtailer', 'archive', 'upload']
+        submodules = ['replset', 'sharding', 'backup', 'oplogtailer', 'oploggetter', 'archive', 'upload']
         for submodule_name in submodules:
             try:
                 submodule = getattr(self, submodule_name)
@@ -325,19 +326,36 @@ class MongodbConsistentBackup(object):
             except Exception, e:
                 self.exception("Problem stopping the balancer! Error: %s" % e, e)
 
-            # init the oplogtailers
-            try:
-                self.oplogtailer = Tailer(
-                    self.manager,
-                    self.config,
-                    self.timer,
-                    self.backup_root_subdirectory,
-                    self.backup_directory,
-                    self.replsets,
-                    self.backup_stop
-                )
-            except Exception, e:
-                self.exception("Problem initializing oplog tailer! Error: %s" % e, e)
+            tailer_module = None
+            if self.config.oplog.tailer.method == "simple":
+                # init the oploggetters
+                try:
+                    self.oploggetter = SimpleOplogGetter(
+                        self.manager,
+                        self.config,
+                        self.timer,
+                        self.backup_root_subdirectory,
+                        self.backup_directory,
+                        self.replsets,
+                        self.backup_stop
+                    )
+                    tailer_module = self.oploggetter
+                except Exception, e:
+                    self.exception("Problem initializing oplog getter! Error: %s" % e, e)
+            else:
+                try:
+                    self.oplogtailer = Tailer(
+                        self.manager,
+                        self.config,
+                        self.timer,
+                        self.backup_root_subdirectory,
+                        self.backup_directory,
+                        self.replsets,
+                        self.backup_stop
+                    )
+                    tailer_module = self.oplogtailer
+                except Exception, e:
+                    self.exception("Problem initializing oplog tailer! Error: %s" % e, e)
 
             # init the backup
             try:
@@ -354,15 +372,16 @@ class MongodbConsistentBackup(object):
                 if self.backup.is_compressed():
                     logging.info("Backup method supports compression, disabling compression in archive step and enabling oplog compression")
                     self.archive.compression('none')
-                    self.oplogtailer.compression(self.backup.compression())
+                    tailer_module.compression(self.backup.compression())
             except Exception, e:
                 self.exception("Problem initializing backup! Error: %s" % e, e)
 
-            # start the oplog tailers, before the backups start
-            try:
-                self.oplogtailer.run()
-            except Exception, e:
-                self.exception("Failed to start oplog tailing threads! Error: %s" % e, e)
+            if self.oplogtailer:
+                # start the oplog tailers, before the backups start
+                try:
+                    self.oplogtailer.run()
+                except Exception, e:
+                    self.exception("Failed to start oplog tailing threads! Error: %s" % e, e)
 
             # run the backup(s)
             try:
@@ -376,6 +395,14 @@ class MongodbConsistentBackup(object):
                 self.oplog_summary = self.oplogtailer.stop()
                 self.state.set('tailer_oplog', self.oplog_summary)
                 self.oplogtailer.close()
+            elif self.oploggetter:
+                try:
+                    self.oploggetter.backup_summary = self.backup_summary
+                    self.oplog_summary = self.oploggetter.run()
+                    self.state.set('tailer_oplog', self.oplog_summary)
+                    self.oploggetter.close()
+                except Exception, e:
+                    self.exception("Failed to start oplog tailing threads! Error: %s" % e, e)
 
             # set balancer back to original value
             try:
@@ -401,7 +428,7 @@ class MongodbConsistentBackup(object):
                 self.db.close()
 
             # resolve/merge tailed oplog into mongodump oplog.bson to a consistent point for all shards
-            if self.backup.task.lower() == "mongodump" and self.oplogtailer.enabled():
+            if self.backup.task.lower() == "mongodump" and tailer_module.enabled():
                 self.resolver = Resolver(
                     self.manager,
                     self.config,
@@ -411,7 +438,7 @@ class MongodbConsistentBackup(object):
                     self.oplog_summary,
                     self.backup_summary
                 )
-                self.resolver.compression(self.oplogtailer.compression())
+                self.resolver.compression(tailer_module.compression())
                 resolver_summary = self.resolver.run()
                 for shard in resolver_summary:
                     shard_dir = os.path.join(self.backup_directory, shard)
