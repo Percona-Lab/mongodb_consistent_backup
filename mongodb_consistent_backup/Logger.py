@@ -25,7 +25,7 @@ class Logger:
             self.stdout_level = logging.DEBUG
 
         self.do_file_log = False
-        if self.config.log_dir is not '':
+        if self.config.log_dir != '':
             self.do_file_log = True
             if not os.path.isdir(self.config.log_dir):
                 print "WARNING: Creating logging directory: %s" % self.config.log_dir
