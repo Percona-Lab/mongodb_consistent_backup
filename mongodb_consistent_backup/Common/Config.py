@@ -143,7 +143,7 @@ class Config(object):
             ret = {}
             for key in data:
                 value = self.to_dict(data[key])
-                if value and key is not ('merge'):
+                if value and key != ('merge'):
                     if key == "password" or key == "secret_key":
                         value = "******"
                     ret[key] = value
