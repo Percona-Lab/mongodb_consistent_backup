@@ -14,7 +14,7 @@ def parse_config_bool(item):
         if isinstance(item, bool):
             return item
         elif isinstance(item, str):
-            if item.rstrip().lower() is "true":
+            if item.rstrip().lower() == "true":
                 return True
         return False
     except Exception:
