@@ -122,7 +122,7 @@ if [ -d ${srcdir} ]; then
 		find ${pexdir} -type f -name "${mod_name}-*.whl" -delete
 	fi
 	[ ! -d ${bindir} ] && mkdir -p ${bindir}
-	${venvdir}/bin/python2.7 ${venvdir}/bin/pex -o ${output_file} -m ${mod_name} -r ${require_file} --pex-root=${pexdir} ${builddir}
+	${venvdir}/bin/python2.7 ${venvdir}/bin/pex -o ${output_file} -m ${mod_name} -r ${require_file} --pre --pex-root=${pexdir} ${builddir}
 	if [ $? -lt 1 ] && [ -x ${output_file} ]; then
 		echo "pex executable written to '$output_file'"
 	else
