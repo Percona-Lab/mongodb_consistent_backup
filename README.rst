@@ -157,7 +157,7 @@ The backups are `mongorestore <https://docs.mongodb.com/manual/reference/program
 
     $ tar xfvz <shardname>.tar.gz
     ...
-    $ mongorestore --host mongod12.example.com --port 27017 -u admin -p 123456 --oplogReplay --dir /var/lib/mongodb-consistent-backup/default/20170424_0000/rs0/dump
+    $ mongorestore --host mongod12.example.com --port 27017 -u admin -p 123456 --oplogReplay --gzip --dir /var/lib/mongodb-consistent-backup/default/20170424_0000/rs0/dump
 
 Run as Docker Container
 ~~~~~~~~~~~~~~~~~~~~~~~
