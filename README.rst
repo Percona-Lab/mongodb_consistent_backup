@@ -16,6 +16,8 @@ archiving, compression/de-duplication, encryption and upload functionality
 The motivation for this tool in explained in this Percona blog post *(more posts coming soon)*:
 `"MongoDB Consistent Backups" <https://www.percona.com/blog/2016/07/25/mongodb-consistent-backups/>`__
 
+**Note**: Percona does not actively develop this tool since the release of [percona-backup-mongodb](https://github.com/percona/percona-backup-mongodb/) at the beginning of 2019. This newer tool makes consistent backups for sharded clusters with the same dump and oplog-taking procedures, but uses golang agents rather than shell scripts.
+
 Features
 ~~~~~~~~
 
